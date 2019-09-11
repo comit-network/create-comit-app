@@ -10,3 +10,6 @@ rust_bitcoin = { version = "0.19.1", package = "bitcoin" }
 structopt = "0.3"
 testcontainers = "0.7"
 web3 = "0.8"
+
+[dev-dependencies]
+quickcheck = "0.7"

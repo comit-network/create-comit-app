@@ -50,13 +50,14 @@ pub fn start_ethereum_node() -> u32 {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use web3::types::{BlockId, BlockNumber, U128};
+    use crate::property_based::Quickcheck;
+    use web3::types::{Address, BlockId, BlockNumber, U128};
 
     #[test]
     fn got_port() {
         let port = start_ethereum_node();
-        let endpoint = format!("http://localhost:{}", port);
 
+        let endpoint = format!("http://localhost:{}", port);
         let (_event_loop, transport) = Http::new(&endpoint).unwrap();
         let client = Web3::new(transport);
 
@@ -65,5 +66,27 @@ mod tests {
             .block(BlockId::Number(BlockNumber::from(0)))
             .map(|block| assert_eq!(block.unwrap().number, Some(U128::from(0))))
             .map_err(|_| panic!());
+    }
+
+    #[test]
+    fn can_fund() {
+        fn prop(address: Quickcheck<Address>, value: Quickcheck<U256>) -> bool {
+            let port = start_ethereum_node();
+
+            fund(port, address, value);
+
+            let endpoint = format!("http://localhost:{}", port);
+            let (_event_loop, transport) = Http::new(&endpoint).unwrap();
+            let client = Web3::new(transport);
+
+            client
+                .eth()
+                .balance(address.into(), None)
+                .map(|balance| balance == value.into())
+                .wait()
+                .unwrap()
+        }
+
+        quickcheck::quickcheck(prop as fn(Quickcheck<Address>, Quickcheck<U256>) -> bool)
     }
 }
