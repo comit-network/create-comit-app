@@ -28,7 +28,7 @@ impl From<Quickcheck<U256>> for U256 {
 impl Arbitrary for Quickcheck<U256> {
     fn arbitrary<G: quickcheck::Gen>(g: &mut G) -> Self {
         let mut inner = [0u8; 32];
-        g.fill_bytes(&mut inner);
+        g.fill_bytes(&mut inner[16..]);
 
         Quickcheck(U256::from(&inner))
     }
