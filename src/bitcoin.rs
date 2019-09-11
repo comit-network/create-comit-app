@@ -31,3 +31,18 @@ pub fn start_bitcoin_node() {
 
     client.generate(1, None).unwrap();
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn can_ping_bitcoin_node() {
+        let bitcoin = BitcoinNode::start();
+
+        let endpoint = format!("http://localhost:{}", bitcoin.port);
+        let client = bitcoincore_rpc::Client::new(endpoint, bitcoin.auth).unwrap();
+
+        assert!(client.ping().is_ok())
+    }
+}
