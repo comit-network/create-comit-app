@@ -1,4 +1,5 @@
 use bitcoincore_rpc::RpcApi;
+use rust_bitcoin::{Address, Amount};
 use testcontainers::{self, Docker};
 
 pub struct BitcoinNode {
@@ -71,5 +72,23 @@ mod tests {
         let client = bitcoincore_rpc::Client::new(endpoint, bitcoin.auth.into()).unwrap();
 
         assert!(client.ping().is_ok())
+    }
+
+    #[test]
+    fn can_fund_bitcoin_address() {
+        let bitcoin = BitcoinNode::start();
+        let address =
+            rust_bitcoin::Address::from_str("bcrt1qj4cuujh723tflnn7ypyq9uxrwf7cwm9kqrnmrk")
+                .unwrap();
+        let value = Amount::from_sat(1000);
+
+        let transaction_id = bitcoin.fund(address, value);
+
+        let endpoint = format!("http://localhost:{}", bitcoin.port);
+        let client = bitcoincore_rpc::Client::new(endpoint, bitcoin.auth.into()).unwrap();
+
+        assert!(client
+            .find_utxo_at_transaction_for_address(&transaction_id, &address)
+            .is_some());
     }
 }
