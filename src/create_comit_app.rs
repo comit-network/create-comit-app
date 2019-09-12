@@ -1,4 +1,3 @@
-use std::process::Command;
 use structopt::StructOpt;
 
 #[derive(StructOpt, Debug)]
@@ -7,8 +6,8 @@ pub enum CreateComitApp {
     StartEnv {},
 }
 
-pub fn start_btsieve() {
-    Command::new("btsieve")
-        .spawn()
-        .expect("btsieve not found in path");
-}
+// pub fn start_btsieve() {
+//     Command::new("btsieve")
+//         .spawn()
+//         .expect("btsieve not found in path");
+// }

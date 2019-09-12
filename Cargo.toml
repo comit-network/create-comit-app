@@ -8,7 +8,9 @@ edition = "2018"
 bitcoincore-rpc = "0.8.0-rc1"
 rust_bitcoin = { version = "0.19.1", package = "bitcoin" }
 structopt = "0.3"
+tempfile = "3.1.0"
 testcontainers = "0.7"
+toml = "0.5"
 web3 = "0.8"
 
 [dev-dependencies]
