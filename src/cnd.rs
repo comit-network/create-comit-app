@@ -1,17 +1,17 @@
+use futures::Future;
 use std::io::Write;
 use std::process::Command;
 use std::thread::sleep;
 use std::time::Duration;
 use tempfile;
+use tokio::runtime::Runtime;
+use tokio_process::CommandExt;
 
-pub struct Cnd {
-    pub port: u32,
-}
+pub struct Cnd;
 
 impl Cnd {
-    pub fn start() -> Cnd {
-        let port = 8000;
-
+    pub fn start(port: u32) -> impl Future<Item = (), Error = ()> {
+        // TODO: Use TOML library to have a struct instead
         let config = format!(
             r#"
 [comit]
@@ -42,17 +42,19 @@ network = "regtest""#,
 
         let config_file = config_file.into_temp_path();
 
-        Command::new("cnd")
+        let child = Command::new("cnd")
             .arg("--config")
-            .stdout(std::process::Stdio::null())
             .arg(config_file.to_str().unwrap())
-            .spawn()
-            .unwrap();
+            .spawn_async();
+
+        let future = child
+            .expect("failed to start cnd")
+            .map(|status| println!("exit status: {}", status))
+            .map_err(|e| panic!("failed to wait for exit: {}", e));
 
         // FIXME: Should wait until cnd logs "Starting HTTP server on V4(0.0.0.0:8000)" instead
         sleep(Duration::from_millis(1000));
-
-        Cnd { port }
+        future
     }
 }
 
@@ -65,9 +67,14 @@ mod tests {
 
     #[test]
     fn can_ping_cnd() {
-        let cnd = Cnd::start();
+        let port = 8000;
+        let mut runtime = tokio::runtime::Runtime::new().unwrap();
 
-        let endpoint = format!("http://localhost:{}", cnd.port);
+        let future = Cnd::start(port);
+
+        runtime.spawn(future);
+
+        let endpoint = format!("http://localhost:{}", port);
         assert!(reqwest::get(&endpoint).unwrap().status().is_success())
     }
 }
