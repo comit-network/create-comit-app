@@ -1,0 +1,13 @@
+language: rust
+cache: cargo
+rust: stable
+before_script:
+  - rustup component add rustfmt
+  - rustup component add clippy
+  - which cargo-tomlfmt || cargo install cargo-tomlfmt
+  - which sccache || cargo install sccache
+script:
+  - ./.githooks/pre-commit
+  - RUSTC_WRAPPER=~/.cargo/bin/sccache cargo build --all --all-targets
+  - RUSTC_WRAPPER=~/.cargo/bin/sccache cargo clippy
+  - RUSTC_WRAPPER=~/.cargo/bin/sccache cargo test --all
