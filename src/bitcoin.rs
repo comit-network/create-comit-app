@@ -1,38 +1,88 @@
 use bitcoincore_rpc::RpcApi;
+use futures::future::Future;
+use futures::stream::Stream;
 use rust_bitcoin::{hashes::sha256d, Address, Amount};
-use testcontainers::{self, Docker};
+use shiplift::{ContainerOptions, Docker, LogsOptions, RmContainerOptions};
+use tokio;
 
 pub struct BitcoinNode {
-    pub port: u32,
-    pub auth: Auth,
+    pub container_id: String,
+    pub rpc_client: bitcoincore_rpc::Client,
 }
 
 impl BitcoinNode {
     pub fn start() -> BitcoinNode {
-        let docker = testcontainers::clients::Cli::default();
-        let container =
-            docker.run(testcontainers::images::coblox_bitcoincore::BitcoinCore::default());
-        let auth = container.image().auth();
+        let mut runtime = tokio::runtime::Runtime::new().unwrap();
+
+        let username = "bitcoin";
+        let password = "t68ej4UX2pB0cLlGwSwHFBLKxXYgomkXyFyxuBmm2U8=";
+        let rpc_port: u32 = port_check::free_local_port().unwrap().into();
+
+        let docker = Docker::new();
+        let image = "coblox/bitcoin-core:0.17.0";
+        let fut = docker
+            .containers()
+            .create(
+                &ContainerOptions::builder(image)
+                    .cmd(vec![
+                        "-regtest",
+                        "-server",
+                        "-printtoconsole",
+                        "-bind=0.0.0.0:18444",
+                        "-rpcbind=0.0.0.0:18443",
+                        "-rpcauth=bitcoin:1c0e8f3de84926c04115e7da7e501346$a48f42ad32741dd1755649c8b98663b3ccbebeb75f196389f9a5c8a96b72edb3",
+                        "-rpcallowip=0.0.0.0/0",
+                        "-debug=1",
+                        "-zmqpubrawblock=tcp://*:28332",
+                        "-zmqpubrawtx=tcp://*:28333",
+                        "-acceptnonstdtxn=0",
+                        "-txindex",
+                    ])
+                    .expose(18443, "tcp", rpc_port)
+                    .expose(18444, "tcp", port_check::free_local_port().unwrap().into())
+                    .expose(28332, "tcp", port_check::free_local_port().unwrap().into())
+                    .expose(28333, "tcp", port_check::free_local_port().unwrap().into())
+                    .build(),
+            )
+            .and_then({
+                let docker = docker.clone();
+                move |container| {
+                    let id = container.id;
+                    docker.containers().get(&id).start().map(|_| id)
+                }
+            }).and_then({
+                let docker = docker.clone();
+                move |id| {
+                    docker.containers()
+                        .get(&id)
+                        .logs(&LogsOptions::builder().stdout(true).follow(true).build())
+                        .take_while(|chunk| {
+                            let log = chunk.as_string_lossy();
+                            Ok(!log.contains("Flushed wallet.dat"))
+                        }).collect().map(|_| id)
+                }});
+
+        let container_id = runtime.block_on(fut).unwrap();
+
+        let endpoint = format!("http://localhost:{}", rpc_port);
+        let rpc_client = bitcoincore_rpc::Client::new(
+            endpoint,
+            bitcoincore_rpc::Auth::UserPass(username.to_string(), password.to_string()),
+        )
+        .unwrap();
 
         let node = BitcoinNode {
-            port: container.get_host_port(18443).unwrap(),
-            auth: Auth {
-                username: auth.username().to_string(),
-                password: auth.password().to_string(),
-            },
+            container_id,
+            rpc_client,
         };
 
-        let endpoint = format!("http://localhost:{}", node.port);
-        let client = bitcoincore_rpc::Client::new(endpoint, node.auth.clone().into()).unwrap();
-
-        client.generate(101, None).unwrap();
+        node.rpc_client.generate(101, None).unwrap();
 
         node
     }
 
     pub fn fund(&self, address: &Address, amount: Amount) -> sha256d::Hash {
-        let endpoint = format!("http://localhost:{}", self.port);
-        let client = bitcoincore_rpc::Client::new(endpoint, self.auth.clone().into()).unwrap();
+        let client = &self.rpc_client;
 
         let transaction_id = client
             .send_to_address(&address, amount, None, None, None, None, None, None)
@@ -44,15 +94,22 @@ impl BitcoinNode {
     }
 }
 
-#[derive(Clone)]
-pub struct Auth {
-    username: String,
-    password: String,
-}
+impl Drop for BitcoinNode {
+    fn drop(&mut self) {
+        let docker = Docker::new();
 
-impl From<Auth> for bitcoincore_rpc::Auth {
-    fn from(source: Auth) -> bitcoincore_rpc::Auth {
-        bitcoincore_rpc::Auth::UserPass(source.username, source.password)
+        let rm_fut = docker
+            .containers()
+            .get(&self.container_id)
+            .remove(
+                RmContainerOptions::builder()
+                    .force(true)
+                    .volumes(true)
+                    .build(),
+            )
+            .map_err(|_| ());
+
+        tokio::run(rm_fut);
     }
 }
 
@@ -100,23 +157,16 @@ mod tests {
     fn can_ping_bitcoin_node() {
         let bitcoin = BitcoinNode::start();
 
-        let endpoint = format!("http://localhost:{}", bitcoin.port);
-        let client = bitcoincore_rpc::Client::new(endpoint, bitcoin.auth.into()).unwrap();
-
-        assert!(client.ping().is_ok())
+        assert!(bitcoin.rpc_client.ping().is_ok());
     }
 
     #[test]
     fn can_fund_bitcoin_address() {
         let bitcoin = BitcoinNode::start();
-
-        let endpoint = format!("http://localhost:{}", bitcoin.port);
-        let client = bitcoincore_rpc::Client::new(endpoint, bitcoin.auth.clone().into()).unwrap();
+        let client = &bitcoin.rpc_client;
 
         let address = client.get_new_address(None, None).unwrap();
-
         let value = Amount::from_sat(1_000);
-
         let transaction_id = bitcoin.fund(&address, value);
 
         assert!(client
