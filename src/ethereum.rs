@@ -1,4 +1,5 @@
-use testcontainers::{self, Docker};
+use futures::stream::Stream;
+use shiplift::{ContainerOptions, Docker, LogsOptions, RmContainerOptions};
 use web3::{
     api::Web3,
     futures::Future,
@@ -7,36 +8,72 @@ use web3::{
 };
 
 pub struct EthereumNode {
-    pub port: u32,
+    pub container_id: String,
+    pub http_port: u32,
 }
 
 impl EthereumNode {
     pub fn start() -> Self {
-        let docker = testcontainers::clients::Cli::default();
-        let container =
-            docker.run(testcontainers::images::parity_parity::ParityEthereum::default());
+        let mut runtime = tokio::runtime::Runtime::new().unwrap();
+
+        let http_port: u32 = port_check::free_local_port().unwrap().into();
+
+        let docker = Docker::new();
+        let image = "parity/parity:v2.5.0";
+        let fut = docker
+            .containers()
+            .create(
+                &ContainerOptions::builder(image)
+                    .cmd(vec![
+                        "--config=dev",
+                        "--jsonrpc-apis=all",
+                        "--unsafe-expose",
+                        "--tracing=on",
+                        "--jsonrpc-cors=all",
+                    ])
+                    .expose(8545, "tcp", http_port)
+                    .build(),
+            )
+            .and_then({
+                let docker = docker.clone();
+                move |container| {
+                    let id = container.id;
+                    docker.containers().get(&id).start().map(|_| id)
+                }
+            })
+            .and_then({
+                let docker = docker.clone();
+                move |id| {
+                    docker
+                        .containers()
+                        .get(&id)
+                        .logs(&LogsOptions::builder().stderr(true).follow(true).build())
+                        .take_while(|chunk| {
+                            let log = chunk.as_string_lossy();
+                            Ok(!log.contains("Public node URL:"))
+                        })
+                        .collect()
+                        .map(|_| id)
+                }
+            });
+
+        let container_id = runtime.block_on(fut).unwrap();
 
         EthereumNode {
-            port: container.get_host_port(8545).unwrap(),
+            container_id,
+            http_port,
         }
     }
 
     pub fn fund(&self, address: Address, value: U256) {
-        let endpoint = format!("http://localhost:{}", &self.port);
-
+        let endpoint = format!("http://localhost:{}", &self.http_port);
         let (_event_loop, transport) = Http::new(&endpoint).unwrap();
         let client = Web3::new(transport);
 
         let parity_dev_account: web3::types::Address =
             "00a329c0648769a73afac7f9381e08fb43dbea72".parse().unwrap();
 
-        // FIXME: Derive address from seed
-        // let taker_address: web3::types::Address =
-        //     "458968726a444a90fda1edc082129c661d39c7ff".parse().unwrap();
-
-        // U256::from_dec_str("200000000000000000000").unwrap();
-
-        client
+        let fut = client
             .personal()
             .send_transaction(
                 TransactionRequest {
@@ -51,8 +88,29 @@ impl EthereumNode {
                 },
                 "",
             )
-            .wait()
-            .unwrap();
+            .map(|_| ())
+            .map_err(|_| ());
+
+        tokio::run(fut);
+    }
+}
+
+impl Drop for EthereumNode {
+    fn drop(&mut self) {
+        let docker = Docker::new();
+
+        let rm_fut = docker
+            .containers()
+            .get(&self.container_id)
+            .remove(
+                RmContainerOptions::builder()
+                    .force(true)
+                    .volumes(true)
+                    .build(),
+            )
+            .map_err(|_| ());
+
+        tokio::run(rm_fut);
     }
 }
 
@@ -64,28 +122,29 @@ mod tests {
     use web3::types::{Address, BlockId, BlockNumber, U128};
 
     #[test]
-    fn got_port() {
+    fn can_ping_ethereum_node() {
         let ethereum = EthereumNode::start();
 
-        let endpoint = format!("http://localhost:{}", ethereum.port);
+        let endpoint = format!("http://localhost:{}", ethereum.http_port);
         let (_event_loop, transport) = Http::new(&endpoint).unwrap();
         let client = Web3::new(transport);
 
-        let _ = client
+        client
             .eth()
             .block(BlockId::Number(BlockNumber::from(0)))
             .map(|block| assert_eq!(block.unwrap().number, Some(U128::from(0))))
-            .map_err(|_| panic!());
+            .wait()
+            .unwrap();
     }
 
     #[test]
-    fn can_fund() {
+    fn can_fund_ethereum_address() {
         fn prop(address: Quickcheck<Address>, value: Quickcheck<U256>) -> bool {
             let ethereum = EthereumNode::start();
 
             ethereum.fund(address.clone().into(), value.clone().into());
 
-            let endpoint = format!("http://localhost:{}", ethereum.port);
+            let endpoint = format!("http://localhost:{}", ethereum.http_port);
             let (_event_loop, transport) = Http::new(&endpoint).unwrap();
             let client = Web3::new(transport);
 
