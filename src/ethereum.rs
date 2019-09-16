@@ -13,14 +13,12 @@ pub struct EthereumNode {
 }
 
 impl EthereumNode {
-    pub fn start() -> Self {
-        let mut runtime = tokio::runtime::Runtime::new().unwrap();
-
+    pub fn start() -> impl Future<Item = Self, Error = shiplift::errors::Error> {
         let http_port: u32 = port_check::free_local_port().unwrap().into();
 
         let docker = Docker::new();
         let image = "parity/parity:v2.5.0";
-        let fut = docker
+        docker
             .containers()
             .create(
                 &ContainerOptions::builder(image)
@@ -55,14 +53,13 @@ impl EthereumNode {
                         .collect()
                         .map(|_| id)
                 }
-            });
-
-        let container_id = runtime.block_on(fut).unwrap();
-
-        EthereumNode {
-            container_id,
-            http_port,
-        }
+            })
+            .and_then(move |container_id| {
+                Ok(EthereumNode {
+                    container_id,
+                    http_port,
+                })
+            })
     }
 
     pub fn fund(&self, address: Address, value: U256) {
@@ -123,7 +120,9 @@ mod tests {
 
     #[test]
     fn can_ping_ethereum_node() {
-        let ethereum = EthereumNode::start();
+        let mut runtime = tokio::runtime::Runtime::new().unwrap();
+
+        let ethereum = runtime.block_on(EthereumNode::start()).unwrap();
 
         let endpoint = format!("http://localhost:{}", ethereum.http_port);
         let (_event_loop, transport) = Http::new(&endpoint).unwrap();
@@ -140,7 +139,9 @@ mod tests {
     #[test]
     fn can_fund_ethereum_address() {
         fn prop(address: Quickcheck<Address>, value: Quickcheck<U256>) -> bool {
-            let ethereum = EthereumNode::start();
+            let mut runtime = tokio::runtime::Runtime::new().unwrap();
+
+            let ethereum = runtime.block_on(EthereumNode::start()).unwrap();
 
             ethereum.fund(address.clone().into(), value.clone().into());
 
