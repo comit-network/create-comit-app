@@ -112,6 +112,7 @@ impl Drop for BitcoinNode {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use config;
     use rust_bitcoin::{Address, TxOut};
     use std::convert::TryFrom;
 
@@ -172,5 +173,20 @@ mod tests {
         assert!(client
             .find_utxo_at_transaction_for_address(&transaction_id, &address)
             .is_some());
+    }
+
+    #[test]
+    fn can_get_rpc_port_from_dot_env_file() {
+        let mut runtime = tokio::runtime::Runtime::new().unwrap();
+
+        let bitcoin = runtime.block_on(BitcoinNode::start()).unwrap();
+
+        let mut env_file = config::Config::default();
+
+        env_file.merge(config::File::with_name("env")).unwrap();
+
+        let env_file = env_file.try_into::<EnvFile>();
+
+        assert_eq!(Ok(_), env_file.map(|env_file| env_file.bitcoin.rpc_port));
     }
 }
