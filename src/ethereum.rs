@@ -8,6 +8,8 @@ use web3::{
     types::{Address, TransactionRequest, U256},
 };
 
+const HTTP_PORT_KEY: &str = "ETHEREUM_NODE_HTTP_PORT";
+
 pub struct EthereumNode {
     pub container_id: String,
     pub http_port: u32,
@@ -65,7 +67,7 @@ impl EthereumNode {
             })
             .and_then(move |node| {
                 envfile
-                    .update("ETHEREUM_NODE_HTTP_PORT", &http_port.to_string())
+                    .update(&HTTP_PORT_KEY, &http_port.to_string())
                     .write()
                     .unwrap();
 
@@ -189,6 +191,6 @@ mod tests {
         runtime.block_on(EthereumNode::start(envfile)).unwrap();
 
         let envfile = EnvFile::new(&file.path()).unwrap();
-        assert!(envfile.get("ETHEREUM_NODE_HTTP_PORT").is_some());
+        assert!(envfile.get(&HTTP_PORT_KEY).is_some());
     }
 }

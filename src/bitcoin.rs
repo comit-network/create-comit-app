@@ -6,6 +6,8 @@ use rust_bitcoin::{hashes::sha256d, Address, Amount};
 use shiplift::{ContainerOptions, Docker, LogsOptions, RmContainerOptions};
 use tokio;
 
+const RPC_PORT_KEY: &str = "BITCOIN_NODE_RPC_PORT";
+
 pub struct BitcoinNode {
     pub container_id: String,
     pub rpc_client: bitcoincore_rpc::Client,
@@ -79,7 +81,7 @@ impl BitcoinNode {
                 Ok(node)
             })
             .and_then(move |node| {
-                envfile.update("BITCOIN_NODE_RPC_PORT", &rpc_port.to_string()).write().unwrap();
+                envfile.update(RPC_PORT_KEY, &rpc_port.to_string()).write().unwrap();
 
                 Ok(node)
             })
@@ -198,6 +200,6 @@ mod tests {
         runtime.block_on(BitcoinNode::start(envfile)).unwrap();
 
         let envfile = EnvFile::new(&file.path()).unwrap();
-        assert!(envfile.get("BITCOIN_NODE_RPC_PORT").is_some());
+        assert!(envfile.get(RPC_PORT_KEY).is_some());
     }
 }
