@@ -11,16 +11,14 @@ pub struct BitcoinNode {
 }
 
 impl BitcoinNode {
-    pub fn start() -> BitcoinNode {
-        let mut runtime = tokio::runtime::Runtime::new().unwrap();
-
+    pub fn start() -> impl Future<Item = BitcoinNode, Error = shiplift::errors::Error> {
         let username = "bitcoin";
         let password = "t68ej4UX2pB0cLlGwSwHFBLKxXYgomkXyFyxuBmm2U8=";
         let rpc_port: u32 = port_check::free_local_port().unwrap().into();
 
         let docker = Docker::new();
         let image = "coblox/bitcoin-core:0.17.0";
-        let fut = docker
+        docker
             .containers()
             .create(
                 &ContainerOptions::builder(image)
@@ -50,7 +48,8 @@ impl BitcoinNode {
                     let id = container.id;
                     docker.containers().get(&id).start().map(|_| id)
                 }
-            }).and_then({
+            })
+            .and_then({
                 let docker = docker.clone();
                 move |id| {
                     docker.containers()
@@ -60,25 +59,22 @@ impl BitcoinNode {
                             let log = chunk.as_string_lossy();
                             Ok(!log.contains("Flushed wallet.dat"))
                         }).collect().map(|_| id)
-                }});
+                }})
+            .and_then(move |container_id| {
+                let endpoint = format!("http://localhost:{}", rpc_port);
+                let rpc_client = bitcoincore_rpc::Client::new(
+                    endpoint,
+                    bitcoincore_rpc::Auth::UserPass(username.to_string(), password.to_string()),
+                ).unwrap();
 
-        let container_id = runtime.block_on(fut).unwrap();
+                let node = BitcoinNode {
+                    container_id,
+                    rpc_client,
+                };
 
-        let endpoint = format!("http://localhost:{}", rpc_port);
-        let rpc_client = bitcoincore_rpc::Client::new(
-            endpoint,
-            bitcoincore_rpc::Auth::UserPass(username.to_string(), password.to_string()),
-        )
-        .unwrap();
-
-        let node = BitcoinNode {
-            container_id,
-            rpc_client,
-        };
-
-        node.rpc_client.generate(101, None).unwrap();
-
-        node
+                node.rpc_client.generate(101, None).unwrap();
+                Ok(node)
+            })
     }
 
     pub fn fund(&self, address: &Address, amount: Amount) -> sha256d::Hash {
@@ -155,14 +151,18 @@ mod tests {
 
     #[test]
     fn can_ping_bitcoin_node() {
-        let bitcoin = BitcoinNode::start();
+        let mut runtime = tokio::runtime::Runtime::new().unwrap();
+
+        let bitcoin = runtime.block_on(BitcoinNode::start()).unwrap();
 
         assert!(bitcoin.rpc_client.ping().is_ok());
     }
 
     #[test]
     fn can_fund_bitcoin_address() {
-        let bitcoin = BitcoinNode::start();
+        let mut runtime = tokio::runtime::Runtime::new().unwrap();
+
+        let bitcoin = runtime.block_on(BitcoinNode::start()).unwrap();
         let client = &bitcoin.rpc_client;
 
         let address = client.get_new_address(None, None).unwrap();
