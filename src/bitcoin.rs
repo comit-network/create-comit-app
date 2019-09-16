@@ -2,20 +2,26 @@ use bitcoincore_rpc::RpcApi;
 use envfile::EnvFile;
 use futures::future::Future;
 use futures::stream::Stream;
-use rust_bitcoin::{hashes::sha256d, Address, Amount};
+use hdwallet::traits::Serialize;
+use hdwallet::ExtendedPrivKey;
+use hex;
+use rust_bitcoin::{self, hashes::sha256d, Address, Amount};
 use shiplift::{ContainerOptions, Docker, LogsOptions, RmContainerOptions};
+use std::path::PathBuf;
 use tokio;
 
 const RPC_PORT_KEY: &str = "BITCOIN_NODE_RPC_PORT";
+const HD_KEY_KEY: &str = "BITCOIN_HD_KEY";
 
 pub struct BitcoinNode {
     pub container_id: String,
     pub rpc_client: bitcoincore_rpc::Client,
+    pub hd_keys: Vec<ExtendedPrivKey>,
 }
 
 impl BitcoinNode {
     pub fn start(
-        mut envfile: EnvFile,
+        envfile_path: PathBuf,
     ) -> impl Future<Item = BitcoinNode, Error = shiplift::errors::Error> {
         let username = "bitcoin";
         let password = "t68ej4UX2pB0cLlGwSwHFBLKxXYgomkXyFyxuBmm2U8=";
@@ -67,24 +73,52 @@ impl BitcoinNode {
                 }})
             .and_then(move |container_id| {
                 let endpoint = format!("http://localhost:{}", rpc_port);
+
                 let rpc_client = bitcoincore_rpc::Client::new(
                     endpoint,
                     bitcoincore_rpc::Auth::UserPass(username.to_string(), password.to_string()),
                 ).unwrap();
 
+                let mut hd_keys = Vec::new();
+
+                for _ in 0..2 {
+                    let extended_private_key =
+                        ExtendedPrivKey::random().expect("failed to generate extended private key");
+
+                    hd_keys.push(extended_private_key);
+                };
+
                 let node = BitcoinNode {
                     container_id,
                     rpc_client,
+                    hd_keys
                 };
 
                 node.rpc_client.generate(101, None).unwrap();
                 Ok(node)
             })
-            .and_then(move |node| {
-                envfile.update(RPC_PORT_KEY, &rpc_port.to_string()).write().unwrap();
+            .and_then({
+                let envfile_path = envfile_path.clone();
+                move |node| {
+                    let mut envfile = EnvFile::new(envfile_path).unwrap();
+                    envfile.update(RPC_PORT_KEY, &rpc_port.to_string()).write().unwrap();
 
-                Ok(node)
-            })
+                    Ok(node)
+                }})
+            .and_then({
+                let envfile_path = envfile_path.clone();
+                move |node: BitcoinNode| {
+                    let mut envfile = EnvFile::new(envfile_path).unwrap();
+
+                    for (i, hd_key) in node.hd_keys.iter().enumerate() {
+                        envfile
+                            .update(format!("{}_{}", HD_KEY_KEY, i + 1)
+                                    .as_str(), hex::encode(&hd_key.serialize()).as_str());
+                    };
+
+                    envfile.write().unwrap();
+                    Ok(node)
+                }})
     }
 
     pub fn fund(&self, address: &Address, amount: Amount) -> sha256d::Hash {
@@ -164,9 +198,10 @@ mod tests {
         let mut runtime = tokio::runtime::Runtime::new().unwrap();
 
         let file = tempfile::Builder::new().tempfile().unwrap();
-        let envfile = EnvFile::new(&file.path()).unwrap();
 
-        let bitcoin = runtime.block_on(BitcoinNode::start(envfile)).unwrap();
+        let bitcoin = runtime
+            .block_on(BitcoinNode::start(file.path().to_path_buf()))
+            .unwrap();
 
         assert!(bitcoin.rpc_client.ping().is_ok());
     }
@@ -176,9 +211,10 @@ mod tests {
         let mut runtime = tokio::runtime::Runtime::new().unwrap();
 
         let file = tempfile::Builder::new().tempfile().unwrap();
-        let envfile = EnvFile::new(&file.path()).unwrap();
 
-        let bitcoin = runtime.block_on(BitcoinNode::start(envfile)).unwrap();
+        let bitcoin = runtime
+            .block_on(BitcoinNode::start(file.path().to_path_buf()))
+            .unwrap();
         let client = &bitcoin.rpc_client;
 
         let address = client.get_new_address(None, None).unwrap();
@@ -195,11 +231,27 @@ mod tests {
         let mut runtime = tokio::runtime::Runtime::new().unwrap();
 
         let file = tempfile::Builder::new().tempfile().unwrap();
-        let envfile = EnvFile::new(&file.path()).unwrap();
 
-        runtime.block_on(BitcoinNode::start(envfile)).unwrap();
+        runtime
+            .block_on(BitcoinNode::start(file.path().to_path_buf()))
+            .unwrap();
 
         let envfile = EnvFile::new(&file.path()).unwrap();
         assert!(envfile.get(RPC_PORT_KEY).is_some());
+    }
+
+    #[test]
+    fn can_get_two_bitcoin_hd_keys_from_envfile() {
+        let mut runtime = tokio::runtime::Runtime::new().unwrap();
+
+        let file = tempfile::Builder::new().tempfile().unwrap();
+
+        runtime
+            .block_on(BitcoinNode::start(file.path().to_path_buf()))
+            .unwrap();
+
+        let envfile = EnvFile::new(&file.path()).unwrap();
+        assert!(envfile.get(format!("{}_1", HD_KEY_KEY).as_str()).is_some());
+        assert!(envfile.get(format!("{}_2", HD_KEY_KEY).as_str()).is_some())
     }
 }
