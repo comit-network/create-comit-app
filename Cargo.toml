@@ -16,6 +16,7 @@ tempfile = "3.1.0"
 testcontainers = "0.7"
 tokio = "0.1"
 tokio-process = "0.2"
+envfile = "0.2"
 toml = "0.5"
 web3 = "0.8"
 

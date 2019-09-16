@@ -1,4 +1,5 @@
 use bitcoincore_rpc::RpcApi;
+use envfile::EnvFile;
 use futures::future::Future;
 use futures::stream::Stream;
 use rust_bitcoin::{hashes::sha256d, Address, Amount};
@@ -11,7 +12,9 @@ pub struct BitcoinNode {
 }
 
 impl BitcoinNode {
-    pub fn start() -> impl Future<Item = BitcoinNode, Error = shiplift::errors::Error> {
+    pub fn start(
+        mut envfile: EnvFile,
+    ) -> impl Future<Item = BitcoinNode, Error = shiplift::errors::Error> {
         let username = "bitcoin";
         let password = "t68ej4UX2pB0cLlGwSwHFBLKxXYgomkXyFyxuBmm2U8=";
         let rpc_port: u32 = port_check::free_local_port().unwrap().into();
@@ -75,6 +78,11 @@ impl BitcoinNode {
                 node.rpc_client.generate(101, None).unwrap();
                 Ok(node)
             })
+            .and_then(move |node| {
+                envfile.update("BITCOIN_NODE_RPC_PORT", &rpc_port.to_string()).write().unwrap();
+
+                Ok(node)
+            })
     }
 
     pub fn fund(&self, address: &Address, amount: Amount) -> sha256d::Hash {
@@ -112,7 +120,6 @@ impl Drop for BitcoinNode {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use config;
     use rust_bitcoin::{Address, TxOut};
     use std::convert::TryFrom;
 
@@ -154,7 +161,10 @@ mod tests {
     fn can_ping_bitcoin_node() {
         let mut runtime = tokio::runtime::Runtime::new().unwrap();
 
-        let bitcoin = runtime.block_on(BitcoinNode::start()).unwrap();
+        let file = tempfile::Builder::new().tempfile().unwrap();
+        let envfile = EnvFile::new(&file.path()).unwrap();
+
+        let bitcoin = runtime.block_on(BitcoinNode::start(envfile)).unwrap();
 
         assert!(bitcoin.rpc_client.ping().is_ok());
     }
@@ -163,7 +173,10 @@ mod tests {
     fn can_fund_bitcoin_address() {
         let mut runtime = tokio::runtime::Runtime::new().unwrap();
 
-        let bitcoin = runtime.block_on(BitcoinNode::start()).unwrap();
+        let file = tempfile::Builder::new().tempfile().unwrap();
+        let envfile = EnvFile::new(&file.path()).unwrap();
+
+        let bitcoin = runtime.block_on(BitcoinNode::start(envfile)).unwrap();
         let client = &bitcoin.rpc_client;
 
         let address = client.get_new_address(None, None).unwrap();
@@ -176,17 +189,15 @@ mod tests {
     }
 
     #[test]
-    fn can_get_rpc_port_from_dot_env_file() {
+    fn can_get_rpc_port_from_envfile() {
         let mut runtime = tokio::runtime::Runtime::new().unwrap();
 
-        let bitcoin = runtime.block_on(BitcoinNode::start()).unwrap();
+        let file = tempfile::Builder::new().tempfile().unwrap();
+        let envfile = EnvFile::new(&file.path()).unwrap();
 
-        let mut env_file = config::Config::default();
+        runtime.block_on(BitcoinNode::start(envfile)).unwrap();
 
-        env_file.merge(config::File::with_name("env")).unwrap();
-
-        let env_file = env_file.try_into::<EnvFile>();
-
-        assert_eq!(Ok(_), env_file.map(|env_file| env_file.bitcoin.rpc_port));
+        let envfile = EnvFile::new(&file.path()).unwrap();
+        assert!(envfile.get("BITCOIN_NODE_RPC_PORT").is_some());
     }
 }
