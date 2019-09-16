@@ -1,3 +1,4 @@
+use envfile::EnvFile;
 use futures::stream::Stream;
 use shiplift::{ContainerOptions, Docker, LogsOptions, RmContainerOptions};
 use web3::{
@@ -13,7 +14,9 @@ pub struct EthereumNode {
 }
 
 impl EthereumNode {
-    pub fn start() -> impl Future<Item = Self, Error = shiplift::errors::Error> {
+    pub fn start(
+        mut envfile: EnvFile,
+    ) -> impl Future<Item = Self, Error = shiplift::errors::Error> {
         let http_port: u32 = port_check::free_local_port().unwrap().into();
 
         let docker = Docker::new();
@@ -59,6 +62,14 @@ impl EthereumNode {
                     container_id,
                     http_port,
                 })
+            })
+            .and_then(move |node| {
+                envfile
+                    .update("ETHEREUM_NODE_HTTP_PORT", &http_port.to_string())
+                    .write()
+                    .unwrap();
+
+                Ok(node)
             })
     }
 
@@ -122,7 +133,10 @@ mod tests {
     fn can_ping_ethereum_node() {
         let mut runtime = tokio::runtime::Runtime::new().unwrap();
 
-        let ethereum = runtime.block_on(EthereumNode::start()).unwrap();
+        let file = tempfile::Builder::new().tempfile().unwrap();
+        let envfile = EnvFile::new(&file.path()).unwrap();
+
+        let ethereum = runtime.block_on(EthereumNode::start(envfile)).unwrap();
 
         let endpoint = format!("http://localhost:{}", ethereum.http_port);
         let (_event_loop, transport) = Http::new(&endpoint).unwrap();
@@ -141,7 +155,10 @@ mod tests {
         fn prop(address: Quickcheck<Address>, value: Quickcheck<U256>) -> bool {
             let mut runtime = tokio::runtime::Runtime::new().unwrap();
 
-            let ethereum = runtime.block_on(EthereumNode::start()).unwrap();
+            let file = tempfile::Builder::new().tempfile().unwrap();
+            let envfile = EnvFile::new(&file.path()).unwrap();
+
+            let ethereum = runtime.block_on(EthereumNode::start(envfile)).unwrap();
 
             ethereum.fund(address.clone().into(), value.clone().into());
 
@@ -160,5 +177,18 @@ mod tests {
         quickcheck::QuickCheck::new()
             .max_tests(1)
             .quickcheck(prop as fn(Quickcheck<Address>, Quickcheck<U256>) -> bool)
+    }
+
+    #[test]
+    fn can_get_http_port_from_envfile() {
+        let mut runtime = tokio::runtime::Runtime::new().unwrap();
+
+        let file = tempfile::Builder::new().tempfile().unwrap();
+        let envfile = EnvFile::new(&file.path()).unwrap();
+
+        runtime.block_on(EthereumNode::start(envfile)).unwrap();
+
+        let envfile = EnvFile::new(&file.path()).unwrap();
+        assert!(envfile.get("ETHEREUM_NODE_HTTP_PORT").is_some());
     }
 }
