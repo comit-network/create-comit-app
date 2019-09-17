@@ -1,78 +1,151 @@
-use futures::Future;
+use rand;
+use rand::Rng;
+use serde::Serialize;
 use std::io::Write;
+use std::net::{IpAddr, Ipv4Addr};
 use std::process::Command;
-use std::thread::sleep;
-use std::time::Duration;
-use tempfile;
-use tokio::runtime::Runtime;
-use tokio_process::CommandExt;
+use tempfile::{self, TempPath};
+use tokio_process::{Child, CommandExt};
 
-pub struct Cnd;
+pub struct Cnd {
+    pub settings: Settings,
+    _config_file: TempPath,
+    pub process: Child,
+}
 
 impl Cnd {
-    pub fn start(port: u32) -> impl Future<Item = (), Error = ()> {
-        // TODO: Use TOML library to have a struct instead
-        let config = format!(
-            r#"
-[comit]
-secret_seed = "4481d31defc255c088891b6fb778968c5b813a8d791aec1b4d06f92cb08f4664"
-
-[network]
-listen = ["/ip4/0.0.0.0/tcp/9939"]
-
-[http_api]
-address = "0.0.0.0"
-port = {}
-
-[btsieve]
-url = "http://localhost:8181/"
-
-[btsieve.bitcoin]
-poll_interval_secs = 300
-network = "regtest"
-
-[btsieve.ethereum]
-poll_interval_secs = 20
-network = "regtest""#,
-            port
-        );
-
+    pub fn start(settings: Settings) -> Cnd {
         let mut config_file = tempfile::Builder::new().suffix(".toml").tempfile().unwrap();
-        writeln!(config_file, "{}", config).unwrap();
-
+        config_file
+            .write(
+                toml::to_string(&settings)
+                    .expect("could not serialize settings")
+                    .as_ref(),
+            )
+            .expect("could not write to temporary file");
         let config_file = config_file.into_temp_path();
 
-        let child = Command::new("cnd")
+        let process = Command::new("cnd")
             .arg("--config")
             .arg(config_file.to_str().unwrap())
-            .spawn_async();
+            .spawn_async()
+            .expect("failed to start btsieve");
 
-        let future = child
-            .expect("failed to start cnd")
-            .map(|status| println!("exit status: {}", status))
-            .map_err(|e| panic!("failed to wait for exit: {}", e));
+        Cnd {
+            settings,
+            _config_file: config_file,
+            process,
+        }
 
         // FIXME: Should wait until cnd logs "Starting HTTP server on V4(0.0.0.0:8000)" instead
-        sleep(Duration::from_millis(1000));
-        future
+        // sleep(Duration::from_millis(1000));
     }
 }
 
-pub fn start_cnd() {}
+#[derive(Clone, Debug, Serialize, Default)]
+pub struct Settings {
+    pub comit: Comit,
+    pub network: Network,
+    pub http_api: HttpSocket,
+    pub btsieve: Btsieve,
+    pub web_gui: Option<HttpSocket>,
+}
+
+#[derive(Clone, Debug, Serialize)]
+pub struct Comit {
+    #[serde(with = "hex_serde")]
+    pub secret_seed: [u8; 32],
+}
+
+#[derive(Clone, Debug, Serialize)]
+pub struct Network {
+    pub listen: Vec<String>,
+}
+#[derive(Clone, Debug, Serialize)]
+pub struct HttpSocket {
+    pub address: IpAddr,
+    pub port: u16,
+}
+
+#[derive(Clone, Debug, Serialize)]
+pub struct Btsieve {
+    pub url: String,
+    pub bitcoin: PollParameters,
+    pub ethereum: PollParameters,
+}
+
+#[derive(Clone, Debug, Serialize)]
+pub struct PollParameters {
+    pub poll_interval_secs: u16,
+    pub network: String,
+}
+
+impl Default for Comit {
+    fn default() -> Comit {
+        let mut secret_seed = [0u8; 32];
+        rand::thread_rng().fill(&mut secret_seed);
+
+        Comit { secret_seed }
+    }
+}
+
+impl Default for Network {
+    fn default() -> Network {
+        Network {
+            listen: vec![String::from("/ip4/0.0.0.0/tcp/9939")],
+        }
+    }
+}
+
+impl Default for HttpSocket {
+    fn default() -> HttpSocket {
+        HttpSocket {
+            address: IpAddr::V4(Ipv4Addr::UNSPECIFIED),
+            port: 8000,
+        }
+    }
+}
+
+impl Default for Btsieve {
+    fn default() -> Btsieve {
+        Btsieve {
+            url: String::from("http://localhost:8181"),
+            bitcoin: PollParameters {
+                poll_interval_secs: 300,
+                network: String::from("regtest"),
+            },
+            ethereum: PollParameters {
+                poll_interval_secs: 20,
+                network: String::from("regtest"),
+            },
+        }
+    }
+}
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use futures::Future;
     use ureq;
 
     #[test]
     fn can_ping_cnd() {
-        let port = 8000;
         let mut runtime = tokio::runtime::Runtime::new().unwrap();
 
-        let future = Cnd::start(port);
+        let port = port_check::free_local_port().unwrap().into();
+        let settings = Settings {
+            http_api: HttpSocket {
+                port,
+                ..Default::default()
+            },
+            ..Default::default()
+        };
 
-        runtime.spawn(future);
+        let cnd = Cnd::start(settings);
+
+        runtime.spawn(cnd.process.map(|_| ()).map_err(|_| ()));
+
+        std::thread::sleep(std::time::Duration::from_millis(5000));
 
         let endpoint = format!("http://localhost:{}", port);
         assert!(ureq::get(&endpoint).call().ok())

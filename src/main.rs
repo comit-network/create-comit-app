@@ -11,7 +11,7 @@ use std::iter::Iterator;
 use std::path::PathBuf;
 use web3::types::U256;
 
-pub const HTTP_PORT_BTSIEVE: &str = "HTTP_PORT_BTSIEVE";
+const HTTP_PORT_BTSIEVE: &str = "HTTP_PORT_BTSIEVE";
 
 // TODO: Ensure that the .env file can only be written to by only one process at a time
 // TODO: Proper error handling in particular to allow for cleanup of state after a runtime error

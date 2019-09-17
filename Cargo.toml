@@ -9,8 +9,10 @@ bitcoincore-rpc = "0.8.0-rc1"
 config = { version = "0.9", features = ["toml"] }
 futures = "0.1"
 hex = "0.3"
+hex-serde = "0.1.0"
 hdwallet = "0.2"
 port_check = "0.1"
+rand = "0.7"
 rust_bitcoin = { version = "0.19.1", package = "bitcoin" }
 secp256k1 = "0.12"
 serde = "1"
