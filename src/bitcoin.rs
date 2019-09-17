@@ -2,21 +2,16 @@ use bitcoincore_rpc::RpcApi;
 use envfile::EnvFile;
 use futures::future::Future;
 use futures::stream::Stream;
-use hdwallet::traits::Serialize;
-use hdwallet::ExtendedPrivKey;
-use hex;
-use rust_bitcoin::{self, hashes::sha256d, Address, Amount};
+use rust_bitcoin::{self, hashes::sha256d, Address, Amount, Network};
 use shiplift::{ContainerOptions, Docker, LogsOptions, RmContainerOptions};
 use std::path::PathBuf;
 use tokio;
 
 const RPC_PORT_KEY: &str = "BITCOIN_NODE_RPC_PORT";
-const HD_KEY_KEY: &str = "BITCOIN_HD_KEY";
 
 pub struct BitcoinNode {
     pub container_id: String,
     pub rpc_client: bitcoincore_rpc::Client,
-    pub hd_keys: Vec<ExtendedPrivKey>,
 }
 
 impl BitcoinNode {
@@ -79,19 +74,9 @@ impl BitcoinNode {
                     bitcoincore_rpc::Auth::UserPass(username.to_string(), password.to_string()),
                 ).unwrap();
 
-                let mut hd_keys = Vec::new();
-
-                for _ in 0..2 {
-                    let extended_private_key =
-                        ExtendedPrivKey::random().expect("failed to generate extended private key");
-
-                    hd_keys.push(extended_private_key);
-                };
-
                 let node = BitcoinNode {
                     container_id,
                     rpc_client,
-                    hd_keys
                 };
 
                 node.rpc_client.generate(101, None).unwrap();
@@ -103,20 +88,6 @@ impl BitcoinNode {
                     let mut envfile = EnvFile::new(envfile_path).unwrap();
                     envfile.update(RPC_PORT_KEY, &rpc_port.to_string()).write().unwrap();
 
-                    Ok(node)
-                }})
-            .and_then({
-                let envfile_path = envfile_path.clone();
-                move |node: BitcoinNode| {
-                    let mut envfile = EnvFile::new(envfile_path).unwrap();
-
-                    for (i, hd_key) in node.hd_keys.iter().enumerate() {
-                        envfile
-                            .update(format!("{}_{}", HD_KEY_KEY, i + 1)
-                                    .as_str(), hex::encode(&hd_key.serialize()).as_str());
-                    };
-
-                    envfile.write().unwrap();
                     Ok(node)
                 }})
     }
@@ -151,6 +122,22 @@ impl Drop for BitcoinNode {
 
         tokio::run(rm_fut);
     }
+}
+
+pub fn derive_address(secret_key: secp256k1::SecretKey) -> Address {
+    let public_key =
+        secp256k1::PublicKey::from_secret_key(&secp256k1::Secp256k1::new(), &secret_key);
+    derive_p2wpkh_regtest_address(public_key)
+}
+
+fn derive_p2wpkh_regtest_address(public_key: secp256k1::PublicKey) -> Address {
+    Address::p2wpkh(
+        &rust_bitcoin::PublicKey {
+            compressed: true, // Only used for serialization
+            key: public_key,
+        },
+        Network::Regtest,
+    )
 }
 
 #[cfg(test)]
@@ -238,20 +225,5 @@ mod tests {
 
         let envfile = EnvFile::new(&file.path()).unwrap();
         assert!(envfile.get(RPC_PORT_KEY).is_some());
-    }
-
-    #[test]
-    fn can_get_two_bitcoin_hd_keys_from_envfile() {
-        let mut runtime = tokio::runtime::Runtime::new().unwrap();
-
-        let file = tempfile::Builder::new().tempfile().unwrap();
-
-        runtime
-            .block_on(BitcoinNode::start(file.path().to_path_buf()))
-            .unwrap();
-
-        let envfile = EnvFile::new(&file.path()).unwrap();
-        assert!(envfile.get(format!("{}_1", HD_KEY_KEY).as_str()).is_some());
-        assert!(envfile.get(format!("{}_2", HD_KEY_KEY).as_str()).is_some())
     }
 }
