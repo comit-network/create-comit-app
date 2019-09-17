@@ -1,5 +1,6 @@
 use create_comit_app::bitcoin::{self, BitcoinNode};
 use create_comit_app::btsieve::{self, Btsieve};
+use create_comit_app::cnd::{self, Cnd};
 use create_comit_app::ethereum::{self, EthereumNode};
 use envfile::EnvFile;
 use futures;
@@ -12,10 +13,12 @@ use std::path::PathBuf;
 use web3::types::U256;
 
 const HTTP_PORT_BTSIEVE: &str = "HTTP_PORT_BTSIEVE";
+const HTTP_PORT_CND: &str = "HTTP_PORT_CND";
 
 // TODO: Ensure that the .env file can only be written to by only one process at a time
 // TODO: Proper error handling in particular to allow for cleanup of state after a runtime error
 // TODO: Improve logs
+// TODO: Refactor to reduce code duplication
 
 fn main() {
     let mut runtime = tokio::runtime::Runtime::new().unwrap();
@@ -150,13 +153,61 @@ fn main() {
                 .map_err(|e| panic!("failed to wait for exit: {}", e)),
         );
 
-        // FIXME: Should wait until btsieve logs
+        // TODO: Should wait until btsieve logs
         // "warp drive engaged: listening on http://0.0.0.0:8181" instead
         std::thread::sleep(std::time::Duration::from_millis(1000));
     }
 
     println!("Two btsieves up and running");
 
-    // FIXME: Unblocking this via CTRL+C doesn't call drop on the containers afterwards
+    for i in 1..3 {
+        let port = port_check::free_local_port().unwrap().into();
+        let btsieve_port = envfile
+            .get(format!("{}_{}", HTTP_PORT_BTSIEVE, i).as_str())
+            .expect("could not find var in envfile");
+        let btsieve_url = format!("http://localhost:{}", btsieve_port);
+
+        let settings = cnd::Settings {
+            network: cnd::Network {
+                listen: vec![String::from(format!("/ip4/0.0.0.0/tcp/{}", 9938 + i))],
+            },
+            http_api: cnd::HttpSocket {
+                port,
+                ..Default::default()
+            },
+            btsieve: cnd::Btsieve {
+                url: String::from(btsieve_url),
+                ..Default::default()
+            },
+            ..Default::default()
+        };
+
+        envfile
+            .update(
+                format!("{}_{}", HTTP_PORT_CND, i).as_str(),
+                &settings.http_api.port.to_string(),
+            )
+            .write()
+            .unwrap();
+
+        let cnd = Cnd::start(settings);
+
+        // May be better for cnd to be a future which spawns a process,
+        // waits for a second and then returns
+        runtime.spawn(
+            cnd.process
+                .map(|status| println!("exit status: {}", status))
+                .map_err(|e| panic!("failed to wait for exit: {}", e)),
+        );
+
+        // TODO: Should wait until cnd logs
+        // "Starting HTTP server on V4(0.0.0.0:8000)" instead
+        std::thread::sleep(std::time::Duration::from_millis(1000));
+    }
+
+    println!("Two cnds up and running");
+
+    // TODO: Unblocking this via CTRL+C doesn't call drop on the containers afterwards
+    // TODO: Delete .env file at the end
     ::std::thread::park();
 }

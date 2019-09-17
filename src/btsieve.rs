@@ -27,6 +27,7 @@ impl Btsieve {
         let process = Command::new("btsieve")
             .arg("--config")
             .arg(config_file.to_str().unwrap())
+            .stdout(std::process::Stdio::null())
             .spawn_async()
             .expect("failed to start btsieve");
 

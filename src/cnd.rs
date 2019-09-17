@@ -28,6 +28,7 @@ impl Cnd {
         let process = Command::new("cnd")
             .arg("--config")
             .arg(config_file.to_str().unwrap())
+            .stdout(std::process::Stdio::null())
             .spawn_async()
             .expect("failed to start btsieve");
 
@@ -37,7 +38,6 @@ impl Cnd {
             process,
         }
 
-        // FIXME: Should wait until cnd logs "Starting HTTP server on V4(0.0.0.0:8000)" instead
         // sleep(Duration::from_millis(1000));
     }
 }
