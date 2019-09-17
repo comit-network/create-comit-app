@@ -13,6 +13,7 @@ hdwallet = "0.2"
 port_check = "0.1"
 rust_bitcoin = { version = "0.19.1", package = "bitcoin" }
 secp256k1 = "0.12"
+serde = "1"
 shiplift = "0.5"
 structopt = "0.3"
 tempfile = "3.1.0"
@@ -25,4 +26,4 @@ toml = "0.5"
 web3 = "0.8"
 
 [dev-dependencies]
-reqwest = "0.9"
+ureq = "0.11"

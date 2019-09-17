@@ -63,7 +63,7 @@ pub fn start_cnd() {}
 #[cfg(test)]
 mod tests {
     use super::*;
-    use reqwest;
+    use ureq;
 
     #[test]
     fn can_ping_cnd() {
@@ -75,6 +75,6 @@ mod tests {
         runtime.spawn(future);
 
         let endpoint = format!("http://localhost:{}", port);
-        assert!(reqwest::get(&endpoint).unwrap().status().is_success())
+        assert!(ureq::get(&endpoint).call().ok())
     }
 }

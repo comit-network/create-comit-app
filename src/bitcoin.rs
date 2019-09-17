@@ -7,7 +7,7 @@ use shiplift::{ContainerOptions, Docker, LogsOptions, RmContainerOptions};
 use std::path::PathBuf;
 use tokio;
 
-const RPC_PORT_KEY: &str = "BITCOIN_NODE_RPC_PORT";
+pub const RPC_URL_KEY: &str = "BITCOIN_NODE_RPC_URL";
 
 pub struct BitcoinNode {
     pub container_id: String,
@@ -21,6 +21,7 @@ impl BitcoinNode {
         let username = "bitcoin";
         let password = "t68ej4UX2pB0cLlGwSwHFBLKxXYgomkXyFyxuBmm2U8=";
         let rpc_port: u32 = port_check::free_local_port().unwrap().into();
+        let rpc_url = format!("http://localhost:{}", rpc_port);
 
         let docker = Docker::new();
         let image = "coblox/bitcoin-core:0.17.0";
@@ -66,11 +67,11 @@ impl BitcoinNode {
                             Ok(!log.contains("Flushed wallet.dat"))
                         }).collect().map(|_| id)
                 }})
-            .and_then(move |container_id| {
-                let endpoint = format!("http://localhost:{}", rpc_port);
-
+            .and_then({
+                let rpc_url = rpc_url.clone();
+                move |container_id| {
                 let rpc_client = bitcoincore_rpc::Client::new(
-                    endpoint,
+                    rpc_url.clone(),
                     bitcoincore_rpc::Auth::UserPass(username.to_string(), password.to_string()),
                 ).unwrap();
 
@@ -81,12 +82,12 @@ impl BitcoinNode {
 
                 node.rpc_client.generate(101, None).unwrap();
                 Ok(node)
-            })
+            }})
             .and_then({
                 let envfile_path = envfile_path.clone();
                 move |node| {
                     let mut envfile = EnvFile::new(envfile_path).unwrap();
-                    envfile.update(RPC_PORT_KEY, &rpc_port.to_string()).write().unwrap();
+                    envfile.update(RPC_URL_KEY, &rpc_url).write().unwrap();
 
                     Ok(node)
                 }})
@@ -224,6 +225,6 @@ mod tests {
             .unwrap();
 
         let envfile = EnvFile::new(&file.path()).unwrap();
-        assert!(envfile.get(RPC_PORT_KEY).is_some());
+        assert!(envfile.get(RPC_URL_KEY).is_some());
     }
 }

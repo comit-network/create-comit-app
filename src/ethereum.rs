@@ -11,7 +11,7 @@ use web3::{
     types::{Address, TransactionRequest, H256, U256},
 };
 
-const HTTP_PORT_KEY: &str = "ETHEREUM_NODE_HTTP_PORT";
+pub const HTTP_URL_KEY: &str = "ETHEREUM_NODE_HTTP_URL";
 
 pub struct EthereumNode {
     pub container_id: String,
@@ -24,6 +24,7 @@ impl EthereumNode {
         envfile_path: PathBuf,
     ) -> impl Future<Item = Self, Error = shiplift::errors::Error> {
         let http_port: u32 = port_check::free_local_port().unwrap().into();
+        let http_url = format!("http://localhost:{}", http_port);
 
         let docker = Docker::new();
         let image = "parity/parity:v2.5.0";
@@ -63,25 +64,25 @@ impl EthereumNode {
                         .map(|_| id)
                 }
             })
-            .and_then(move |container_id| {
-                let endpoint = format!("http://localhost:{}", http_port);
-                let (_event_loop, transport) = Http::new(&endpoint).unwrap();
-                let http_client = Web3::new(transport);
+            .and_then({
+                let http_url = http_url.clone();
+                move |container_id| {
+                    let (_event_loop, transport) = Http::new(&http_url).unwrap();
+                    let http_client = Web3::new(transport);
 
-                Ok(EthereumNode {
-                    container_id,
-                    http_client,
-                    _event_loop,
-                })
+                    Ok(EthereumNode {
+                        container_id,
+                        http_client,
+                        _event_loop,
+                    })
+                }
             })
             .and_then({
                 let envfile_path = envfile_path.clone();
+                let http_url = http_url.clone();
                 move |node| {
                     let mut envfile = EnvFile::new(envfile_path).unwrap();
-                    envfile
-                        .update(&HTTP_PORT_KEY, &http_port.to_string())
-                        .write()
-                        .unwrap();
+                    envfile.update(&HTTP_URL_KEY, &http_url).write().unwrap();
 
                     Ok(node)
                 }
@@ -206,6 +207,6 @@ mod tests {
             .unwrap();
 
         let envfile = EnvFile::new(&file.path()).unwrap();
-        assert!(envfile.get(&HTTP_PORT_KEY).is_some());
+        assert!(envfile.get(&HTTP_URL_KEY).is_some());
     }
 }

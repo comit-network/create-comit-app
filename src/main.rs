@@ -1,4 +1,5 @@
 use create_comit_app::bitcoin::{self, BitcoinNode};
+use create_comit_app::btsieve::{self, Btsieve};
 use create_comit_app::ethereum::{self, EthereumNode};
 use envfile::EnvFile;
 use futures;
@@ -86,7 +87,7 @@ fn main() {
     let (bitcoin_hd_keys, ethereum_hd_keys) = ((results.0).1, (results.1).1);
 
     // Store HD keys in .env file
-    let mut envfile = EnvFile::new(envfile_path).unwrap();
+    let mut envfile = EnvFile::new(envfile_path.clone()).unwrap();
 
     for (i, hd_key) in bitcoin_hd_keys.iter().enumerate() {
         envfile.update(
@@ -103,6 +104,34 @@ fn main() {
     }
     envfile.write().unwrap();
 
-    // TODO: Unblocking this via CTRL+C doesn't call drop on the containers afterwards
+    let port_bind = port_check::free_local_port().unwrap().into();
+    let settings = btsieve::Settings {
+        http_api: btsieve::HttpApi {
+            port_bind,
+            ..Default::default()
+        },
+        bitcoin: Some(btsieve::Bitcoin {
+            network: String::from("regtest"),
+            node_url: String::from(
+                envfile
+                    .get(bitcoin::RPC_URL_KEY)
+                    .expect("could not find var in envfile"),
+            ),
+        }),
+        ethereum: Some(btsieve::Ethereum {
+            node_url: String::from(
+                envfile
+                    .get(ethereum::HTTP_URL_KEY)
+                    .expect("could not find var in envfile"),
+            ),
+        }),
+        ..Default::default()
+    };
+
+    runtime.spawn(Btsieve::start(settings, envfile_path.clone()));
+
+    println!("One btsieve up");
+
+    // FIXME: Unblocking this via CTRL+C doesn't call drop on the containers afterwards
     ::std::thread::park();
 }
