@@ -14,6 +14,8 @@ pub struct BitcoinNode {
     pub rpc_client: bitcoincore_rpc::Client,
 }
 
+// TODO: Move all envfile stuff outside
+// TODO: Move free_local_port outside
 impl BitcoinNode {
     pub fn start(
         envfile_path: PathBuf,

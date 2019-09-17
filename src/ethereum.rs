@@ -19,6 +19,8 @@ pub struct EthereumNode {
     _event_loop: EventLoopHandle,
 }
 
+// TODO: Move all envfile stuff outside
+// TODO: Move free_local_port outside
 impl EthereumNode {
     pub fn start(
         envfile_path: PathBuf,
