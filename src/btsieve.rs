@@ -1,30 +1,19 @@
-use envfile::EnvFile;
-use futures::Future;
 use serde::Serialize;
 use std::io::Write;
 use std::net::IpAddr;
-use std::path::PathBuf;
 use std::process::Command;
 use std::str::FromStr;
-use std::thread::sleep;
-use std::time::Duration;
-use tempfile;
-use tokio_process::CommandExt;
-
-pub const HTTP_PORT: &str = "BTSIEVE_HTTP_PORT";
+use tempfile::{self, TempPath};
+use tokio_process::{Child, CommandExt};
 
 pub struct Btsieve {
     pub settings: Settings,
+    _config_file: TempPath,
+    pub process: Child,
 }
 
 impl Btsieve {
-    pub fn start(settings: Settings, envfile_path: PathBuf) -> impl Future<Item = (), Error = ()> {
-        let mut envfile = EnvFile::new(&envfile_path).unwrap();
-        envfile
-            .update(HTTP_PORT, &settings.http_api.port_bind.to_string())
-            .write()
-            .unwrap();
-
+    pub fn start(settings: Settings) -> Btsieve {
         let mut config_file = tempfile::Builder::new().suffix(".toml").tempfile().unwrap();
         config_file
             .write(
@@ -35,22 +24,18 @@ impl Btsieve {
             .expect("could not write to temporary file");
         let config_file = config_file.into_temp_path();
 
-        let child = Command::new("btsieve")
+        let process = Command::new("btsieve")
             .arg("--config")
             .stdout(std::process::Stdio::null())
             .arg(config_file.to_str().unwrap())
-            .spawn_async();
+            .spawn_async()
+            .expect("failed to start btsieve");
 
-        // FIXME: Should wait until btsieve logs
-        // "warp drive engaged: listening on http://0.0.0.0:8181" instead
-        sleep(Duration::from_millis(1000));
-
-        let future = child
-            .expect("failed to start btsieve")
-            .map(|status| println!("exit status: {}", status))
-            .map_err(|e| panic!("failed to wait for exit: {}", e));
-
-        future
+        Btsieve {
+            settings,
+            _config_file: config_file,
+            process,
+        }
     }
 }
 
@@ -104,6 +89,7 @@ impl Default for HttpApi {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use futures::Future;
     use ureq;
 
     #[test]
@@ -118,9 +104,11 @@ mod tests {
             },
             ..Default::default()
         };
-        let file = tempfile::Builder::new().tempfile().unwrap();
+        let btsieve = Btsieve::start(settings);
 
-        runtime.spawn(Btsieve::start(settings, file.path().to_path_buf()));
+        runtime.spawn(btsieve.process.map(|_| ()).map_err(|_| ()));
+
+        std::thread::sleep(std::time::Duration::from_millis(5000));
 
         let endpoint = format!("http://localhost:{}/health", port_bind);
         assert!(ureq::get(&endpoint)

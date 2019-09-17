@@ -11,6 +11,8 @@ use std::iter::Iterator;
 use std::path::PathBuf;
 use web3::types::U256;
 
+pub const HTTP_PORT_BTSIEVE: &str = "HTTP_PORT_BTSIEVE";
+
 // TODO: Ensure that the .env file can only be written to by only one process at a time
 // TODO: Proper error handling in particular to allow for cleanup of state after a runtime error
 // TODO: Improve logs
@@ -104,33 +106,56 @@ fn main() {
     }
     envfile.write().unwrap();
 
-    let port_bind = port_check::free_local_port().unwrap().into();
-    let settings = btsieve::Settings {
-        http_api: btsieve::HttpApi {
-            port_bind,
+    for i in 1..3 {
+        let port_bind = port_check::free_local_port().unwrap().into();
+        let settings = btsieve::Settings {
+            http_api: btsieve::HttpApi {
+                port_bind,
+                ..Default::default()
+            },
+            bitcoin: Some(btsieve::Bitcoin {
+                network: String::from("regtest"),
+                node_url: String::from(
+                    envfile
+                        .get(bitcoin::RPC_URL_KEY)
+                        .expect("could not find var in envfile"),
+                ),
+            }),
+            ethereum: Some(btsieve::Ethereum {
+                node_url: String::from(
+                    envfile
+                        .get(ethereum::HTTP_URL_KEY)
+                        .expect("could not find var in envfile"),
+                ),
+            }),
             ..Default::default()
-        },
-        bitcoin: Some(btsieve::Bitcoin {
-            network: String::from("regtest"),
-            node_url: String::from(
-                envfile
-                    .get(bitcoin::RPC_URL_KEY)
-                    .expect("could not find var in envfile"),
-            ),
-        }),
-        ethereum: Some(btsieve::Ethereum {
-            node_url: String::from(
-                envfile
-                    .get(ethereum::HTTP_URL_KEY)
-                    .expect("could not find var in envfile"),
-            ),
-        }),
-        ..Default::default()
-    };
+        };
 
-    runtime.spawn(Btsieve::start(settings, envfile_path.clone()));
+        envfile
+            .update(
+                format!("{}_{}", HTTP_PORT_BTSIEVE, i).as_str(),
+                &settings.http_api.port_bind.to_string(),
+            )
+            .write()
+            .unwrap();
 
-    println!("One btsieve up");
+        let btsieve = Btsieve::start(settings);
+
+        // May be better for btsieve to be a future which spawns a process,
+        // waits for a second and then returns
+        runtime.spawn(
+            btsieve
+                .process
+                .map(|status| println!("exit status: {}", status))
+                .map_err(|e| panic!("failed to wait for exit: {}", e)),
+        );
+
+        // FIXME: Should wait until btsieve logs
+        // "warp drive engaged: listening on http://0.0.0.0:8181" instead
+        std::thread::sleep(std::time::Duration::from_millis(1000));
+    }
+
+    println!("Two btsieves up and running");
 
     // FIXME: Unblocking this via CTRL+C doesn't call drop on the containers afterwards
     ::std::thread::park();
