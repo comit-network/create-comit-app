@@ -109,11 +109,11 @@ impl Default for Btsieve {
         Btsieve {
             url: String::from("http://localhost:8181"),
             bitcoin: PollParameters {
-                poll_interval_secs: 300,
+                poll_interval_secs: 1,
                 network: String::from("regtest"),
             },
             ethereum: PollParameters {
-                poll_interval_secs: 20,
+                poll_interval_secs: 1,
                 network: String::from("regtest"),
             },
         }
