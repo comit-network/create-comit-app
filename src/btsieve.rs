@@ -16,7 +16,7 @@ impl Btsieve {
     pub fn start(settings: Settings) -> Btsieve {
         let mut config_file = tempfile::Builder::new().suffix(".toml").tempfile().unwrap();
         config_file
-            .write(
+            .write_all(
                 toml::to_string(&settings)
                     .expect("could not serialize settings")
                     .as_ref(),

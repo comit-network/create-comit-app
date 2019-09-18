@@ -17,7 +17,7 @@ impl Cnd {
     pub fn start(settings: Settings) -> Cnd {
         let mut config_file = tempfile::Builder::new().suffix(".toml").tempfile().unwrap();
         config_file
-            .write(
+            .write_all(
                 toml::to_string(&settings)
                     .expect("could not serialize settings")
                     .as_ref(),
