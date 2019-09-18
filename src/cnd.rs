@@ -37,8 +37,6 @@ impl Cnd {
             _config_file: config_file,
             process,
         }
-
-        // sleep(Duration::from_millis(1000));
     }
 }
 
