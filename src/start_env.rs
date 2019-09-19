@@ -1,7 +1,8 @@
 use crate::bitcoin::{self, BitcoinNode};
-use crate::btsieve::{self, Btsieve};
-use crate::cnd::{self, Cnd};
 use crate::ethereum::{self, EthereumNode};
+use crate::executable::btsieve::{self, Btsieve};
+use crate::executable::cnd::{self};
+use crate::executable::Executable;
 use envfile::EnvFile;
 use futures;
 use futures::Future;
@@ -190,15 +191,11 @@ pub fn start_env() {
             .write()
             .unwrap();
 
-        let cnd = Cnd::start(settings);
+        let cnd = Executable::start("cnd", settings);
 
         // May be better for cnd to be a future which spawns a process,
         // waits for a second and then returns
-        runtime.spawn(
-            cnd.process
-                .map(|status| println!("exit status: {}", status))
-                .map_err(|e| panic!("failed to wait for exit: {}", e)),
-        );
+        runtime.spawn(cnd.future);
 
         // TODO: Should wait until cnd logs
         // "Starting HTTP server on V4(0.0.0.0:8000)" instead
