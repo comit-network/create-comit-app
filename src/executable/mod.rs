@@ -49,7 +49,6 @@ pub fn start_cnd() {}
 
 #[cfg(test)]
 mod tests {
-    use super::cnd::Settings;
     use super::*;
     use std::thread::sleep;
     use std::time::Duration;
@@ -58,7 +57,7 @@ mod tests {
     fn can_start_cnd() {
         let mut runtime = tokio::runtime::Runtime::new().unwrap();
 
-        let settings = Settings::default();
+        let settings = cnd::Settings::default();
         let port = settings.http_api.port;
 
         let cnd = Executable::start("cnd", settings);
@@ -81,8 +80,8 @@ mod tests {
     fn can_start_btsieve() {
         let mut runtime = tokio::runtime::Runtime::new().unwrap();
 
-        let settings = Settings::default();
-        let port = settings.http_api.port;
+        let settings = btsieve::Settings::default();
+        let port = settings.http_api.port_bind;
 
         let cnd = Executable::start("btsieve", settings);
 
