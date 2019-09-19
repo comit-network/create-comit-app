@@ -54,8 +54,7 @@ mod tests {
     use std::time::Duration;
 
     #[test]
-    fn can_ping_cnd() {
-        let port = port_check::free_local_port().unwrap();
+    fn can_start_cnd() {
         let mut runtime = tokio::runtime::Runtime::new().unwrap();
 
         let settings = Settings::default();
@@ -75,5 +74,28 @@ mod tests {
         println!("{:?}", response.into_string());
 
         assert!(ureq::get(&endpoint).call().ok())
+    }
+
+    #[test]
+    fn can_start_btsieve() {
+        let mut runtime = tokio::runtime::Runtime::new().unwrap();
+
+        let settings = Settings::default();
+        let port = settings.http_api.port;
+
+        let cnd = Executable::start("btsieve", settings);
+
+        runtime.spawn(cnd.future);
+
+        // FIXME: Should wait until cnd logs "Starting HTTP server on V4(0.0.0.0:8000)" instead
+        sleep(Duration::from_millis(1000));
+
+        let endpoint = format!("http://localhost:{}/health", port);
+
+        let response = ureq::get(&endpoint).call();
+        println!("{:?}", response);
+        println!("{:?}", response.into_string());
+
+        assert_eq!(ureq::get(&endpoint).call().status(), 400)
     }
 }

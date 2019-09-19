@@ -1,6 +1,6 @@
 use crate::bitcoin::{self, BitcoinNode};
 use crate::ethereum::{self, EthereumNode};
-use crate::executable::btsieve::{self, Btsieve};
+use crate::executable::btsieve::{self};
 use crate::executable::cnd::{self};
 use crate::executable::Executable;
 use envfile::EnvFile;
@@ -143,16 +143,11 @@ pub fn start_env() {
             .write()
             .unwrap();
 
-        let btsieve = Btsieve::start(settings);
+        let btsieve = Executable::start("btsieve", settings);
 
         // May be better for btsieve to be a future which spawns a process,
         // waits for a second and then returns
-        runtime.spawn(
-            btsieve
-                .process
-                .map(|status| println!("exit status: {}", status))
-                .map_err(|e| panic!("failed to wait for exit: {}", e)),
-        );
+        runtime.spawn(btsieve.future);
 
         // TODO: Should wait until btsieve logs
         // "warp drive engaged: listening on http://0.0.0.0:8181" instead
