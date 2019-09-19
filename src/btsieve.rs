@@ -91,15 +91,6 @@ mod tests {
     use super::*;
     use futures::Future;
     use ureq;
-    use std::fs::File;
-    use std::io::Read;
-
-    fn comit_rs_version() -> String {
-        let mut file = File::open("comit-rs_version").expect("Cannot open comit-rs_version");
-        let mut contents = String::new();
-        file.read_to_string(&mut contents).expect("Cannot open comit-rs_version");
-        contents
-    }
 
     #[test]
     fn can_ping_btsieve() {
@@ -120,10 +111,6 @@ mod tests {
         std::thread::sleep(std::time::Duration::from_millis(5000));
 
         let endpoint = format!("http://localhost:{}/health", port_bind);
-        let version = comit_rs_version();
-        assert!(ureq::get(&endpoint)
-            .set("Expected-Version", version.as_str())
-            .call()
-            .ok())
+        assert_eq!(ureq::get(&endpoint).call().status(), 400)
     }
 }
