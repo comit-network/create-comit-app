@@ -29,6 +29,7 @@ impl Executable where {
         let config_file = config_file.into_temp_path();
 
         let child = Command::new(program)
+            .stdout(std::process::Stdio::null())
             .arg("--config")
             .arg(config_file.to_str().unwrap())
             .spawn_async();
