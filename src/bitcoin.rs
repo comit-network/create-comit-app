@@ -157,23 +157,13 @@ mod tests {
     use rust_bitcoin::{Address, TxOut};
     use std::convert::TryFrom;
 
-    trait FindUtxo {
         fn find_utxo_at_transaction_for_address(
-            &self,
-            transaction_id: &sha256d::Hash,
-            address: &Address,
-        ) -> Option<TxOut>;
-    }
-
-    // Copied from blockchain_contracts tests
-    impl<Rpc: bitcoincore_rpc::RpcApi> FindUtxo for Rpc {
-        fn find_utxo_at_transaction_for_address(
-            &self,
+            rpc_client: &bitcoincore_rpc::Client,
             transaction_id: &sha256d::Hash,
             address: &Address,
         ) -> Option<TxOut> {
             let address = address.clone();
-            let unspent = self
+            let unspent = rpc_client
                 .list_unspent(Some(1), None, Some(&[address]), None, None)
                 .unwrap();
 
@@ -189,7 +179,6 @@ mod tests {
                     }
                 })
         }
-    }
 
     #[test]
     fn can_ping_bitcoin_node() {
@@ -219,8 +208,8 @@ mod tests {
         let value = Amount::from_sat(1_000);
         let transaction_id = bitcoin.fund(&address, value);
 
-        assert!(client
-            .find_utxo_at_transaction_for_address(&transaction_id, &address)
+        assert!(
+            find_utxo_at_transaction_for_address(client, &transaction_id, &address)
             .is_some());
     }
 
