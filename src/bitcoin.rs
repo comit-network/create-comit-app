@@ -3,7 +3,7 @@ use envfile::EnvFile;
 use futures::future::Future;
 use futures::stream::Stream;
 use rust_bitcoin::{self, hashes::sha256d, Address, Amount, Network};
-use shiplift::{ContainerOptions, Docker, LogsOptions, RmContainerOptions};
+use shiplift::{ContainerOptions, Docker, LogsOptions, PullOptions, RmContainerOptions};
 use std::path::PathBuf;
 use tokio;
 
@@ -17,20 +17,31 @@ pub struct BitcoinNode {
 // TODO: Move all envfile stuff outside
 // TODO: Move free_local_port outside
 impl BitcoinNode {
+    const IMAGE: &'static str = "coblox/bitcoin-core:0.17.0";
     pub fn start(
+        envfile_path: PathBuf,
+    ) -> impl Future<Item = BitcoinNode, Error = shiplift::errors::Error> {
+        let docker = Docker::new();
+        docker
+            .images()
+            .pull(&PullOptions::builder().image(Self::IMAGE).build())
+            // TODO: Pretty print progress
+            .collect()
+            .and_then(|_| Self::start_container(envfile_path))
+    }
+
+    fn start_container(
         envfile_path: PathBuf,
     ) -> impl Future<Item = BitcoinNode, Error = shiplift::errors::Error> {
         let username = "bitcoin";
         let password = "t68ej4UX2pB0cLlGwSwHFBLKxXYgomkXyFyxuBmm2U8=";
         let rpc_port: u32 = port_check::free_local_port().unwrap().into();
         let rpc_url = format!("http://localhost:{}", rpc_port);
-
         let docker = Docker::new();
-        let image = "coblox/bitcoin-core:0.17.0";
         docker
             .containers()
             .create(
-                &ContainerOptions::builder(image)
+                &ContainerOptions::builder(Self::IMAGE)
                     .cmd(vec![
                         "-regtest",
                         "-server",
@@ -72,19 +83,19 @@ impl BitcoinNode {
             .and_then({
                 let rpc_url = rpc_url.clone();
                 move |container_id| {
-                let rpc_client = bitcoincore_rpc::Client::new(
-                    rpc_url.clone(),
-                    bitcoincore_rpc::Auth::UserPass(username.to_string(), password.to_string()),
-                ).unwrap();
+                    let rpc_client = bitcoincore_rpc::Client::new(
+                        rpc_url.clone(),
+                        bitcoincore_rpc::Auth::UserPass(username.to_string(), password.to_string()),
+                    ).unwrap();
 
-                let node = BitcoinNode {
-                    container_id,
-                    rpc_client,
-                };
+                    let node = BitcoinNode {
+                        container_id,
+                        rpc_client,
+                    };
 
-                node.rpc_client.generate(101, None).unwrap();
-                Ok(node)
-            }})
+                    node.rpc_client.generate(101, None).unwrap();
+                    Ok(node)
+                }})
             .and_then({
                 let envfile_path = envfile_path.clone();
                 move |node| {
