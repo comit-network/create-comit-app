@@ -31,13 +31,10 @@ pub fn start_env() {
         .and_then({
             let mut hd_keys = Vec::new();
             move |node: BitcoinNode| {
-                // Generate HD keys
-                // Assume two parties for now
                 for _ in 0..2 {
                     hd_keys.push(ExtendedPrivKey::random().expect("failed to generate hd key"));
                 }
 
-                // Fund addresses associated with HD keys with 1 bitcoin
                 for hd_key in hd_keys.iter() {
                     let private_key = hd_key
                         .derive_private_key(KeyIndex::Normal(0))
@@ -60,13 +57,10 @@ pub fn start_env() {
             let mut hd_keys = Vec::new();
             let executor = runtime.executor();
             move |node: EthereumNode| {
-                // Generate HD keys
-                // Assume two parties for now
                 for _ in 0..2 {
                     hd_keys.push(ExtendedPrivKey::random().expect("failed to generate hd key"));
                 }
 
-                // Fund addresses associated with HD keys with 90 ether
                 for hd_key in hd_keys.iter() {
                     let private_key = hd_key
                         .derive_private_key(KeyIndex::Normal(0))
@@ -92,7 +86,6 @@ pub fn start_env() {
 
     let (bitcoin_hd_keys, ethereum_hd_keys) = ((results.0).1, (results.1).1);
 
-    // Store HD keys in .env file
     let mut envfile = EnvFile::new(envfile_path.clone()).unwrap();
 
     for (i, hd_key) in bitcoin_hd_keys.iter().enumerate() {
