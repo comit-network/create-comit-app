@@ -1,6 +1,6 @@
 use envfile::EnvFile;
 use futures::stream::Stream;
-use shiplift::{ContainerOptions, Docker, LogsOptions, RmContainerOptions};
+use shiplift::{ContainerOptions, Docker, LogsOptions, PullOptions, RmContainerOptions};
 use std::path::PathBuf;
 use tiny_keccak;
 use web3::transports::EventLoopHandle;
@@ -22,18 +22,29 @@ pub struct EthereumNode {
 // TODO: Move all envfile stuff outside
 // TODO: Move free_local_port outside
 impl EthereumNode {
+    const IMAGE: &'static str = "parity/parity:v2.5.0";
     pub fn start(
+        envfile_path: PathBuf,
+    ) -> impl Future<Item = Self, Error = shiplift::errors::Error> {
+        let docker = Docker::new();
+        docker
+            .images()
+            .pull(&PullOptions::builder().image(Self::IMAGE).build())
+            // TODO: Pretty print progress
+            .collect()
+            .and_then(|_| Self::start_container(envfile_path))
+    }
+
+    fn start_container(
         envfile_path: PathBuf,
     ) -> impl Future<Item = Self, Error = shiplift::errors::Error> {
         let http_port: u32 = port_check::free_local_port().unwrap().into();
         let http_url = format!("http://localhost:{}", http_port);
-
         let docker = Docker::new();
-        let image = "parity/parity:v2.5.0";
         docker
             .containers()
             .create(
-                &ContainerOptions::builder(image)
+                &ContainerOptions::builder(Self::IMAGE)
                     .cmd(vec![
                         "--config=dev",
                         "--jsonrpc-apis=all",
