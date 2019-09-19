@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+
+cargo fmt -- --check
+cargo tomlfmt -d -p Cargo.toml
