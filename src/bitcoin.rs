@@ -45,21 +45,18 @@ impl BitcoinNode {
                     .cmd(vec![
                         "-regtest",
                         "-server",
+                        "-rest",
                         "-printtoconsole",
                         "-bind=0.0.0.0:18444",
                         "-rpcbind=0.0.0.0:18443",
                         "-rpcauth=bitcoin:1c0e8f3de84926c04115e7da7e501346$a48f42ad32741dd1755649c8b98663b3ccbebeb75f196389f9a5c8a96b72edb3",
                         "-rpcallowip=0.0.0.0/0",
                         "-debug=1",
-                        "-zmqpubrawblock=tcp://*:28332",
-                        "-zmqpubrawtx=tcp://*:28333",
                         "-acceptnonstdtxn=0",
                         "-txindex",
                     ])
                     .expose(18443, "tcp", rpc_port)
                     .expose(18444, "tcp", port_check::free_local_port().unwrap().into())
-                    .expose(28332, "tcp", port_check::free_local_port().unwrap().into())
-                    .expose(28333, "tcp", port_check::free_local_port().unwrap().into())
                     .build(),
             )
             .and_then({
