@@ -52,8 +52,9 @@ impl Default for Comit {
 
 impl Default for Network {
     fn default() -> Network {
+        let port = port_check::free_local_port().expect("Could not find a free port");
         Network {
-            listen: vec![String::from("/ip4/0.0.0.0/tcp/9939")],
+            listen: vec![format!("/ip4/0.0.0.0/tcp/{}", port)],
         }
     }
 }

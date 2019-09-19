@@ -157,20 +157,12 @@ pub fn start_env() {
     println!("Two btsieves up and running");
 
     for i in 1..3 {
-        let port = port_check::free_local_port().unwrap();
         let btsieve_port = envfile
             .get(format!("{}_{}", HTTP_PORT_BTSIEVE, i).as_str())
             .expect("could not find var in envfile");
         let btsieve_url = format!("http://localhost:{}", btsieve_port);
 
         let settings = cnd::Settings {
-            network: cnd::Network {
-                listen: vec![format!("/ip4/0.0.0.0/tcp/{}", 9938 + i)],
-            },
-            http_api: cnd::HttpSocket {
-                port,
-                ..Default::default()
-            },
             btsieve: cnd::Btsieve {
                 url: btsieve_url,
                 ..Default::default()
