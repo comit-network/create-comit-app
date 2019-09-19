@@ -157,28 +157,28 @@ mod tests {
     use rust_bitcoin::{Address, TxOut};
     use std::convert::TryFrom;
 
-        fn find_utxo_at_transaction_for_address(
-            rpc_client: &bitcoincore_rpc::Client,
-            transaction_id: &sha256d::Hash,
-            address: &Address,
-        ) -> Option<TxOut> {
-            let address = address.clone();
-            let unspent = rpc_client
-                .list_unspent(Some(1), None, Some(&[address]), None, None)
-                .unwrap();
+    fn find_utxo_at_transaction_for_address(
+        rpc_client: &bitcoincore_rpc::Client,
+        transaction_id: &sha256d::Hash,
+        address: &Address,
+    ) -> Option<TxOut> {
+        let address = address.clone();
+        let unspent = rpc_client
+            .list_unspent(Some(1), None, Some(&[address]), None, None)
+            .unwrap();
 
-            #[allow(clippy::cast_sign_loss)] // it is just for the tests
-            unspent
-                .into_iter()
-                .find(|utxo| utxo.txid == *transaction_id)
-                .map(|result| {
-                    let value = u64::try_from(result.amount.as_sat()).unwrap();
-                    TxOut {
-                        value,
-                        script_pubkey: result.script_pub_key,
-                    }
-                })
-        }
+        #[allow(clippy::cast_sign_loss)] // it is just for the tests
+        unspent
+            .into_iter()
+            .find(|utxo| utxo.txid == *transaction_id)
+            .map(|result| {
+                let value = u64::try_from(result.amount.as_sat()).unwrap();
+                TxOut {
+                    value,
+                    script_pubkey: result.script_pub_key,
+                }
+            })
+    }
 
     #[test]
     fn can_ping_bitcoin_node() {
@@ -208,9 +208,7 @@ mod tests {
         let value = Amount::from_sat(1_000);
         let transaction_id = bitcoin.fund(&address, value);
 
-        assert!(
-            find_utxo_at_transaction_for_address(client, &transaction_id, &address)
-            .is_some());
+        assert!(find_utxo_at_transaction_for_address(client, &transaction_id, &address).is_some());
     }
 
     #[test]

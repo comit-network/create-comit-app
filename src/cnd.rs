@@ -28,9 +28,8 @@ impl Cnd {
         let process = Command::new("cnd")
             .arg("--config")
             .arg(config_file.to_str().unwrap())
-            .stdout(std::process::Stdio::null())
             .spawn_async()
-            .expect("failed to start btsieve");
+            .expect("failed to start cnd");
 
         Cnd {
             settings,
@@ -97,9 +96,12 @@ impl Default for Network {
 
 impl Default for HttpSocket {
     fn default() -> HttpSocket {
+        let port = port_check::free_local_port()
+            .expect("Could not find a free port")
+            .into();
         HttpSocket {
             address: IpAddr::V4(Ipv4Addr::UNSPECIFIED),
-            port: 8000,
+            port,
         }
     }
 }
@@ -130,15 +132,8 @@ mod tests {
     fn can_ping_cnd() {
         let mut runtime = tokio::runtime::Runtime::new().unwrap();
 
-        let port = port_check::free_local_port().unwrap().into();
-        let settings = Settings {
-            http_api: HttpSocket {
-                port,
-                ..Default::default()
-            },
-            ..Default::default()
-        };
-
+        let settings = Settings::default();
+        let port = settings.http_api.port;
         let cnd = Cnd::start(settings);
 
         runtime.spawn(cnd.process.map(|_| ()).map_err(|_| ()));
@@ -146,6 +141,12 @@ mod tests {
         std::thread::sleep(std::time::Duration::from_millis(5000));
 
         let endpoint = format!("http://localhost:{}", port);
-        assert!(ureq::get(&endpoint).call().ok())
+        println!("endpoint: {}", endpoint);
+        let response = ureq::get(&endpoint).call();
+        println!("{:?}", response);
+        let response = ureq::get(&endpoint).call();
+        println!("{:?}", response);
+        assert!(response.ok());
+        std::thread::sleep(std::time::Duration::from_millis(5000));
     }
 }

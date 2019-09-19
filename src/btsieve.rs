@@ -1,8 +1,7 @@
 use serde::Serialize;
 use std::io::Write;
-use std::net::IpAddr;
+use std::net::{IpAddr, Ipv4Addr};
 use std::process::Command;
-use std::str::FromStr;
 use tempfile::{self, TempPath};
 use tokio_process::{Child, CommandExt};
 
@@ -79,9 +78,12 @@ impl Default for LogLevels {
 
 impl Default for HttpApi {
     fn default() -> HttpApi {
+        let port_bind = port_check::free_local_port()
+            .expect("Could not find a free port")
+            .into();
         HttpApi {
-            address_bind: IpAddr::from_str("0.0.0.0").expect("can't parse IpAddr from &str"),
-            port_bind: 8181,
+            address_bind: IpAddr::V4(Ipv4Addr::UNSPECIFIED),
+            port_bind,
         }
     }
 }
@@ -96,21 +98,15 @@ mod tests {
     fn can_ping_btsieve() {
         let mut runtime = tokio::runtime::Runtime::new().unwrap();
 
-        let port_bind = port_check::free_local_port().unwrap().into();
-        let settings = Settings {
-            http_api: HttpApi {
-                port_bind,
-                ..Default::default()
-            },
-            ..Default::default()
-        };
+        let settings = Settings::default();
+        let port = settings.http_api.port_bind;
         let btsieve = Btsieve::start(settings);
 
         runtime.spawn(btsieve.process.map(|_| ()).map_err(|_| ()));
 
         std::thread::sleep(std::time::Duration::from_millis(5000));
 
-        let endpoint = format!("http://localhost:{}/health", port_bind);
+        let endpoint = format!("http://localhost:{}/health", port);
         assert_eq!(ureq::get(&endpoint).call().status(), 400)
     }
 }
