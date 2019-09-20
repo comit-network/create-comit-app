@@ -1,5 +1,6 @@
 use crate::bitcoin::{self, BitcoinNode};
-use crate::ethereum::{self, EthereumNode};
+use crate::docker::ethereum::{self, EthereumNode};
+use crate::docker::{Node, NodeImage};
 use crate::executable::btsieve::{self};
 use crate::executable::cnd::{self};
 use crate::executable::Executable;
@@ -52,11 +53,11 @@ pub fn start_env() {
             println!("Bitcoin node error: {}", e);
         });
 
-    let ethereum_node = EthereumNode::start(envfile_path.clone())
+    let ethereum_node = Node::<EthereumNode>::start(envfile_path.clone())
         .and_then({
             let mut hd_keys = Vec::new();
             let executor = runtime.executor();
-            move |node: EthereumNode| {
+            move |node| {
                 for _ in 0..2 {
                     hd_keys.push(ExtendedPrivKey::random().expect("failed to generate hd key"));
                 }
@@ -69,7 +70,8 @@ pub fn start_env() {
                     let address = ethereum::derive_address(private_key);
 
                     executor.spawn(
-                        node.fund(address, U256::from("9000000000000000000"))
+                        node.node_image
+                            .fund(address, U256::from("9000000000000000000"))
                             .and_then(|_| Ok(()))
                             .map_err(|e| println!("Could not fund ethereum addresses: {}", e)),
                     );
@@ -121,7 +123,7 @@ pub fn start_env() {
             ethereum: Some(btsieve::Ethereum {
                 node_url: String::from(
                     envfile
-                        .get(ethereum::HTTP_URL_KEY)
+                        .get(EthereumNode::HTTP_URL_KEY)
                         .expect("could not find var in envfile"),
                 ),
             }),
