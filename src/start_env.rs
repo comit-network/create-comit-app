@@ -1,4 +1,4 @@
-use crate::bitcoin::{self, BitcoinNode};
+use crate::docker::bitcoin::{self, BitcoinNode};
 use crate::docker::ethereum::{self, EthereumNode};
 use crate::docker::{Node, NodeImage};
 use crate::executable::btsieve::{self};
@@ -10,7 +10,6 @@ use futures::Future;
 use hdwallet::traits::Serialize;
 use hdwallet::{ExtendedPrivKey, KeyIndex};
 use rust_bitcoin::Amount;
-use std::iter::Iterator;
 use std::path::PathBuf;
 use web3::types::U256;
 
@@ -28,10 +27,11 @@ pub fn start_env() {
     let envfile_path = PathBuf::from(".env");
     std::fs::File::create(envfile_path.clone()).expect("Could not create .env file");
 
-    let bitcoin_node = BitcoinNode::start(envfile_path.clone())
+    let bitcoin_node = Node::<BitcoinNode>::start(envfile_path.clone())
         .and_then({
             let mut hd_keys = Vec::new();
-            move |node: BitcoinNode| {
+            let executor = runtime.executor();
+            move |node| {
                 for _ in 0..2 {
                     hd_keys.push(ExtendedPrivKey::random().expect("failed to generate hd key"));
                 }
@@ -43,7 +43,12 @@ pub fn start_env() {
                         .private_key;
                     let address = bitcoin::derive_address(private_key);
 
-                    node.fund(&address, Amount::from_sat(100_000_000));
+                    executor.spawn(
+                        node.node_image
+                            .fund(address, Amount::from_sat(100_000_000))
+                            .and_then(|_| Ok(()))
+                            .map_err(|e| println!("Could not fund bitcoin address: {}", e)),
+                    );
                 }
 
                 Ok((node, hd_keys))
@@ -116,7 +121,7 @@ pub fn start_env() {
                 network: String::from("regtest"),
                 node_url: String::from(
                     envfile
-                        .get(bitcoin::RPC_URL_KEY)
+                        .get(BitcoinNode::HTTP_URL_KEY)
                         .expect("could not find var in envfile"),
                 ),
             }),

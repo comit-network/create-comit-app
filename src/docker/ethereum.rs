@@ -19,7 +19,7 @@ impl NodeImage for EthereumNode {
     type Address = Address;
     type Amount = U256;
     type TxId = H256;
-    type Error = web3::error::Error;
+    type ClientError = web3::error::Error;
 
     fn arguments_for_create() -> Vec<&'static str> {
         vec![
@@ -48,7 +48,7 @@ impl NodeImage for EthereumNode {
         &self,
         address: Self::Address,
         value: Self::Amount,
-    ) -> Box<dyn Future<Item = Self::TxId, Error = Self::Error> + Send + Sync> {
+    ) -> Box<dyn Future<Item = Self::TxId, Error = Self::ClientError> + Send + Sync> {
         let parity_dev_account: web3::types::Address =
             "00a329c0648769a73afac7f9381e08fb43dbea72".parse().unwrap();
 

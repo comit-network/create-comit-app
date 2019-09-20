@@ -4,16 +4,16 @@ use futures::Future;
 use shiplift::{ContainerOptions, Docker, LogsOptions, PullOptions, RmContainerOptions};
 use std::path::PathBuf;
 
+pub mod bitcoin;
 pub mod ethereum;
 
 pub trait NodeImage {
     const IMAGE: &'static str;
-    // TODO: Change to ENDPOINT
     const HTTP_URL_KEY: &'static str;
     type Address;
     type Amount;
     type TxId;
-    type Error;
+    type ClientError;
 
     fn arguments_for_create() -> Vec<&'static str>;
     fn client_port() -> u32;
@@ -22,7 +22,7 @@ pub trait NodeImage {
         &self,
         address: Self::Address,
         value: Self::Amount,
-    ) -> Box<dyn Future<Item = Self::TxId, Error = Self::Error> + Send + Sync>;
+    ) -> Box<dyn Future<Item = Self::TxId, Error = Self::ClientError> + Send + Sync>;
 }
 
 pub struct Node<I: NodeImage> {
