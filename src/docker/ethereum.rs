@@ -31,6 +31,10 @@ impl NodeImage for EthereumNode {
         ]
     }
 
+    fn client_port() -> u32 {
+        8545
+    }
+
     fn new(endpoint: String) -> Self {
         let (_event_loop, transport) = Http::new(&endpoint).unwrap();
         let http_client = Web3::new(transport);

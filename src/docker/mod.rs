@@ -16,6 +16,7 @@ pub trait NodeImage {
     type Error;
 
     fn arguments_for_create() -> Vec<&'static str>;
+    fn client_port() -> u32;
     fn new(endpoint: String) -> Self;
     fn fund(
         &self,
@@ -49,15 +50,16 @@ impl<I: NodeImage> Node<I> {
     ) -> impl Future<Item = Self, Error = shiplift::errors::Error> {
         let http_port: u32 = port_check::free_local_port().unwrap().into();
         let http_url = format!("http://localhost:{}", http_port);
+
         let docker = Docker::new();
+        let create_options = ContainerOptions::builder(I::IMAGE)
+            .cmd(I::arguments_for_create())
+            .expose(I::client_port(), "tcp", http_port)
+            .build();
+
         docker
             .containers()
-            .create(
-                &ContainerOptions::builder(I::IMAGE)
-                    .cmd(I::arguments_for_create())
-                    .expose(8545, "tcp", http_port)
-                    .build(),
-            )
+            .create(&create_options)
             .and_then({
                 let docker = docker.clone();
                 move |container| {
