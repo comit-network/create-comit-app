@@ -45,8 +45,6 @@ impl Executable where {
     }
 }
 
-pub fn start_cnd() {}
-
 #[cfg(test)]
 mod tests {
     use super::*;
