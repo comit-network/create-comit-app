@@ -121,14 +121,14 @@ pub fn start_env() {
                 network: String::from("regtest"),
                 node_url: String::from(
                     envfile
-                        .get(BitcoinNode::HTTP_URL_KEY)
+                        .get(bitcoin::HTTP_URL_KEY)
                         .expect("could not find var in envfile"),
                 ),
             }),
             ethereum: Some(btsieve::Ethereum {
                 node_url: String::from(
                     envfile
-                        .get(EthereumNode::HTTP_URL_KEY)
+                        .get(ethereum::HTTP_URL_KEY)
                         .expect("could not find var in envfile"),
                 ),
             }),

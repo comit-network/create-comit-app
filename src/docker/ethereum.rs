@@ -1,4 +1,4 @@
-use crate::docker::NodeImage;
+use crate::docker::{ExposedPorts, NodeImage};
 use tiny_keccak;
 use web3::transports::EventLoopHandle;
 use web3::{
@@ -8,6 +8,8 @@ use web3::{
     types::{Address, TransactionRequest, H256, U256},
 };
 
+pub const HTTP_URL_KEY: &'static str = "ETHEREUM_NODE_HTTP_URL";
+
 pub struct EthereumNode {
     pub http_client: Web3<Http>,
     _event_loop: EventLoopHandle,
@@ -15,7 +17,6 @@ pub struct EthereumNode {
 
 impl NodeImage for EthereumNode {
     const IMAGE: &'static str = "parity/parity:v2.5.0";
-    const HTTP_URL_KEY: &'static str = "ETHEREUM_NODE_HTTP_URL";
     type Address = Address;
     type Amount = U256;
     type TxId = H256;
@@ -31,8 +32,13 @@ impl NodeImage for EthereumNode {
         ]
     }
 
-    fn client_port() -> u32 {
-        8545
+    fn expose_ports() -> Vec<ExposedPorts> {
+        vec![ExposedPorts {
+            for_client: true,
+            srcport: 8545,
+            env_file_key: HTTP_URL_KEY.to_string(),
+            env_file_value: Box::new(|port| format!("http://localhost:{}", port)),
+        }]
     }
 
     fn new(endpoint: String) -> Self {
@@ -162,6 +168,6 @@ mod tests {
             .unwrap();
 
         let envfile = EnvFile::new(&file.path()).unwrap();
-        assert!(envfile.get(&EthereumNode::HTTP_URL_KEY).is_some());
+        assert!(envfile.get(&HTTP_URL_KEY).is_some());
     }
 }

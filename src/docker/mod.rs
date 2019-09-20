@@ -7,16 +7,22 @@ use std::path::PathBuf;
 pub mod bitcoin;
 pub mod ethereum;
 
+pub struct ExposedPorts {
+    pub for_client: bool,
+    pub srcport: u32,
+    pub env_file_key: String,
+    pub env_file_value: Box<dyn Fn(u32) -> String>,
+}
+
 pub trait NodeImage {
     const IMAGE: &'static str;
-    const HTTP_URL_KEY: &'static str;
     type Address;
     type Amount;
     type TxId;
     type ClientError;
 
     fn arguments_for_create() -> Vec<&'static str>;
-    fn client_port() -> u32;
+    fn expose_ports() -> Vec<ExposedPorts>;
     fn new(endpoint: String) -> Self;
     fn fund(
         &self,
@@ -53,14 +59,31 @@ impl<I: NodeImage> Node<I> {
     fn start_container(
         envfile_path: PathBuf,
     ) -> impl Future<Item = Self, Error = shiplift::errors::Error> {
-        let http_port: u32 = port_check::free_local_port().unwrap().into();
-        let http_url = format!("http://localhost:{}", http_port);
-
         let docker = Docker::new();
-        let create_options = ContainerOptions::builder(I::IMAGE)
-            .cmd(I::arguments_for_create())
-            .expose(I::client_port(), "tcp", http_port)
-            .build();
+
+        let mut create_options = ContainerOptions::builder(I::IMAGE);
+        create_options.cmd(I::arguments_for_create());
+
+        let mut to_write_in_env: Vec<(String, String)> = vec![];
+        let mut http_url: Option<String> = None;
+        for expose_port in I::expose_ports() {
+            let port: u32 = port_check::free_local_port().unwrap().into();
+            create_options.expose(expose_port.srcport, "tcp", port);
+
+            let value = (*expose_port.env_file_value)(port);
+
+            if expose_port.for_client {
+                http_url = Some(value.clone().into());
+            }
+
+            to_write_in_env.push((expose_port.env_file_key, value));
+        }
+
+        let http_url: String = http_url.unwrap_or_else(|| {
+            panic!("Internal Error: Url for client should have been set.");
+        });
+
+        let create_options = create_options.build();
         docker
             .containers()
             .create(&create_options)
@@ -103,10 +126,11 @@ impl<I: NodeImage> Node<I> {
             })
             .and_then({
                 let envfile_path = envfile_path.clone();
-                let http_url = http_url.clone();
                 move |node| {
                     let mut envfile = EnvFile::new(envfile_path).unwrap();
-                    envfile.update(&I::HTTP_URL_KEY, &http_url).write().unwrap();
+                    for key_value in to_write_in_env {
+                        envfile.update(&key_value.0, &key_value.1).write().unwrap();
+                    }
 
                     Ok(node)
                 }
