@@ -102,7 +102,6 @@ pub fn derive_address(secret_key: secp256k1::SecretKey) -> Address {
 mod tests {
     use super::*;
     use crate::docker::Node;
-    use envfile::EnvFile;
     use std::str::FromStr;
     use web3::types::{Address, BlockId, BlockNumber, U128};
 
@@ -153,11 +152,9 @@ mod tests {
     fn can_get_http_port_from_envfile() {
         let mut runtime = tokio::runtime::Runtime::new().unwrap();
 
-        let file = tempfile::Builder::new().tempfile().unwrap();
-
         runtime.block_on(Node::<EthereumNode>::start()).unwrap();
 
-        let envfile = EnvFile::new(&file.path()).unwrap();
+        let envfile = crate::env_file::new().unwrap();
         assert!(envfile.get(&HTTP_URL_KEY).is_some());
     }
 }

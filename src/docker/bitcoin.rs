@@ -112,7 +112,6 @@ mod tests {
     use super::*;
     use crate::docker::Node;
     use crate::docker::NodeImage;
-    use envfile::EnvFile;
     use rust_bitcoin::{Address, TxOut};
     use std::convert::TryFrom;
 
@@ -170,11 +169,9 @@ mod tests {
     fn can_get_rpc_port_from_envfile() {
         let mut runtime = tokio::runtime::Runtime::new().unwrap();
 
-        let file = tempfile::Builder::new().tempfile().unwrap();
-
         runtime.block_on(Node::<BitcoinNode>::start()).unwrap();
 
-        let envfile = EnvFile::new(&file.path()).unwrap();
+        let envfile = crate::env_file::new().unwrap();
         assert!(envfile.get(HTTP_URL_KEY).is_some());
     }
 
@@ -182,11 +179,9 @@ mod tests {
     fn can_get_p2p_port_from_envfile() {
         let mut runtime = tokio::runtime::Runtime::new().unwrap();
 
-        let file = tempfile::Builder::new().tempfile().unwrap();
-
         runtime.block_on(Node::<BitcoinNode>::start()).unwrap();
 
-        let envfile = EnvFile::new(&file.path()).unwrap();
+        let envfile = crate::env_file::new().unwrap();
         assert!(envfile.get(P2P_URI_KEY).is_some());
     }
 }
