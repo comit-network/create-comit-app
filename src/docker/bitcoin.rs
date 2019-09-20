@@ -164,4 +164,18 @@ mod tests {
         let envfile = EnvFile::new(&file.path()).unwrap();
         assert!(envfile.get(BitcoinNode::HTTP_URL_KEY).is_some());
     }
+
+    #[test]
+    fn can_get_p2p_port_from_envfile() {
+        let mut runtime = tokio::runtime::Runtime::new().unwrap();
+
+        let file = tempfile::Builder::new().tempfile().unwrap();
+
+        runtime
+            .block_on(Node::<BitcoinNode>::start(file.path().to_path_buf()))
+            .unwrap();
+
+        let envfile = EnvFile::new(&file.path()).unwrap();
+        assert!(envfile.get(P2P_URI_KEY).is_some());
+    }
 }
