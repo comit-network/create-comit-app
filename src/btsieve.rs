@@ -111,9 +111,6 @@ mod tests {
         std::thread::sleep(std::time::Duration::from_millis(5000));
 
         let endpoint = format!("http://localhost:{}/health", port_bind);
-        assert!(ureq::get(&endpoint)
-            .set("Expected-Version", "0.2.0")
-            .call()
-            .ok())
+        assert_eq!(ureq::get(&endpoint).call().status(), 400)
     }
 }
