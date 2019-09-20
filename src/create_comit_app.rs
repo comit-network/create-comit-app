@@ -4,4 +4,5 @@ use structopt::StructOpt;
 #[structopt(name = "create-comit-app")]
 pub enum CreateComitApp {
     StartEnv,
+    New,
 }
