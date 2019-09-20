@@ -66,6 +66,10 @@ impl NodeImage for BitcoinNode {
 
         Box::new(response.into_future())
     }
+
+    fn log_ready() -> String {
+        "Flushed wallet.dat".into()
+    }
 }
 
 pub fn derive_address(secret_key: secp256k1::SecretKey) -> Address {

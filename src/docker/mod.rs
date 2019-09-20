@@ -23,6 +23,7 @@ pub trait NodeImage {
         address: Self::Address,
         value: Self::Amount,
     ) -> Box<dyn Future<Item = Self::TxId, Error = Self::ClientError> + Send + Sync>;
+    fn log_ready() -> String;
 }
 
 pub struct Node<I: NodeImage> {
@@ -56,7 +57,6 @@ impl<I: NodeImage> Node<I> {
             .cmd(I::arguments_for_create())
             .expose(I::client_port(), "tcp", http_port)
             .build();
-
         docker
             .containers()
             .create(&create_options)
@@ -73,10 +73,16 @@ impl<I: NodeImage> Node<I> {
                     docker
                         .containers()
                         .get(&id)
-                        .logs(&LogsOptions::builder().stderr(true).follow(true).build())
+                        .logs(
+                            &LogsOptions::builder()
+                                .stdout(true)
+                                .stderr(true)
+                                .follow(true)
+                                .build(),
+                        )
                         .take_while(|chunk| {
                             let log = chunk.as_string_lossy();
-                            Ok(!log.contains("Public node URL:"))
+                            Ok(!log.contains(I::log_ready().as_str()))
                         })
                         .collect()
                         .map(|_| id)
