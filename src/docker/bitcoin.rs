@@ -70,6 +70,11 @@ impl NodeImage for BitcoinNode {
     fn log_ready() -> String {
         "Flushed wallet.dat".into()
     }
+
+    fn post_start_actions(&self) {
+        // TODO: Properly handle failure
+        self.rpc_client.generate(101, None).unwrap();
+    }
 }
 
 pub fn derive_address(secret_key: secp256k1::SecretKey) -> Address {

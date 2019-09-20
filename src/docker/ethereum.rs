@@ -71,6 +71,8 @@ impl NodeImage for EthereumNode {
     fn log_ready() -> String {
         "Public node URL:".into()
     }
+
+    fn post_start_actions(&self) {}
 }
 
 pub fn derive_address(secret_key: secp256k1::SecretKey) -> Address {

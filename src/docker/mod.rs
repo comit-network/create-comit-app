@@ -24,6 +24,7 @@ pub trait NodeImage {
         value: Self::Amount,
     ) -> Box<dyn Future<Item = Self::TxId, Error = Self::ClientError> + Send + Sync>;
     fn log_ready() -> String;
+    fn post_start_actions(&self);
 }
 
 pub struct Node<I: NodeImage> {
@@ -44,6 +45,9 @@ impl<I: NodeImage> Node<I> {
             // TODO: Pretty print progress
             .collect()
             .and_then(|_| Self::start_container(envfile_path))
+            .inspect(|node| {
+                node.node_image.post_start_actions();
+            })
     }
 
     fn start_container(
