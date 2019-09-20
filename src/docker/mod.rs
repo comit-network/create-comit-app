@@ -1,8 +1,7 @@
-use envfile::EnvFile;
+use crate::env_file::Lock;
 use futures::stream::Stream;
 use futures::Future;
 use shiplift::{ContainerOptions, Docker, LogsOptions, PullOptions, RmContainerOptions};
-use std::path::PathBuf;
 
 pub mod bitcoin;
 pub mod ethereum;
@@ -41,24 +40,20 @@ pub struct Node<I: NodeImage> {
 // TODO: Move all envfile stuff outside
 // TODO: Move free_local_port outside
 impl<I: NodeImage> Node<I> {
-    pub fn start(
-        envfile_path: PathBuf,
-    ) -> impl Future<Item = Self, Error = shiplift::errors::Error> {
+    pub fn start() -> impl Future<Item = Self, Error = shiplift::errors::Error> {
         let docker = Docker::new();
         docker
             .images()
             .pull(&PullOptions::builder().image(I::IMAGE).build())
             // TODO: Pretty print progress
             .collect()
-            .and_then(|_| Self::start_container(envfile_path))
+            .and_then(|_| Self::start_container())
             .inspect(|node| {
                 node.node_image.post_start_actions();
             })
     }
 
-    fn start_container(
-        envfile_path: PathBuf,
-    ) -> impl Future<Item = Self, Error = shiplift::errors::Error> {
+    fn start_container() -> impl Future<Item = Self, Error = shiplift::errors::Error> {
         let docker = Docker::new();
 
         let mut create_options = ContainerOptions::builder(I::IMAGE);
@@ -125,11 +120,12 @@ impl<I: NodeImage> Node<I> {
                 }
             })
             .and_then({
-                let envfile_path = envfile_path.clone();
                 move |node| {
-                    let mut envfile = EnvFile::new(envfile_path).unwrap();
+                    let mut envfile = crate::env_file::new().unwrap();
                     for key_value in to_write_in_env {
-                        envfile.update(&key_value.0, &key_value.1).write().unwrap();
+                        envfile
+                            .lock_update_write(&key_value.0, &key_value.1)
+                            .unwrap();
                     }
 
                     Ok(node)

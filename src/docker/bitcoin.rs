@@ -143,11 +143,7 @@ mod tests {
     fn can_ping_bitcoin_node() {
         let mut runtime = tokio::runtime::Runtime::new().unwrap();
 
-        let file = tempfile::Builder::new().tempfile().unwrap();
-
-        let bitcoin = runtime
-            .block_on(Node::<BitcoinNode>::start(file.path().to_path_buf()))
-            .unwrap();
+        let bitcoin = runtime.block_on(Node::<BitcoinNode>::start()).unwrap();
 
         assert!(bitcoin.node_image.rpc_client.ping().is_ok());
     }
@@ -156,11 +152,7 @@ mod tests {
     fn can_fund_bitcoin_address() {
         let mut runtime = tokio::runtime::Runtime::new().unwrap();
 
-        let file = tempfile::Builder::new().tempfile().unwrap();
-
-        let bitcoin = runtime
-            .block_on(Node::<BitcoinNode>::start(file.path().to_path_buf()))
-            .unwrap();
+        let bitcoin = runtime.block_on(Node::<BitcoinNode>::start()).unwrap();
         let client = &bitcoin.node_image.rpc_client;
 
         let address = client.get_new_address(None, None).unwrap();
@@ -180,9 +172,7 @@ mod tests {
 
         let file = tempfile::Builder::new().tempfile().unwrap();
 
-        runtime
-            .block_on(Node::<BitcoinNode>::start(file.path().to_path_buf()))
-            .unwrap();
+        runtime.block_on(Node::<BitcoinNode>::start()).unwrap();
 
         let envfile = EnvFile::new(&file.path()).unwrap();
         assert!(envfile.get(HTTP_URL_KEY).is_some());
@@ -194,9 +184,7 @@ mod tests {
 
         let file = tempfile::Builder::new().tempfile().unwrap();
 
-        runtime
-            .block_on(Node::<BitcoinNode>::start(file.path().to_path_buf()))
-            .unwrap();
+        runtime.block_on(Node::<BitcoinNode>::start()).unwrap();
 
         let envfile = EnvFile::new(&file.path()).unwrap();
         assert!(envfile.get(P2P_URI_KEY).is_some());

@@ -110,11 +110,7 @@ mod tests {
     fn can_ping_ethereum_node() {
         let mut runtime = tokio::runtime::Runtime::new().unwrap();
 
-        let file = tempfile::Builder::new().tempfile().unwrap();
-
-        let ethereum = runtime
-            .block_on(Node::<EthereumNode>::start(file.path().to_path_buf()))
-            .unwrap();
+        let ethereum = runtime.block_on(Node::<EthereumNode>::start()).unwrap();
 
         ethereum
             .node_image
@@ -130,11 +126,7 @@ mod tests {
     fn can_fund_ethereum_address() {
         let mut runtime = tokio::runtime::Runtime::new().unwrap();
 
-        let file = tempfile::Builder::new().tempfile().unwrap();
-
-        let ethereum = runtime
-            .block_on(Node::<EthereumNode>::start(file.path().to_path_buf()))
-            .unwrap();
+        let ethereum = runtime.block_on(Node::<EthereumNode>::start()).unwrap();
 
         let address = Address::from_str("98e8183a8bf0b7805ed7eb1044ba3e9eb2ed6c1d").unwrap();
         let value = U256::from(1_000);
@@ -163,9 +155,7 @@ mod tests {
 
         let file = tempfile::Builder::new().tempfile().unwrap();
 
-        runtime
-            .block_on(Node::<EthereumNode>::start(file.path().to_path_buf()))
-            .unwrap();
+        runtime.block_on(Node::<EthereumNode>::start()).unwrap();
 
         let envfile = EnvFile::new(&file.path()).unwrap();
         assert!(envfile.get(&HTTP_URL_KEY).is_some());

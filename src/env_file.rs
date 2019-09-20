@@ -9,6 +9,7 @@ const LOCK_FILE_SUFFIX: &str = ".lock";
 const LOCK_FILE_CONTENT: &[u8] =
     b"# This lock file is to ensure that no two create-comit-app updates the .env file.";
 
+#[derive(Debug)]
 pub enum Error {
     IsLocked,
     CannotWriteLock(io::Error),
@@ -16,8 +17,9 @@ pub enum Error {
     CannotUpdateEnvFile(io::Error),
 }
 
-pub trait LockUpdateWrite {
+pub trait Lock {
     fn lock_update_write(&mut self, key: &str, value: &str) -> Result<(), Error>;
+    fn lock_write(&mut self) -> Result<(), Error>;
 }
 
 fn lock_path(envfile: &EnvFile) -> PathBuf {
@@ -41,10 +43,18 @@ fn lock(envfile: &EnvFile) -> Result<(), Error> {
 
 fn unlock(envfile: &EnvFile) -> Result<(), Error> {
     let lock_path = lock_path(envfile);
-    std::fs::remove_file(lock_path).map_err(|e| Error::CannotRemoveLock(e))
+    std::fs::remove_file(lock_path).map_err( Error::CannotRemoveLock)
 }
 
-impl LockUpdateWrite for EnvFile {
+pub fn create() -> Result<File, io::Error> {
+    File::create(ENV_FILE)
+}
+
+pub fn new() -> Result<EnvFile, io::Error> {
+    EnvFile::new(ENV_FILE)
+}
+
+impl Lock for EnvFile {
     fn lock_update_write(&mut self, key: &str, value: &str) -> Result<(), Error> {
         lock(self)
             .and(
@@ -52,6 +62,12 @@ impl LockUpdateWrite for EnvFile {
                     .write()
                     .map_err(Error::CannotUpdateEnvFile),
             )
+            .and(unlock(self))
+    }
+
+    fn lock_write(&mut self) -> Result<(), Error> {
+        lock(self)
+            .and(self.write().map_err(Error::CannotUpdateEnvFile))
             .and(unlock(self))
     }
 }

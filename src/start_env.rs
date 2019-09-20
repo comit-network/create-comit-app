@@ -1,22 +1,20 @@
 use crate::docker::bitcoin::{self, BitcoinNode};
 use crate::docker::ethereum::{self, EthereumNode};
 use crate::docker::{Node, NodeImage};
+use crate::env_file::Lock;
 use crate::executable::btsieve::{self};
 use crate::executable::cnd::{self};
 use crate::executable::Executable;
-use envfile::EnvFile;
 use futures;
 use futures::Future;
 use hdwallet::traits::Serialize;
 use hdwallet::{ExtendedPrivKey, KeyIndex};
 use rust_bitcoin::Amount;
-use std::path::PathBuf;
 use web3::types::U256;
 
 const HTTP_PORT_BTSIEVE: &str = "HTTP_PORT_BTSIEVE";
 const HTTP_PORT_CND: &str = "HTTP_PORT_CND";
 
-// TODO: Ensure that the .env file can only be written to by only one process at a time
 // TODO: Proper error handling in particular to allow for cleanup of state after a runtime error
 // TODO: Improve logs
 // TODO: Refactor to reduce code duplication
@@ -24,10 +22,9 @@ const HTTP_PORT_CND: &str = "HTTP_PORT_CND";
 pub fn start_env() {
     let mut runtime = tokio::runtime::Runtime::new().unwrap();
 
-    let envfile_path = PathBuf::from(".env");
-    std::fs::File::create(envfile_path.clone()).expect("Could not create .env file");
+    crate::env_file::create().expect("Could not create .env file");
 
-    let bitcoin_node = Node::<BitcoinNode>::start(envfile_path.clone())
+    let bitcoin_node = Node::<BitcoinNode>::start()
         .and_then({
             let mut hd_keys = Vec::new();
             let executor = runtime.executor();
@@ -58,7 +55,7 @@ pub fn start_env() {
             println!("Bitcoin node error: {}", e);
         });
 
-    let ethereum_node = Node::<EthereumNode>::start(envfile_path.clone())
+    let ethereum_node = Node::<EthereumNode>::start()
         .and_then({
             let mut hd_keys = Vec::new();
             let executor = runtime.executor();
@@ -93,7 +90,7 @@ pub fn start_env() {
 
     let (bitcoin_hd_keys, ethereum_hd_keys) = ((results.0).1, (results.1).1);
 
-    let mut envfile = EnvFile::new(envfile_path.clone()).unwrap();
+    let mut envfile = crate::env_file::new().unwrap();
 
     for (i, hd_key) in bitcoin_hd_keys.iter().enumerate() {
         envfile.update(
@@ -108,7 +105,7 @@ pub fn start_env() {
             hex::encode(&hd_key.serialize()).as_str(),
         );
     }
-    envfile.write().unwrap();
+    envfile.lock_write().unwrap();
 
     for i in 1..3 {
         let port_bind = port_check::free_local_port().unwrap();
