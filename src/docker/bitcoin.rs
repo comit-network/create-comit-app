@@ -4,8 +4,8 @@ use futures::future::Future;
 use futures::IntoFuture;
 use rust_bitcoin::{self, hashes::sha256d, Address, Amount, Network};
 
-pub const P2P_URI_KEY: &'static str = "BITCOIN_P2P_URI";
-pub const HTTP_URL_KEY: &'static str = "BITCOIN_NODE_RPC_URL";
+pub const P2P_URI_KEY: &str = "BITCOIN_P2P_URI";
+pub const HTTP_URL_KEY: &str = "BITCOIN_NODE_RPC_URL";
 
 pub struct BitcoinNode {
     pub rpc_client: bitcoincore_rpc::Client,

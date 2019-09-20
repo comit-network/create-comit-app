@@ -8,7 +8,7 @@ use web3::{
     types::{Address, TransactionRequest, H256, U256},
 };
 
-pub const HTTP_URL_KEY: &'static str = "ETHEREUM_NODE_HTTP_URL";
+pub const HTTP_URL_KEY: &str = "ETHEREUM_NODE_HTTP_URL";
 
 pub struct EthereumNode {
     pub http_client: Web3<Http>,

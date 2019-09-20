@@ -73,7 +73,7 @@ impl<I: NodeImage> Node<I> {
             let value = (*expose_port.env_file_value)(port);
 
             if expose_port.for_client {
-                http_url = Some(value.clone().into());
+                http_url = Some(value.clone());
             }
 
             to_write_in_env.push((expose_port.env_file_key, value));
