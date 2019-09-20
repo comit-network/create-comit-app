@@ -57,12 +57,14 @@ mod tests {
     use super::*;
 
     #[test]
-    fn can_lock_and_unlock() {
+    fn can_lock_and_unlock_twice() {
         let path = tempfile::Builder::new().tempfile().unwrap();
         let mut env_file = EnvFile::new(path.path()).unwrap();
 
         let res = env_file.lock_update_write("key", "value");
+        assert!(res.is_ok());
 
-        assert!(res.is_ok())
+        let res = env_file.lock_update_write("key", "value");
+        assert!(res.is_ok());
     }
 }
