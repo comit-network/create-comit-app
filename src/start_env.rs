@@ -11,6 +11,7 @@ use hdwallet::traits::Serialize;
 use hdwallet::{ExtendedPrivKey, KeyIndex};
 use rust_bitcoin::Amount;
 use std::path::PathBuf;
+use tokio::runtime::Runtime;
 use web3::types::U256;
 
 const HTTP_PORT_BTSIEVE: &str = "HTTP_PORT_BTSIEVE";
@@ -22,12 +23,54 @@ const HTTP_PORT_CND: &str = "HTTP_PORT_CND";
 // TODO: Refactor to reduce code duplication
 
 pub fn start_env() {
-    let mut runtime = tokio::runtime::Runtime::new().unwrap();
+    let mut runtime = Runtime::new().unwrap();
 
     let envfile_path = PathBuf::from(".env");
     std::fs::File::create(envfile_path.clone()).expect("Could not create .env file");
 
-    let bitcoin_node = Node::<BitcoinNode>::start(envfile_path.clone())
+    let bitcoin_node = start_and_fund_bitcoin_node(&runtime, &envfile_path);
+
+    let ethereum_node = start_and_fund_ethereum_node(&runtime, &envfile_path);
+
+    let results = runtime.block_on(bitcoin_node.join(ethereum_node)).unwrap();
+
+    println!("Blockchain nodes up and running");
+
+    let (bitcoin_hd_keys, ethereum_hd_keys) = ((results.0).1, (results.1).1);
+
+    let mut envfile = EnvFile::new(envfile_path.clone()).unwrap();
+
+    for (i, hd_key) in bitcoin_hd_keys.iter().enumerate() {
+        envfile.update(
+            format!("BITCOIN_HD_KEY_{}", i).as_str(),
+            hex::encode(&hd_key.serialize()).as_str(),
+        );
+    }
+
+    for (i, hd_key) in ethereum_hd_keys.iter().enumerate() {
+        envfile.update(
+            format!("ETHEREUM_HD_KEY_{}", i).as_str(),
+            hex::encode(&hd_key.serialize()).as_str(),
+        );
+    }
+    envfile.write().unwrap();
+
+    start_btsieves(&mut runtime, &mut envfile);
+    println!("Two btsieves up and running");
+
+    start_cnds(&mut runtime, &mut envfile);
+    println!("Two cnds up and running");
+
+    // TODO: Unblocking this via CTRL+C doesn't call drop on the containers afterwards
+    // TODO: Delete .env file at the end
+    ::std::thread::park();
+}
+
+fn start_and_fund_bitcoin_node(
+    runtime: &Runtime,
+    envfile_path: &PathBuf,
+) -> impl Future<Item = (Node<BitcoinNode>, Vec<ExtendedPrivKey>), Error = ()> {
+    Node::<BitcoinNode>::start(envfile_path.clone())
         .and_then({
             let mut hd_keys = Vec::new();
             let executor = runtime.executor();
@@ -56,9 +99,20 @@ pub fn start_env() {
         })
         .map_err(|e| {
             println!("Bitcoin node error: {}", e);
-        });
+        })
+}
 
-    let ethereum_node = Node::<EthereumNode>::start(envfile_path.clone())
+fn start_and_fund_ethereum_node(
+    runtime: &Runtime,
+    envfile_path: &PathBuf,
+) -> impl Future<
+    Item = (
+        Node<EthereumNode>,
+        Vec<hdwallet::extended_key::ExtendedPrivKey>,
+    ),
+    Error = (),
+> {
+    Node::<EthereumNode>::start(envfile_path.clone())
         .and_then({
             let mut hd_keys = Vec::new();
             let executor = runtime.executor();
@@ -85,31 +139,10 @@ pub fn start_env() {
                 Ok((node, hd_keys))
             }
         })
-        .map_err(|e| println!("Ethereum node error: {}", e));
+        .map_err(|e| println!("Ethereum node error: {}", e))
+}
 
-    let results = runtime.block_on(bitcoin_node.join(ethereum_node)).unwrap();
-
-    println!("Blockchain nodes up and running");
-
-    let (bitcoin_hd_keys, ethereum_hd_keys) = ((results.0).1, (results.1).1);
-
-    let mut envfile = EnvFile::new(envfile_path.clone()).unwrap();
-
-    for (i, hd_key) in bitcoin_hd_keys.iter().enumerate() {
-        envfile.update(
-            format!("BITCOIN_HD_KEY_{}", i).as_str(),
-            hex::encode(&hd_key.serialize()).as_str(),
-        );
-    }
-
-    for (i, hd_key) in ethereum_hd_keys.iter().enumerate() {
-        envfile.update(
-            format!("ETHEREUM_HD_KEY_{}", i).as_str(),
-            hex::encode(&hd_key.serialize()).as_str(),
-        );
-    }
-    envfile.write().unwrap();
-
+fn start_btsieves(runtime: &mut Runtime, envfile: &mut EnvFile) {
     for i in 1..3 {
         let port_bind = port_check::free_local_port().unwrap();
         let settings = btsieve::Settings {
@@ -153,9 +186,9 @@ pub fn start_env() {
         // "warp drive engaged: listening on http://0.0.0.0:8181" instead
         std::thread::sleep(std::time::Duration::from_millis(1000));
     }
+}
 
-    println!("Two btsieves up and running");
-
+fn start_cnds(runtime: &mut Runtime, envfile: &mut EnvFile) {
     for i in 1..3 {
         let btsieve_port = envfile
             .get(format!("{}_{}", HTTP_PORT_BTSIEVE, i).as_str())
@@ -188,10 +221,4 @@ pub fn start_env() {
         // "Starting HTTP server on V4(0.0.0.0:8000)" instead
         std::thread::sleep(std::time::Duration::from_millis(1000));
     }
-
-    println!("Two cnds up and running");
-
-    // TODO: Unblocking this via CTRL+C doesn't call drop on the containers afterwards
-    // TODO: Delete .env file at the end
-    ::std::thread::park();
 }
