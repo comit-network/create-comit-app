@@ -43,7 +43,7 @@ fn lock(envfile: &EnvFile) -> Result<(), Error> {
 
 fn unlock(envfile: &EnvFile) -> Result<(), Error> {
     let lock_path = lock_path(envfile);
-    std::fs::remove_file(lock_path).map_err( Error::CannotRemoveLock)
+    std::fs::remove_file(lock_path).map_err(Error::CannotRemoveLock)
 }
 
 pub fn create() -> Result<File, io::Error> {
