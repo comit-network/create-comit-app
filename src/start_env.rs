@@ -143,7 +143,7 @@ fn start_and_fund_ethereum_node(
 }
 
 fn start_btsieves(runtime: &mut Runtime, envfile: &mut EnvFile) {
-    for i in 1..3 {
+    for i in 0..2 {
         let port_bind = port_check::free_local_port().unwrap();
         let settings = btsieve::Settings {
             http_api: btsieve::HttpApi {
@@ -189,7 +189,7 @@ fn start_btsieves(runtime: &mut Runtime, envfile: &mut EnvFile) {
 }
 
 fn start_cnds(runtime: &mut Runtime, envfile: &mut EnvFile) {
-    for i in 1..3 {
+    for i in 0..2 {
         let btsieve_port = envfile
             .get(format!("{}_{}", HTTP_PORT_BTSIEVE, i).as_str())
             .expect("could not find var in envfile");
