@@ -110,7 +110,7 @@ pub fn start_env() {
     }
     envfile.write().unwrap();
 
-    for i in 1..3 {
+    for i in 0..2 {
         let port_bind = port_check::free_local_port().unwrap();
         let settings = btsieve::Settings {
             http_api: btsieve::HttpApi {
@@ -156,7 +156,7 @@ pub fn start_env() {
 
     println!("Two btsieves up and running");
 
-    for i in 1..3 {
+    for i in 0..2 {
         let btsieve_port = envfile
             .get(format!("{}_{}", HTTP_PORT_BTSIEVE, i).as_str())
             .expect("could not find var in envfile");
