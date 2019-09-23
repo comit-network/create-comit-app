@@ -1,8 +1,8 @@
 use crate::docker::bitcoin::{self, BitcoinNode};
 use crate::docker::ethereum::{self, EthereumNode};
 use crate::docker::{Node, NodeImage};
-use crate::executable::btsieve::{self};
-use crate::executable::cnd::{self};
+use crate::executable::btsieve;
+use crate::executable::cnd;
 use crate::executable::Executable;
 use envfile::EnvFile;
 use futures;
@@ -98,14 +98,14 @@ pub fn start_env() {
     for (i, hd_key) in bitcoin_hd_keys.iter().enumerate() {
         envfile.update(
             format!("BITCOIN_HD_KEY_{}", i).as_str(),
-            hex::encode(&hd_key.serialize()).as_str(),
+            &bs58::encode(&hd_key.serialize()).into_string(),
         );
     }
 
     for (i, hd_key) in ethereum_hd_keys.iter().enumerate() {
         envfile.update(
             format!("ETHEREUM_HD_KEY_{}", i).as_str(),
-            hex::encode(&hd_key.serialize()).as_str(),
+            &bs58::encode(&hd_key.serialize()).into_string(),
         );
     }
     envfile.write().unwrap();
