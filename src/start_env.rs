@@ -68,7 +68,6 @@ pub fn start_env() {
     start_cnds(&mut runtime, &mut envfile);
     println!("Two cnds up and running");
 
-    // TODO: Delete .env file at the end
     let terminate = Arc::new(AtomicBool::new(false));
     signal_hook::flag::register(signal_hook::SIGTERM, Arc::clone(&terminate))
         .expect("Could not register SIGTERM");
@@ -81,9 +80,11 @@ pub fn start_env() {
         sleep(Duration::from_millis(50))
     }
     println!("Signal received, terminating...");
-    runtime
+    let _ = runtime
         .block_on(bitcoin_node.stop_remove().join(ethereum_node.stop_remove()))
-        .expect("Runtime could not run docker terminate futures");
+        .map_err(|e| eprintln!("Runtime could not run docker terminate futures: {:?}", e));
+    let _ = std::fs::remove_file(envfile_path)
+        .map_err(|e| eprintln!("Could not remove .env file: {:?}", e));
 }
 
 fn start_and_fund_bitcoin_node(
