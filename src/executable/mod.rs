@@ -9,6 +9,11 @@ use tokio_process::CommandExt;
 pub mod btsieve;
 pub mod cnd;
 
+pub trait Program {
+    const COMMAND: &'static str;
+    const LOG_READY: &'static str;
+}
+
 // config_file is only here to ensure it is not erased (when dropped) before the executable fully runs
 #[allow(dead_code)]
 pub struct Executable {
@@ -17,7 +22,7 @@ pub struct Executable {
 }
 
 impl Executable where {
-    pub fn start<S: Serialize>(program: &'static str, settings: S) -> Self {
+    pub fn start<P: Program, S: Serialize>(settings: S) -> Self {
         let mut config_file = tempfile::Builder::new().suffix(".toml").tempfile().unwrap();
         config_file
             .write_all(
@@ -28,14 +33,14 @@ impl Executable where {
             .expect("could not write to temporary file");
         let config_file = config_file.into_temp_path();
 
-        let child = Command::new(program)
+        let child = Command::new(P::COMMAND)
             .stdout(std::process::Stdio::null())
             .arg("--config")
             .arg(config_file.to_str().unwrap())
             .spawn_async();
         let future = child
             .expect("failed to start executable")
-            .map(move |status| println!("{}'s exit status: {}", program, status))
+            .map(move |status| println!("{}'s exit status: {}", P::COMMAND, status))
             .map_err(|e| panic!("failed to wait for exit: {}", e));
 
         Executable {
@@ -48,6 +53,8 @@ impl Executable where {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::executable::btsieve::Btsieve;
+    use crate::executable::cnd::Cnd;
     use std::thread::sleep;
     use std::time::Duration;
 
@@ -58,7 +65,7 @@ mod tests {
         let settings = cnd::Settings::default();
         let port = settings.http_api.port;
 
-        let cnd = Executable::start("cnd", settings);
+        let cnd = Executable::start::<Cnd, _>(settings);
 
         runtime.spawn(cnd.future);
 
@@ -81,7 +88,7 @@ mod tests {
         let settings = btsieve::Settings::default();
         let port = settings.http_api.port_bind;
 
-        let cnd = Executable::start("btsieve", settings);
+        let cnd = Executable::start::<Btsieve, _>(settings);
 
         runtime.spawn(cnd.future);
 

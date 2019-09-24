@@ -17,6 +17,7 @@ pub struct EthereumNode {
 
 impl NodeImage for EthereumNode {
     const IMAGE: &'static str = "parity/parity:v2.5.0";
+    const LOG_READY: &'static str = "Public node URL:";
     type Address = Address;
     type Amount = U256;
     type TxId = H256;
@@ -72,10 +73,6 @@ impl NodeImage for EthereumNode {
             "",
         );
         Box::new(future)
-    }
-
-    fn log_ready() -> String {
-        "Public node URL:".into()
     }
 
     fn post_start_actions(&self) {}

@@ -16,6 +16,7 @@ pub struct ExposedPorts {
 
 pub trait NodeImage {
     const IMAGE: &'static str;
+    const LOG_READY: &'static str;
     type Address;
     type Amount;
     type TxId;
@@ -29,7 +30,6 @@ pub trait NodeImage {
         address: Self::Address,
         value: Self::Amount,
     ) -> Box<dyn Future<Item = Self::TxId, Error = Self::ClientError> + Send + Sync>;
-    fn log_ready() -> String;
     fn post_start_actions(&self);
 }
 
@@ -109,7 +109,7 @@ impl<I: NodeImage> Node<I> {
                         )
                         .take_while(|chunk| {
                             let log = chunk.as_string_lossy();
-                            Ok(!log.contains(I::log_ready().as_str()))
+                            Ok(!log.contains(I::LOG_READY))
                         })
                         .collect()
                         .map(|_| id)
