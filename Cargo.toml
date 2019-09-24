@@ -9,7 +9,7 @@ bitcoincore-rpc = "0.8.0-rc1"
 config = { version = "0.9", features = ["toml"] }
 envfile = "0.2"
 futures = "0.1"
-git2 = "0.10.1"
+git2 = { version = "0.10", default-features = false, features = ["vendored-openssl"] }
 hdwallet = "0.2"
 hex = "0.3"
 hex-serde = "0.1.0"
