@@ -19,6 +19,7 @@ impl BitcoinNode {
 
 impl NodeImage for BitcoinNode {
     const IMAGE: &'static str = "coblox/bitcoin-core:0.17.0";
+    const LOG_READY: &'static str = "Flushed wallet.dat";
     type Address = Address;
     type Amount = Amount;
     type TxId = sha256d::Hash;
@@ -79,10 +80,6 @@ impl NodeImage for BitcoinNode {
             .and_then(|txid| client.generate(1, None).map(|_| txid));
 
         Box::new(response.into_future())
-    }
-
-    fn log_ready() -> String {
-        "Flushed wallet.dat".into()
     }
 
     fn post_start_actions(&self) {
