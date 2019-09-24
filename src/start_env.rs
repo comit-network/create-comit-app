@@ -10,6 +10,7 @@ use futures::Future;
 use hdwallet::traits::Serialize;
 use hdwallet::{ExtendedPrivKey, KeyIndex};
 use rust_bitcoin::Amount;
+use secp256k1::SecretKey;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
@@ -27,40 +28,106 @@ const HTTP_PORT_CND: &str = "HTTP_PORT_CND";
 // TODO: Refactor to reduce code duplication
 
 pub fn start_env() {
-    let mut runtime = Runtime::new().unwrap();
+    let bitcoin_hd_keys = (
+        ExtendedPrivKey::random().expect("Could not generate HD key"),
+        ExtendedPrivKey::random().expect("Could not generate HD key"),
+    );
+    let bitcoin_priv_keys = derive_keys(&bitcoin_hd_keys).expect("Could not derive keys");
+
+    let ethereum_hd_keys = (
+        ExtendedPrivKey::random().expect("Could not generate HD key"),
+        ExtendedPrivKey::random().expect("Could not generate HD key"),
+    );
+    let ethereum_priv_keys = derive_keys(&ethereum_hd_keys).expect("Could not derive keys");
 
     let envfile_path = PathBuf::from(".env");
     std::fs::File::create(envfile_path.clone()).expect("Could not create .env file");
 
-    let bitcoin_node_and_keys = start_and_fund_bitcoin_node(&runtime, &envfile_path);
+    let bitcoin_node = start_bitcoin_node(&envfile_path, bitcoin_priv_keys).map_err(|e| {
+        eprintln!("Issue starting Bitcoin node: {:?}", e);
+    });
 
-    let ethereum_node_and_keys = start_and_fund_ethereum_node(&runtime, &envfile_path);
+    let ethereum_node = start_ethereum_node(&envfile_path, ethereum_priv_keys).map_err(|e| {
+        eprintln!("Issue starting Ethereum node: {:?}", e);
+    });
 
-    let results = runtime
-        .block_on(bitcoin_node_and_keys.join(ethereum_node_and_keys))
-        .expect("Runtime could not run node futures");
+    let mut runtime = Runtime::new().unwrap();
+
+    // TODO: use await to avoid all these clones
+    let envfile_path_clone = envfile_path.clone();
+    let bitcoin_node = runtime
+        .block_on(bitcoin_node)
+        .map_err(|e| {
+            eprintln!("Could not start bitcoin node, cleaning up...\n{:?}", e);
+            clean_up(&mut runtime, envfile_path_clone, None, None);
+        })
+        .unwrap();
+
+    let envfile_path_clone = envfile_path.clone();
+    let bitcoin_node_clone = bitcoin_node.clone();
+    let ethereum_node = runtime
+        .block_on(ethereum_node)
+        .map_err(|e| {
+            eprintln!("Could not start Ethereum node, cleaning up...\n{:?}", e);
+            clean_up(
+                &mut runtime,
+                envfile_path_clone,
+                Some(bitcoin_node_clone),
+                None,
+            );
+        })
+        .unwrap();
 
     println!("Blockchain nodes up and running");
 
-    let (bitcoin_node, ethereum_node) = ((results.0).0, (results.1).0);
-    let (bitcoin_hd_keys, ethereum_hd_keys) = ((results.0).1, (results.1).1);
+    let envfile_path_clone = envfile_path.clone();
+    let bitcoin_node_clone = bitcoin_node.clone();
+    let ethereum_node_clone = ethereum_node.clone();
+    let mut envfile = EnvFile::new(envfile_path.clone())
+        .map_err(|e| {
+            eprintln!("Could not read .env file, cleaning up...\n{:?}", e);
+            clean_up(
+                &mut runtime,
+                envfile_path_clone,
+                Some(bitcoin_node_clone),
+                Some(ethereum_node_clone),
+            );
+        })
+        .unwrap();
 
-    let mut envfile = EnvFile::new(envfile_path.clone()).unwrap();
+    //TODO: Replace with macro?
+    envfile.update(
+        "BITCOIN_HD_KEY_0",
+        hex::encode(&bitcoin_hd_keys.0.serialize()).as_str(),
+    );
+    envfile.update(
+        "BITCOIN_HD_KEY_1",
+        hex::encode(&bitcoin_hd_keys.1.serialize()).as_str(),
+    );
+    envfile.update(
+        "ETHEREUM_HD_KEY_0",
+        hex::encode(&ethereum_hd_keys.0.serialize()).as_str(),
+    );
+    envfile.update(
+        "ETHEREUM_HD_KEY_1",
+        hex::encode(&ethereum_hd_keys.1.serialize()).as_str(),
+    );
 
-    for (i, hd_key) in bitcoin_hd_keys.iter().enumerate() {
-        envfile.update(
-            format!("BITCOIN_HD_KEY_{}", i).as_str(),
-            hex::encode(&hd_key.serialize()).as_str(),
-        );
-    }
-
-    for (i, hd_key) in ethereum_hd_keys.iter().enumerate() {
-        envfile.update(
-            format!("ETHEREUM_HD_KEY_{}", i).as_str(),
-            hex::encode(&hd_key.serialize()).as_str(),
-        );
-    }
-    envfile.write().unwrap();
+    let envfile_path_clone = envfile_path.clone();
+    let bitcoin_node_clone = bitcoin_node.clone();
+    let ethereum_node_clone = ethereum_node.clone();
+    envfile
+        .write()
+        .map_err(|e| {
+            eprintln!("Could not write .env file, cleaning up...\n{:?}", e);
+            clean_up(
+                &mut runtime,
+                envfile_path_clone,
+                Some(bitcoin_node_clone),
+                Some(ethereum_node_clone),
+            );
+        })
+        .unwrap();
 
     start_btsieves(&mut runtime, &mut envfile);
     println!("Two btsieves up and running");
@@ -68,98 +135,85 @@ pub fn start_env() {
     start_cnds(&mut runtime, &mut envfile);
     println!("Two cnds up and running");
 
-    // TODO: Delete .env file at the end
-    let terminate = Arc::new(AtomicBool::new(false));
-    signal_hook::flag::register(signal_hook::SIGTERM, Arc::clone(&terminate))
-        .expect("Could not register SIGTERM");
-    signal_hook::flag::register(signal_hook::SIGINT, Arc::clone(&terminate))
-        .expect("Could not register SIGINT");
-    signal_hook::flag::register(signal_hook::SIGQUIT, Arc::clone(&terminate))
-        .expect("Could not register SIGQUIT");
     println!("Environment has started, time to create a COMIT app!");
-    while !terminate.load(Ordering::Relaxed) {
-        sleep(Duration::from_millis(50))
-    }
-    println!("Signal received, terminating...");
-    runtime
-        .block_on(bitcoin_node.stop_remove().join(ethereum_node.stop_remove()))
-        .expect("Runtime could not run docker terminate futures");
+    handle_signal(&mut runtime, envfile_path, bitcoin_node, ethereum_node);
 }
 
-fn start_and_fund_bitcoin_node(
-    runtime: &Runtime,
+#[derive(Debug)]
+enum Error {
+    HdKey(hdwallet::error::Error),
+    BitcoinFunding(bitcoincore_rpc::Error),
+    EtherFunding(web3::Error),
+    Docker(shiplift::Error),
+}
+
+fn derive_keys(
+    hd_keys: &(ExtendedPrivKey, ExtendedPrivKey),
+) -> Result<(SecretKey, SecretKey), Error> {
+    Ok((
+        (hd_keys.0)
+            .derive_private_key(KeyIndex::Normal(0))
+            .map_err(Error::HdKey)?
+            .private_key,
+        (hd_keys.1)
+            .derive_private_key(KeyIndex::Normal(0))
+            .map_err(Error::HdKey)?
+            .private_key,
+    ))
+}
+
+fn start_bitcoin_node(
     envfile_path: &PathBuf,
-) -> impl Future<Item = (Node<BitcoinNode>, Vec<ExtendedPrivKey>), Error = ()> {
+    private_keys: (SecretKey, SecretKey),
+) -> impl Future<Item = Arc<Node<BitcoinNode>>, Error = Error> {
+    let (key1, key2) = private_keys;
     Node::<BitcoinNode>::start(envfile_path.clone())
-        .and_then({
-            let mut hd_keys = Vec::new();
-            let executor = runtime.executor();
-            move |node| {
-                for _ in 0..2 {
-                    hd_keys.push(ExtendedPrivKey::random().expect("failed to generate hd key"));
-                }
-
-                for hd_key in hd_keys.iter() {
-                    let private_key = hd_key
-                        .derive_private_key(KeyIndex::Normal(0))
-                        .expect("failed to derive private key from hd key")
-                        .private_key;
-                    let address = bitcoin::derive_address(private_key);
-
-                    executor.spawn(
-                        node.node_image
-                            .fund(address, Amount::from_sat(100_000_000))
-                            .and_then(|_| Ok(()))
-                            .map_err(|e| println!("Could not fund bitcoin address: {}", e)),
-                    );
-                }
-
-                Ok((node, hd_keys))
-            }
+        .map_err(Error::Docker)
+        .and_then(move |node| Ok(Arc::new(node)))
+        .and_then(move |node| {
+            node.clone()
+                .node_image
+                .fund(bitcoin::derive_address(key1), Amount::from_sat(100_000_000))
+                .map_err(Error::BitcoinFunding)
+                .map(|_| node)
         })
-        .map_err(|e| {
-            println!("Bitcoin node error: {}", e);
+        .and_then(move |node| {
+            node.clone()
+                .node_image
+                .fund(bitcoin::derive_address(key2), Amount::from_sat(100_000_000))
+                .map_err(Error::BitcoinFunding)
+                .map(|_| node)
         })
 }
 
-fn start_and_fund_ethereum_node(
-    runtime: &Runtime,
+fn start_ethereum_node(
     envfile_path: &PathBuf,
-) -> impl Future<
-    Item = (
-        Node<EthereumNode>,
-        Vec<hdwallet::extended_key::ExtendedPrivKey>,
-    ),
-    Error = (),
-> {
+    private_keys: (SecretKey, SecretKey),
+) -> impl Future<Item = Arc<Node<EthereumNode>>, Error = Error> {
+    let (key1, key2) = private_keys;
     Node::<EthereumNode>::start(envfile_path.clone())
-        .and_then({
-            let mut hd_keys = Vec::new();
-            let executor = runtime.executor();
-            move |node| {
-                for _ in 0..2 {
-                    hd_keys.push(ExtendedPrivKey::random().expect("failed to generate hd key"));
-                }
-
-                for hd_key in hd_keys.iter() {
-                    let private_key = hd_key
-                        .derive_private_key(KeyIndex::Normal(0))
-                        .expect("failed to derive private key from hd key")
-                        .private_key;
-                    let address = ethereum::derive_address(private_key);
-
-                    executor.spawn(
-                        node.node_image
-                            .fund(address, U256::from("9000000000000000000"))
-                            .and_then(|_| Ok(()))
-                            .map_err(|e| println!("Could not fund ethereum addresses: {}", e)),
-                    );
-                }
-
-                Ok((node, hd_keys))
-            }
+        .map_err(Error::Docker)
+        .and_then(move |node| Ok(Arc::new(node)))
+        .and_then(move |node| {
+            node.clone()
+                .node_image
+                .fund(
+                    ethereum::derive_address(key1),
+                    U256::from("9000000000000000000"),
+                )
+                .map_err(Error::EtherFunding)
+                .map(|_| node)
         })
-        .map_err(|e| println!("Ethereum node error: {}", e))
+        .and_then(move |node| {
+            node.clone()
+                .node_image
+                .fund(
+                    ethereum::derive_address(key2),
+                    U256::from("9000000000000000000"),
+                )
+                .map_err(Error::EtherFunding)
+                .map(|_| node)
+        })
 }
 
 fn start_btsieves(runtime: &mut Runtime, envfile: &mut EnvFile) {
@@ -241,4 +295,49 @@ fn start_cnds(runtime: &mut Runtime, envfile: &mut EnvFile) {
         // "Starting HTTP server on V4(0.0.0.0:8000)" instead
         std::thread::sleep(std::time::Duration::from_millis(1000));
     }
+}
+
+fn handle_signal(
+    runtime: &mut Runtime,
+    envfile_path: PathBuf,
+    bitcoin_node: Arc<Node<BitcoinNode>>,
+    ethereum_node: Arc<Node<EthereumNode>>,
+) {
+    let terminate = Arc::new(AtomicBool::new(false));
+    signal_hook::flag::register(signal_hook::SIGTERM, Arc::clone(&terminate))
+        .expect("Could not register SIGTERM");
+    signal_hook::flag::register(signal_hook::SIGINT, Arc::clone(&terminate))
+        .expect("Could not register SIGINT");
+    signal_hook::flag::register(signal_hook::SIGQUIT, Arc::clone(&terminate))
+        .expect("Could not register SIGQUIT");
+    while !terminate.load(Ordering::Relaxed) {
+        sleep(Duration::from_millis(50))
+    }
+    println!("Signal received, terminating...");
+    clean_up(
+        runtime,
+        envfile_path,
+        Some(bitcoin_node),
+        Some(ethereum_node),
+    );
+}
+
+fn clean_up(
+    runtime: &mut Runtime,
+    envfile_path: PathBuf,
+    bitcoin_node: Option<Arc<Node<BitcoinNode>>>,
+    ethereum_node: Option<Arc<Node<EthereumNode>>>,
+) {
+    if let Some(bitcoin_node) = bitcoin_node {
+        let _ = runtime
+            .block_on(bitcoin_node.stop_remove())
+            .map_err(|e| eprintln!("Runtime could not run bitcoin docker terminate: {:?}", e));
+    };
+    if let Some(ethereum_node) = ethereum_node {
+        let _ = runtime
+            .block_on(ethereum_node.stop_remove())
+            .map_err(|e| eprintln!("Runtime could not run ethereum docker terminate: {:?}", e));
+    };
+    let _ = std::fs::remove_file(envfile_path)
+        .map_err(|e| eprintln!("Could not remove .env file: {:?}", e));
 }
