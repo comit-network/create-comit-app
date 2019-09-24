@@ -53,9 +53,10 @@ pub fn start_env() {
         eprintln!("Issue starting Bitcoin node: {:?}", e);
     });
 
-    let ethereum_node = start_ethereum_node(&envfile_path, ethereum_priv_keys).map_err(|e| {
-        eprintln!("Issue starting Ethereum node: {:?}", e);
-    });
+    let ethereum_node =
+        start_ethereum_node(&envfile_path, ethereum_priv_keys.clone()).map_err(|e| {
+            eprintln!("Issue starting Ethereum node: {:?}", e);
+        });
 
     let mut runtime = Runtime::new().unwrap();
 
@@ -110,10 +111,10 @@ pub fn start_env() {
         );
     }
 
-    for (i, hd_key) in ethereum_hd_keys.iter().enumerate() {
+    for (i, priv_key) in ethereum_priv_keys.iter().enumerate() {
         envfile.update(
-            format!("ETHEREUM_HD_KEY_{}", i).as_str(),
-            hex::encode(&hd_key.serialize()).as_str(),
+            format!("ETHEREUM_KEY_{}", i).as_str(),
+            format!("{}", priv_key).as_str(),
         );
     }
 
