@@ -17,6 +17,7 @@ pub struct EthereumNode {
 
 impl Image for EthereumNode {
     const IMAGE: &'static str = "parity/parity:v2.5.0";
+    const NAME: &'static str = "ethereum";
     const LOG_READY: &'static str = "Public node URL:";
 
     fn arguments_for_create() -> Vec<&'static str> {

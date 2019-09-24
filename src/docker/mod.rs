@@ -17,6 +17,7 @@ pub struct ExposedPorts {
 pub trait Image {
     const IMAGE: &'static str;
     const LOG_READY: &'static str;
+    const NAME: &'static str;
 
     fn arguments_for_create() -> Vec<&'static str>;
     fn expose_ports() -> Vec<ExposedPorts>;
@@ -66,6 +67,7 @@ impl<I: BlockchainImage> Node<I> {
         let docker = Docker::new();
 
         let mut create_options = ContainerOptions::builder(I::IMAGE);
+        create_options.name(I::NAME);
         create_options.cmd(I::arguments_for_create());
 
         let mut to_write_in_env: Vec<(String, String)> = vec![];

@@ -19,6 +19,7 @@ impl BitcoinNode {
 
 impl Image for BitcoinNode {
     const IMAGE: &'static str = "coblox/bitcoin-core:0.17.0";
+    const NAME: &'static str = "bitcoin";
     const LOG_READY: &'static str = "Flushed wallet.dat";
 
     fn arguments_for_create() -> Vec<&'static str> {
