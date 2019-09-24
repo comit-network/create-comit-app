@@ -17,7 +17,7 @@ pub struct Executable {
 }
 
 impl Executable where {
-    pub fn start<S: Serialize>(program: &str, settings: S) -> Self {
+    pub fn start<S: Serialize>(program: &'static str, settings: S) -> Self {
         let mut config_file = tempfile::Builder::new().suffix(".toml").tempfile().unwrap();
         config_file
             .write_all(
@@ -35,7 +35,7 @@ impl Executable where {
             .spawn_async();
         let future = child
             .expect("failed to start executable")
-            .map(|status| println!("exit status: {}", status))
+            .map(move |status| println!("{}'s exit status: {}", program, status))
             .map_err(|e| panic!("failed to wait for exit: {}", e));
 
         Executable {

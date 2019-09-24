@@ -136,6 +136,19 @@ impl<I: NodeImage> Node<I> {
                 }
             })
     }
+
+    pub fn stop_remove(&self) -> impl Future<Item = (), Error = ()> {
+        Docker::new()
+            .containers()
+            .get(&self.container_id)
+            .remove(
+                RmContainerOptions::builder()
+                    .force(true)
+                    .volumes(true)
+                    .build(),
+            )
+            .map_err(|_| ())
+    }
 }
 
 impl<I: NodeImage> Drop for Node<I> {

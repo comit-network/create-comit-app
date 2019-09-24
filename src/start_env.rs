@@ -11,6 +11,10 @@ use hdwallet::traits::Serialize;
 use hdwallet::{ExtendedPrivKey, KeyIndex};
 use rust_bitcoin::Amount;
 use std::path::PathBuf;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
+use std::thread::sleep;
+use std::time::Duration;
 use tokio::runtime::Runtime;
 use web3::types::U256;
 
@@ -28,14 +32,17 @@ pub fn start_env() {
     let envfile_path = PathBuf::from(".env");
     std::fs::File::create(envfile_path.clone()).expect("Could not create .env file");
 
-    let bitcoin_node = start_and_fund_bitcoin_node(&runtime, &envfile_path);
+    let bitcoin_node_and_keys = start_and_fund_bitcoin_node(&runtime, &envfile_path);
 
-    let ethereum_node = start_and_fund_ethereum_node(&runtime, &envfile_path);
+    let ethereum_node_and_keys = start_and_fund_ethereum_node(&runtime, &envfile_path);
 
-    let results = runtime.block_on(bitcoin_node.join(ethereum_node)).unwrap();
+    let results = runtime
+        .block_on(bitcoin_node_and_keys.join(ethereum_node_and_keys))
+        .expect("Runtime could not run node futures");
 
     println!("Blockchain nodes up and running");
 
+    let (bitcoin_node, ethereum_node) = ((results.0).0, (results.1).0);
     let (bitcoin_hd_keys, ethereum_hd_keys) = ((results.0).1, (results.1).1);
 
     let mut envfile = EnvFile::new(envfile_path.clone()).unwrap();
@@ -61,9 +68,22 @@ pub fn start_env() {
     start_cnds(&mut runtime, &mut envfile);
     println!("Two cnds up and running");
 
-    // TODO: Unblocking this via CTRL+C doesn't call drop on the containers afterwards
     // TODO: Delete .env file at the end
-    ::std::thread::park();
+    let terminate = Arc::new(AtomicBool::new(false));
+    signal_hook::flag::register(signal_hook::SIGTERM, Arc::clone(&terminate))
+        .expect("Could not register SIGTERM");
+    signal_hook::flag::register(signal_hook::SIGINT, Arc::clone(&terminate))
+        .expect("Could not register SIGINT");
+    signal_hook::flag::register(signal_hook::SIGQUIT, Arc::clone(&terminate))
+        .expect("Could not register SIGQUIT");
+    println!("Environment has started, time to create a COMIT app!");
+    while !terminate.load(Ordering::Relaxed) {
+        sleep(Duration::from_millis(50))
+    }
+    println!("Signal received, terminating...");
+    runtime
+        .block_on(bitcoin_node.stop_remove().join(ethereum_node.stop_remove()))
+        .expect("Runtime could not run docker terminate futures");
 }
 
 fn start_and_fund_bitcoin_node(

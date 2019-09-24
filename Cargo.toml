@@ -19,6 +19,7 @@ rust_bitcoin = { version = "0.19.1", package = "bitcoin" }
 secp256k1 = "0.12"
 serde = "1"
 shiplift = "0.5"
+signal-hook = { version = "0.1", features = ["tokio-support"] }
 structopt = "0.3"
 tempfile = "3.1.0"
 testcontainers = "0.7"
