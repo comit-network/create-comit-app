@@ -19,7 +19,6 @@ impl BitcoinNode {
 
 impl Image for BitcoinNode {
     const IMAGE: &'static str = "coblox/bitcoin-core:0.17.0";
-    const NAME: &'static str = "bitcoin";
     const LOG_READY: &'static str = "Flushed wallet.dat";
 
     fn arguments_for_create() -> Vec<&'static str> {
@@ -146,7 +145,10 @@ mod tests {
         let file = tempfile::Builder::new().tempfile().unwrap();
 
         let bitcoin = runtime
-            .block_on(Node::<BitcoinNode>::start(file.path().to_path_buf()))
+            .block_on(Node::<BitcoinNode>::start(
+                file.path().to_path_buf(),
+                "can_ping_bitcoin_node",
+            ))
             .unwrap();
 
         assert!(bitcoin.node_image.rpc_client.ping().is_ok());
@@ -159,7 +161,10 @@ mod tests {
         let file = tempfile::Builder::new().tempfile().unwrap();
 
         let bitcoin = runtime
-            .block_on(Node::<BitcoinNode>::start(file.path().to_path_buf()))
+            .block_on(Node::<BitcoinNode>::start(
+                file.path().to_path_buf(),
+                "can_fund_bitcoin_address",
+            ))
             .unwrap();
         let client = &bitcoin.node_image.rpc_client;
 
@@ -181,7 +186,10 @@ mod tests {
         let file = tempfile::Builder::new().tempfile().unwrap();
 
         runtime
-            .block_on(Node::<BitcoinNode>::start(file.path().to_path_buf()))
+            .block_on(Node::<BitcoinNode>::start(
+                file.path().to_path_buf(),
+                "can_get_rpc_port_from_envfile",
+            ))
             .unwrap();
 
         let envfile = EnvFile::new(&file.path()).unwrap();
@@ -195,7 +203,10 @@ mod tests {
         let file = tempfile::Builder::new().tempfile().unwrap();
 
         runtime
-            .block_on(Node::<BitcoinNode>::start(file.path().to_path_buf()))
+            .block_on(Node::<BitcoinNode>::start(
+                file.path().to_path_buf(),
+                "can_get_p2p_port_from_envfile",
+            ))
             .unwrap();
 
         let envfile = EnvFile::new(&file.path()).unwrap();

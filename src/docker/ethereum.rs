@@ -17,7 +17,6 @@ pub struct EthereumNode {
 
 impl Image for EthereumNode {
     const IMAGE: &'static str = "parity/parity:v2.5.0";
-    const NAME: &'static str = "ethereum";
     const LOG_READY: &'static str = "Public node URL:";
 
     fn arguments_for_create() -> Vec<&'static str> {
@@ -114,7 +113,10 @@ mod tests {
         let file = tempfile::Builder::new().tempfile().unwrap();
 
         let ethereum = runtime
-            .block_on(Node::<EthereumNode>::start(file.path().to_path_buf()))
+            .block_on(Node::<EthereumNode>::start(
+                file.path().to_path_buf(),
+                "can_ping_ethereum_node",
+            ))
             .unwrap();
 
         ethereum
@@ -134,7 +136,10 @@ mod tests {
         let file = tempfile::Builder::new().tempfile().unwrap();
 
         let ethereum = runtime
-            .block_on(Node::<EthereumNode>::start(file.path().to_path_buf()))
+            .block_on(Node::<EthereumNode>::start(
+                file.path().to_path_buf(),
+                "can_fund_ethereum_address",
+            ))
             .unwrap();
 
         let address = Address::from_str("98e8183a8bf0b7805ed7eb1044ba3e9eb2ed6c1d").unwrap();
@@ -165,7 +170,10 @@ mod tests {
         let file = tempfile::Builder::new().tempfile().unwrap();
 
         runtime
-            .block_on(Node::<EthereumNode>::start(file.path().to_path_buf()))
+            .block_on(Node::<EthereumNode>::start(
+                file.path().to_path_buf(),
+                "can_get_http_port_from_envfile",
+            ))
             .unwrap();
 
         let envfile = EnvFile::new(&file.path()).unwrap();

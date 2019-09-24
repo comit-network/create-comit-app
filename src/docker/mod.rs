@@ -21,7 +21,6 @@ pub struct ExposedPorts {
 pub trait Image {
     const IMAGE: &'static str;
     const LOG_READY: &'static str;
-    const NAME: &'static str;
 
     fn arguments_for_create() -> Vec<&'static str>;
     fn expose_ports() -> Vec<ExposedPorts>;
@@ -52,14 +51,16 @@ pub struct Node<I: BlockchainImage> {
 impl<I: BlockchainImage> Node<I> {
     pub fn start(
         envfile_path: PathBuf,
+        name: &str,
     ) -> impl Future<Item = Self, Error = shiplift::errors::Error> {
-        let docker = Docker::new();
-        docker
+        let name = name.to_string();
+
+        Docker::new()
             .images()
             .pull(&PullOptions::builder().image(I::IMAGE).build())
             // TODO: Pretty print progress
             .collect()
-            .and_then(|_| Self::start_container(envfile_path))
+            .and_then(move |_| Self::start_container(envfile_path, &name))
             .inspect(|node| {
                 node.node_image.post_start_actions();
             })
@@ -67,11 +68,12 @@ impl<I: BlockchainImage> Node<I> {
 
     fn start_container(
         envfile_path: PathBuf,
+        name: &str,
     ) -> impl Future<Item = Self, Error = shiplift::errors::Error> {
         let docker = Docker::new();
 
         let mut create_options = ContainerOptions::builder(I::IMAGE);
-        create_options.name(I::NAME);
+        create_options.name(&name);
         create_options.network_mode(DOCKER_NETWORK);
         create_options.cmd(I::arguments_for_create());
 

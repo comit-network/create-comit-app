@@ -207,7 +207,7 @@ fn start_bitcoin_node(
     envfile_path: &PathBuf,
     secret_keys: Vec<SecretKey>,
 ) -> impl Future<Item = Node<BitcoinNode>, Error = Error> {
-    Node::<BitcoinNode>::start(envfile_path.clone())
+    Node::<BitcoinNode>::start(envfile_path.clone(), "bitcoin")
         .map_err(Error::Docker)
         .and_then(move |node| {
             stream::iter_ok(secret_keys).fold(node, |node, key| {
@@ -223,7 +223,7 @@ fn start_ethereum_node(
     envfile_path: &PathBuf,
     secret_keys: Vec<SecretKey>,
 ) -> impl Future<Item = Node<EthereumNode>, Error = Error> {
-    Node::<EthereumNode>::start(envfile_path.clone())
+    Node::<EthereumNode>::start(envfile_path.clone(), "ethereum")
         .map_err(Error::Docker)
         .and_then(move |node| {
             stream::iter_ok(secret_keys).fold(node, |node, key| {
