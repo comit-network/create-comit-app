@@ -1,6 +1,6 @@
 use crate::docker::bitcoin::{self, BitcoinNode};
 use crate::docker::ethereum::{self, EthereumNode};
-use crate::docker::{BlockchainImage, Node};
+use crate::docker::{create_network, delete_network, BlockchainImage, Node};
 use crate::executable::btsieve::{self, Btsieve};
 use crate::executable::cnd::{self, Cnd};
 use crate::executable::Executable;
@@ -49,6 +49,8 @@ pub fn start_env() {
     let envfile_path = PathBuf::from(".env");
     std::fs::File::create(envfile_path.clone()).expect("Could not create .env file");
 
+    let docker_network_create = create_network();
+
     let bitcoin_node = start_bitcoin_node(&envfile_path, bitcoin_priv_keys).map_err(|e| {
         eprintln!("Issue starting Bitcoin node: {:?}", e);
     });
@@ -60,12 +62,24 @@ pub fn start_env() {
 
     let mut runtime = Runtime::new().unwrap();
 
+    let docker_network_id = runtime
+        .block_on(docker_network_create)
+        .map_err({
+            let envfile_path = envfile_path.clone();
+            |e| {
+                eprintln!("Could not create docker network, cleaning up...\n{:?}", e);
+                clean_up(&mut runtime, envfile_path, None, None);
+            }
+        })
+        .unwrap();
+
     // TODO: use await to avoid all these clones
     let envfile_path_clone = envfile_path.clone();
     let bitcoin_node = runtime
         .block_on(bitcoin_node)
         .map_err(|e| {
             eprintln!("Could not start bitcoin node, cleaning up...\n{:?}", e);
+            // TODO: The clean up should also try to delete the bitcoin container if it exists
             clean_up(&mut runtime, envfile_path_clone, None, None);
         })
         .map(Arc::new)
@@ -141,7 +155,13 @@ pub fn start_env() {
     println!("Two cnds up and running");
 
     println!("Environment has started, time to create a COMIT app!");
-    handle_signal(&mut runtime, envfile_path, bitcoin_node, ethereum_node);
+    handle_signal(
+        &mut runtime,
+        envfile_path,
+        bitcoin_node,
+        ethereum_node,
+        docker_network_id,
+    );
 }
 
 #[derive(Debug)]
@@ -280,6 +300,7 @@ fn handle_signal(
     envfile_path: PathBuf,
     bitcoin_node: Arc<Node<BitcoinNode>>,
     ethereum_node: Arc<Node<EthereumNode>>,
+    docker_network_id: String,
 ) {
     let terminate = Arc::new(AtomicBool::new(false));
     signal_hook::flag::register(signal_hook::SIGTERM, Arc::clone(&terminate))
@@ -298,6 +319,7 @@ fn handle_signal(
         Some(bitcoin_node),
         Some(ethereum_node),
     );
+    clean_up_docker_network(runtime, docker_network_id)
 }
 
 // TODO: Split this method
@@ -319,4 +341,10 @@ fn clean_up(
     };
     let _ = std::fs::remove_file(envfile_path)
         .map_err(|e| eprintln!("Could not remove .env file: {:?}", e));
+}
+
+fn clean_up_docker_network(runtime: &mut Runtime, id: String) {
+    let _ = runtime
+        .block_on(delete_network(id))
+        .map_err(|e| eprintln!("Runtime could not delete docker network: {:?}", e));
 }

@@ -1,11 +1,15 @@
 use envfile::EnvFile;
 use futures::stream::Stream;
 use futures::Future;
-use shiplift::{ContainerOptions, Docker, LogsOptions, PullOptions, RmContainerOptions};
+use shiplift::{
+    ContainerOptions, Docker, LogsOptions, NetworkCreateOptions, PullOptions, RmContainerOptions,
+};
 use std::path::PathBuf;
 
 pub mod bitcoin;
 pub mod ethereum;
+
+pub const DOCKER_NETWORK: &str = "create-comit-app";
 
 pub struct ExposedPorts {
     pub for_client: bool,
@@ -68,6 +72,7 @@ impl<I: BlockchainImage> Node<I> {
 
         let mut create_options = ContainerOptions::builder(I::IMAGE);
         create_options.name(I::NAME);
+        create_options.network_mode(DOCKER_NETWORK);
         create_options.cmd(I::arguments_for_create());
 
         let mut to_write_in_env: Vec<(String, String)> = vec![];
@@ -172,4 +177,32 @@ impl<I: BlockchainImage> Drop for Node<I> {
 
         tokio::run(rm_fut);
     }
+}
+
+pub fn create_network() -> impl Future<Item = String, Error = shiplift::Error> {
+    Docker::new()
+        .networks()
+        .get(DOCKER_NETWORK)
+        .inspect()
+        .map(|info| {
+            eprintln!(
+                "[warn] {} Docker network already exist, re-using it.",
+                DOCKER_NETWORK
+            );
+            info.id
+        })
+        .or_else(|_| {
+            Docker::new()
+                .networks()
+                .create(
+                    &NetworkCreateOptions::builder(DOCKER_NETWORK)
+                        .driver("bridge")
+                        .build(),
+                )
+                .and_then(|info| Ok(info.id))
+        })
+}
+
+pub fn delete_network(id: String) -> impl Future<Item = (), Error = shiplift::Error> {
+    Docker::new().networks().get(id.clone().as_str()).delete()
 }
