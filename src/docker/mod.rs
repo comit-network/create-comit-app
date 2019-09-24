@@ -153,9 +153,7 @@ impl<I: NodeImage> Node<I> {
 
 impl<I: NodeImage> Drop for Node<I> {
     fn drop(&mut self) {
-        let docker = Docker::new();
-
-        let rm_fut = docker
+        let rm_fut = Docker::new()
             .containers()
             .get(&self.container_id)
             .remove(
