@@ -1,7 +1,8 @@
 use crate::docker::bitcoin::{self, BitcoinNode};
+use crate::docker::btsieve::Btsieve;
 use crate::docker::ethereum::{self, EthereumNode};
 use crate::docker::{create_network, delete_network, BlockchainImage, Node};
-use crate::executable::btsieve::{self, Btsieve};
+use crate::executable::btsieve::{self};
 use crate::executable::cnd::{self, Cnd};
 use crate::executable::Executable;
 use envfile::EnvFile;
@@ -10,10 +11,13 @@ use futures::stream;
 use futures::{Future, Stream};
 use hdwallet::traits::Serialize;
 use hdwallet::{ExtendedPrivKey, KeyIndex};
+use rand::distributions::Alphanumeric;
+use rand::{thread_rng, Rng};
 use rust_bitcoin::Amount;
 use secp256k1::SecretKey;
 use std::io::Write;
 use std::path::PathBuf;
+use std::str::FromStr;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::thread::sleep;
@@ -68,6 +72,10 @@ pub fn start_env() {
         start_ethereum_node(&envfile_path, ethereum_priv_keys.clone()).map_err(|e| {
             eprintln!("Issue starting Ethereum node: {:?}", e);
         });
+
+    let btsieves = start_btsieves(&envfile_path).map_err(|e| {
+        eprintln!("Issue starting btsieves: {:?}", e);
+    });
 
     let mut runtime = Runtime::new().unwrap();
 
@@ -171,12 +179,30 @@ pub fn start_env() {
     println!("✓");
 
     print_progress!("Starting two btsieves");
-    start_btsieves(&mut runtime, &mut envfile);
+    let btsieves = runtime
+        .block_on(btsieves)
+        .map_err({
+            let envfile_path = envfile_path.clone();
+            let bitcoin_node = bitcoin_node.clone();
+            let ethereum_node = ethereum_node.clone();
+
+            |e| {
+                eprintln!("Could not start btsieves, cleaning up...\n{:?}", e);
+                clean_up(
+                    &mut runtime,
+                    envfile_path,
+                    Some(bitcoin_node),
+                    Some(ethereum_node),
+                );
+            }
+        })
+        .map(Arc::new)
+        .unwrap();
     println!("✓");
 
-    print_progress!("Starting two cnds");
-    start_cnds(&mut runtime, &mut envfile);
-    println!("✓");
+    //    print_progress!("Starting two cnds");
+    //    start_cnds(&mut runtime, &mut envfile);
+    //    println!("✓");
 
     println!("🎉 Environment is ready, time to create a COMIT app!");
     handle_signal(
@@ -194,6 +220,8 @@ enum Error {
     BitcoinFunding(bitcoincore_rpc::Error),
     EtherFunding(web3::Error),
     Docker(shiplift::Error),
+    CreateDir(std::io::Error),
+    WriteConfig(std::io::Error),
 }
 
 fn derive_key(hd_key: &ExtendedPrivKey) -> Result<SecretKey, Error> {
@@ -238,50 +266,63 @@ fn start_ethereum_node(
         })
 }
 
-fn start_btsieves(runtime: &mut Runtime, envfile: &mut EnvFile) {
-    for i in 0..2 {
-        let port_bind = port_check::free_local_port().unwrap();
-        let settings = btsieve::Settings {
-            http_api: btsieve::HttpApi {
-                port_bind,
-                ..Default::default()
-            },
-            bitcoin: Some(btsieve::Bitcoin {
-                network: String::from("regtest"),
-                node_url: String::from(
-                    envfile
-                        .get(bitcoin::HTTP_URL_KEY)
-                        .expect("could not find var in envfile"),
-                ),
-            }),
-            ethereum: Some(btsieve::Ethereum {
-                node_url: String::from(
-                    envfile
-                        .get(ethereum::HTTP_URL_KEY)
-                        .expect("could not find var in envfile"),
-                ),
-            }),
+fn start_btsieves(envfile_path: &PathBuf) -> impl Future<Item = Vec<Node<Btsieve>>, Error = Error> {
+    let settings = btsieve::Settings {
+        http_api: btsieve::HttpApi {
+            port_bind: 8080,
             ..Default::default()
-        };
+        },
+        bitcoin: Some(btsieve::Bitcoin {
+            network: String::from("regtest"),
+            node_url: "http://bitcoin:18443".to_string(),
+        }),
+        ethereum: Some(btsieve::Ethereum {
+            node_url: "http://ethereum:8545".to_string(),
+        }),
+        ..Default::default()
+    };
 
-        envfile
-            .update(
-                format!("{}_{}", HTTP_PORT_BTSIEVE, i).as_str(),
-                &settings.http_api.port_bind.to_string(),
-            )
-            .write()
-            .unwrap();
+    let rng = thread_rng();
+    let folder_name: String = rng.sample_iter(Alphanumeric).take(7).collect();
 
-        let btsieve = Executable::start::<Btsieve, _>(settings);
+    // Default $TMPDIR in Mac OS is under /var/folders/
+    // However this is not a "shared path" by default for Docker
+    // (see Docker > Preferences)
+    #[cfg(target_os = "macos")]
+    let mut config_folder = PathBuf::from_str("/tmp/create-comit-app").expect("Infaillible");
+    #[cfg(not(target_os = "macos"))]
+    let mut config_folder = std::env::temp_dir();
 
-        // May be better for btsieve to be a future which spawns a process,
-        // waits for a second and then returns
-        runtime.spawn(btsieve.future);
+    config_folder.push(folder_name);
 
-        // TODO: Should wait until btsieve logs
-        // "warp drive engaged: listening on http://0.0.0.0:8181" instead
-        std::thread::sleep(std::time::Duration::from_millis(1000));
-    }
+    let config_file = config_folder.clone().join("btsieve.toml");
+
+    let settings = toml::to_string(&settings).expect("could not serialize settings");
+    let volume = format!("{}:/config", config_folder.clone().to_str().unwrap());
+
+    // TODO: delete folder at clean up
+    tokio::fs::create_dir_all(config_folder.clone())
+        .map_err(Error::CreateDir)
+        .and_then(|_| tokio::fs::write(config_file, settings).map_err(Error::WriteConfig))
+        .and_then({
+            let envfile_path = envfile_path.clone();
+            move |_| {
+                stream::iter_ok(vec![0, 1])
+                    .and_then({
+                        let volume = volume.clone();
+                        let envfile_path = envfile_path.clone();
+                        move |i| {
+                            Node::<Btsieve>::start_with_volume(
+                                envfile_path.to_path_buf(),
+                                format!("btsieve_{}", i).as_str(),
+                                &volume,
+                            )
+                            .map_err(Error::Docker)
+                        }
+                    })
+                    .collect()
+            }
+        })
 }
 
 fn start_cnds(runtime: &mut Runtime, envfile: &mut EnvFile) {
