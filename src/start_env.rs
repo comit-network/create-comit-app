@@ -1,8 +1,8 @@
 use crate::docker::bitcoin::{self, BitcoinNode};
 use crate::docker::ethereum::{self, EthereumNode};
 use crate::docker::{Node, NodeImage};
-use crate::executable::btsieve::{self};
-use crate::executable::cnd::{self};
+use crate::executable::btsieve::{self, Btsieve};
+use crate::executable::cnd::{self, Cnd};
 use crate::executable::Executable;
 use envfile::EnvFile;
 use futures;
@@ -228,7 +228,7 @@ fn start_btsieves(runtime: &mut Runtime, envfile: &mut EnvFile) {
             .write()
             .unwrap();
 
-        let btsieve = Executable::start("btsieve", settings);
+        let btsieve = Executable::start::<Btsieve, _>(settings);
 
         // May be better for btsieve to be a future which spawns a process,
         // waits for a second and then returns
@@ -263,7 +263,7 @@ fn start_cnds(runtime: &mut Runtime, envfile: &mut EnvFile) {
             .write()
             .unwrap();
 
-        let cnd = Executable::start("cnd", settings);
+        let cnd = Executable::start::<Cnd, _>(settings);
 
         // May be better for cnd to be a future which spawns a process,
         // waits for a second and then returns

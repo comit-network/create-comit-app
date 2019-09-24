@@ -1,3 +1,4 @@
+use crate::executable::Program;
 use rand;
 use rand::Rng;
 use serde::Serialize;
@@ -83,4 +84,11 @@ impl Default for Btsieve {
             },
         }
     }
+}
+
+pub struct Cnd;
+
+impl Program for Cnd {
+    const COMMAND: &'static str = "cnd";
+    const LOG_READY: &'static str = "Starting HTTP server on";
 }

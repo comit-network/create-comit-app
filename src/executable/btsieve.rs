@@ -1,3 +1,4 @@
+use crate::executable::Program;
 use serde::Serialize;
 use std::net::{IpAddr, Ipv4Addr};
 
@@ -47,4 +48,11 @@ impl Default for HttpApi {
             port_bind,
         }
     }
+}
+
+pub struct Btsieve;
+
+impl Program for Btsieve {
+    const COMMAND: &'static str = "btsieve";
+    const LOG_READY: &'static str = "warp drive engaged";
 }
