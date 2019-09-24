@@ -6,7 +6,8 @@ use crate::executable::cnd::{self};
 use crate::executable::Executable;
 use envfile::EnvFile;
 use futures;
-use futures::Future;
+use futures::stream;
+use futures::{Future, Stream};
 use hdwallet::traits::Serialize;
 use hdwallet::{ExtendedPrivKey, KeyIndex};
 use rust_bitcoin::Amount;
@@ -28,17 +29,22 @@ const HTTP_PORT_CND: &str = "HTTP_PORT_CND";
 // TODO: Refactor to reduce code duplication
 
 pub fn start_env() {
-    let bitcoin_hd_keys = (
-        ExtendedPrivKey::random().expect("Could not generate HD key"),
-        ExtendedPrivKey::random().expect("Could not generate HD key"),
-    );
-    let bitcoin_priv_keys = derive_keys(&bitcoin_hd_keys).expect("Could not derive keys");
+    let mut bitcoin_hd_keys = vec![];
+    let mut ethereum_hd_keys = vec![];
+    for _ in 0..2 {
+        bitcoin_hd_keys.push(ExtendedPrivKey::random().expect("Could not generate HD key"));
+        ethereum_hd_keys.push(ExtendedPrivKey::random().expect("Could not generate HD key"));
+    }
 
-    let ethereum_hd_keys = (
-        ExtendedPrivKey::random().expect("Could not generate HD key"),
-        ExtendedPrivKey::random().expect("Could not generate HD key"),
-    );
-    let ethereum_priv_keys = derive_keys(&ethereum_hd_keys).expect("Could not derive keys");
+    let mut bitcoin_priv_keys = vec![];
+    for hd_key in &bitcoin_hd_keys {
+        bitcoin_priv_keys.push(derive_key(hd_key).expect("Could not derive keys"));
+    }
+
+    let mut ethereum_priv_keys = vec![];
+    for hd_key in &ethereum_hd_keys {
+        ethereum_priv_keys.push(derive_key(hd_key).expect("Could not derive keys"));
+    }
 
     let envfile_path = PathBuf::from(".env");
     std::fs::File::create(envfile_path.clone()).expect("Could not create .env file");
@@ -61,6 +67,7 @@ pub fn start_env() {
             eprintln!("Could not start bitcoin node, cleaning up...\n{:?}", e);
             clean_up(&mut runtime, envfile_path_clone, None, None);
         })
+        .map(Arc::new)
         .unwrap();
 
     let envfile_path_clone = envfile_path.clone();
@@ -76,6 +83,7 @@ pub fn start_env() {
                 None,
             );
         })
+        .map(Arc::new)
         .unwrap();
 
     println!("Blockchain nodes up and running");
@@ -95,23 +103,19 @@ pub fn start_env() {
         })
         .unwrap();
 
-    //TODO: Replace with macro?
-    envfile.update(
-        "BITCOIN_HD_KEY_0",
-        hex::encode(&bitcoin_hd_keys.0.serialize()).as_str(),
-    );
-    envfile.update(
-        "BITCOIN_HD_KEY_1",
-        hex::encode(&bitcoin_hd_keys.1.serialize()).as_str(),
-    );
-    envfile.update(
-        "ETHEREUM_HD_KEY_0",
-        hex::encode(&ethereum_hd_keys.0.serialize()).as_str(),
-    );
-    envfile.update(
-        "ETHEREUM_HD_KEY_1",
-        hex::encode(&ethereum_hd_keys.1.serialize()).as_str(),
-    );
+    for (i, hd_key) in bitcoin_hd_keys.iter().enumerate() {
+        envfile.update(
+            format!("BITCOIN_HD_KEY_{}", i).as_str(),
+            hex::encode(&hd_key.serialize()).as_str(),
+        );
+    }
+
+    for (i, hd_key) in ethereum_hd_keys.iter().enumerate() {
+        envfile.update(
+            format!("ETHEREUM_HD_KEY_{}", i).as_str(),
+            hex::encode(&hd_key.serialize()).as_str(),
+        );
+    }
 
     let envfile_path_clone = envfile_path.clone();
     let bitcoin_node_clone = bitcoin_node.clone();
@@ -147,72 +151,45 @@ enum Error {
     Docker(shiplift::Error),
 }
 
-fn derive_keys(
-    hd_keys: &(ExtendedPrivKey, ExtendedPrivKey),
-) -> Result<(SecretKey, SecretKey), Error> {
-    Ok((
-        (hd_keys.0)
-            .derive_private_key(KeyIndex::Normal(0))
-            .map_err(Error::HdKey)?
-            .private_key,
-        (hd_keys.1)
-            .derive_private_key(KeyIndex::Normal(0))
-            .map_err(Error::HdKey)?
-            .private_key,
-    ))
+fn derive_key(hd_key: &ExtendedPrivKey) -> Result<SecretKey, Error> {
+    Ok(hd_key
+        .derive_private_key(KeyIndex::Normal(0))
+        .map_err(Error::HdKey)?
+        .private_key)
 }
 
 fn start_bitcoin_node(
     envfile_path: &PathBuf,
-    private_keys: (SecretKey, SecretKey),
-) -> impl Future<Item = Arc<Node<BitcoinNode>>, Error = Error> {
-    let (key1, key2) = private_keys;
+    secret_keys: Vec<SecretKey>,
+) -> impl Future<Item = Node<BitcoinNode>, Error = Error> {
     Node::<BitcoinNode>::start(envfile_path.clone())
         .map_err(Error::Docker)
-        .and_then(move |node| Ok(Arc::new(node)))
         .and_then(move |node| {
-            node.clone()
-                .node_image
-                .fund(bitcoin::derive_address(key1), Amount::from_sat(100_000_000))
-                .map_err(Error::BitcoinFunding)
-                .map(|_| node)
-        })
-        .and_then(move |node| {
-            node.clone()
-                .node_image
-                .fund(bitcoin::derive_address(key2), Amount::from_sat(100_000_000))
-                .map_err(Error::BitcoinFunding)
-                .map(|_| node)
+            stream::iter_ok(secret_keys).fold(node, |node, key| {
+                node.node_image
+                    .fund(bitcoin::derive_address(key), Amount::from_sat(100_000_000))
+                    .map_err(Error::BitcoinFunding)
+                    .map(|_| node)
+            })
         })
 }
 
 fn start_ethereum_node(
     envfile_path: &PathBuf,
-    private_keys: (SecretKey, SecretKey),
-) -> impl Future<Item = Arc<Node<EthereumNode>>, Error = Error> {
-    let (key1, key2) = private_keys;
+    secret_keys: Vec<SecretKey>,
+) -> impl Future<Item = Node<EthereumNode>, Error = Error> {
     Node::<EthereumNode>::start(envfile_path.clone())
         .map_err(Error::Docker)
-        .and_then(move |node| Ok(Arc::new(node)))
         .and_then(move |node| {
-            node.clone()
-                .node_image
-                .fund(
-                    ethereum::derive_address(key1),
-                    U256::from("9000000000000000000"),
-                )
-                .map_err(Error::EtherFunding)
-                .map(|_| node)
-        })
-        .and_then(move |node| {
-            node.clone()
-                .node_image
-                .fund(
-                    ethereum::derive_address(key2),
-                    U256::from("9000000000000000000"),
-                )
-                .map_err(Error::EtherFunding)
-                .map(|_| node)
+            stream::iter_ok(secret_keys).fold(node, |node, key| {
+                node.node_image
+                    .fund(
+                        ethereum::derive_address(key),
+                        U256::from("9000000000000000000"),
+                    )
+                    .map_err(Error::EtherFunding)
+                    .map(|_| node)
+            })
         })
 }
 
@@ -322,6 +299,7 @@ fn handle_signal(
     );
 }
 
+// TODO: Split this method
 fn clean_up(
     runtime: &mut Runtime,
     envfile_path: PathBuf,
