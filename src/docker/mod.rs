@@ -14,33 +14,37 @@ pub struct ExposedPorts {
     pub env_file_value: Box<dyn Fn(u32) -> String>,
 }
 
-pub trait NodeImage {
+pub trait Image {
     const IMAGE: &'static str;
     const LOG_READY: &'static str;
+
+    fn arguments_for_create() -> Vec<&'static str>;
+    fn expose_ports() -> Vec<ExposedPorts>;
+    fn new(endpoint: String) -> Self;
+    fn post_start_actions(&self);
+}
+
+pub trait BlockchainImage: Image {
     type Address;
     type Amount;
     type TxId;
     type ClientError;
 
-    fn arguments_for_create() -> Vec<&'static str>;
-    fn expose_ports() -> Vec<ExposedPorts>;
-    fn new(endpoint: String) -> Self;
     fn fund(
         &self,
         address: Self::Address,
         value: Self::Amount,
     ) -> Box<dyn Future<Item = Self::TxId, Error = Self::ClientError> + Send + Sync>;
-    fn post_start_actions(&self);
 }
 
-pub struct Node<I: NodeImage> {
+pub struct Node<I: BlockchainImage> {
     container_id: String,
     pub node_image: I,
 }
 
 // TODO: Move all envfile stuff outside
 // TODO: Move free_local_port outside
-impl<I: NodeImage> Node<I> {
+impl<I: BlockchainImage> Node<I> {
     pub fn start(
         envfile_path: PathBuf,
     ) -> impl Future<Item = Self, Error = shiplift::errors::Error> {
@@ -151,7 +155,7 @@ impl<I: NodeImage> Node<I> {
     }
 }
 
-impl<I: NodeImage> Drop for Node<I> {
+impl<I: BlockchainImage> Drop for Node<I> {
     fn drop(&mut self) {
         let rm_fut = Docker::new()
             .containers()

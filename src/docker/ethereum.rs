@@ -1,4 +1,4 @@
-use crate::docker::{ExposedPorts, NodeImage};
+use crate::docker::{BlockchainImage, ExposedPorts, Image};
 use tiny_keccak;
 use web3::transports::EventLoopHandle;
 use web3::{
@@ -15,13 +15,9 @@ pub struct EthereumNode {
     _event_loop: EventLoopHandle,
 }
 
-impl NodeImage for EthereumNode {
+impl Image for EthereumNode {
     const IMAGE: &'static str = "parity/parity:v2.5.0";
     const LOG_READY: &'static str = "Public node URL:";
-    type Address = Address;
-    type Amount = U256;
-    type TxId = H256;
-    type ClientError = web3::error::Error;
 
     fn arguments_for_create() -> Vec<&'static str> {
         vec![
@@ -51,6 +47,15 @@ impl NodeImage for EthereumNode {
         }
     }
 
+    fn post_start_actions(&self) {}
+}
+
+impl BlockchainImage for EthereumNode {
+    type Address = Address;
+    type Amount = U256;
+    type TxId = H256;
+    type ClientError = web3::error::Error;
+
     fn fund(
         &self,
         address: Self::Address,
@@ -74,8 +79,6 @@ impl NodeImage for EthereumNode {
         );
         Box::new(future)
     }
-
-    fn post_start_actions(&self) {}
 }
 
 pub fn derive_address(secret_key: secp256k1::SecretKey) -> Address {

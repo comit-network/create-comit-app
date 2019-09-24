@@ -1,4 +1,4 @@
-use crate::docker::{ExposedPorts, NodeImage};
+use crate::docker::{BlockchainImage, ExposedPorts, Image};
 use bitcoincore_rpc::RpcApi;
 use futures::future::Future;
 use futures::IntoFuture;
@@ -17,28 +17,24 @@ impl BitcoinNode {
     const PASSWORD: &'static str = "t68ej4UX2pB0cLlGwSwHFBLKxXYgomkXyFyxuBmm2U8=";
 }
 
-impl NodeImage for BitcoinNode {
+impl Image for BitcoinNode {
     const IMAGE: &'static str = "coblox/bitcoin-core:0.17.0";
     const LOG_READY: &'static str = "Flushed wallet.dat";
-    type Address = Address;
-    type Amount = Amount;
-    type TxId = sha256d::Hash;
-    type ClientError = bitcoincore_rpc::Error;
 
     fn arguments_for_create() -> Vec<&'static str> {
         vec![
-            "-regtest",
-            "-server",
-            "-rest",
-            "-printtoconsole",
-            "-bind=0.0.0.0:18444",
-            "-rpcbind=0.0.0.0:18443",
-            "-rpcauth=bitcoin:1c0e8f3de84926c04115e7da7e501346$a48f42ad32741dd1755649c8b98663b3ccbebeb75f196389f9a5c8a96b72edb3",
-            "-rpcallowip=0.0.0.0/0",
-            "-debug=1",
-            "-acceptnonstdtxn=0",
-            "-txindex",
-        ]
+        "-regtest",
+        "-server",
+        "-rest",
+        "-printtoconsole",
+        "-bind=0.0.0.0:18444",
+        "-rpcbind=0.0.0.0:18443",
+        "-rpcauth=bitcoin:1c0e8f3de84926c04115e7da7e501346$a48f42ad32741dd1755649c8b98663b3ccbebeb75f196389f9a5c8a96b72edb3",
+        "-rpcallowip=0.0.0.0/0",
+        "-debug=1",
+        "-acceptnonstdtxn=0",
+        "-txindex",
+    ]
     }
 
     fn expose_ports() -> Vec<ExposedPorts> {
@@ -67,6 +63,17 @@ impl NodeImage for BitcoinNode {
 
         Self { rpc_client }
     }
+    fn post_start_actions(&self) {
+        // TODO: Properly handle failure
+        self.rpc_client.generate(101, None).unwrap();
+    }
+}
+
+impl BlockchainImage for BitcoinNode {
+    type Address = Address;
+    type Amount = Amount;
+    type TxId = sha256d::Hash;
+    type ClientError = bitcoincore_rpc::Error;
 
     fn fund(
         &self,
@@ -80,11 +87,6 @@ impl NodeImage for BitcoinNode {
             .and_then(|txid| client.generate(1, None).map(|_| txid));
 
         Box::new(response.into_future())
-    }
-
-    fn post_start_actions(&self) {
-        // TODO: Properly handle failure
-        self.rpc_client.generate(101, None).unwrap();
     }
 }
 
@@ -107,8 +109,8 @@ fn derive_p2wpkh_regtest_address(public_key: secp256k1::PublicKey) -> Address {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::docker::BlockchainImage;
     use crate::docker::Node;
-    use crate::docker::NodeImage;
     use envfile::EnvFile;
     use rust_bitcoin::{Address, TxOut};
     use std::convert::TryFrom;

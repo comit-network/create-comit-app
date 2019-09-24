@@ -1,6 +1,6 @@
 use crate::docker::bitcoin::{self, BitcoinNode};
 use crate::docker::ethereum::{self, EthereumNode};
-use crate::docker::{Node, NodeImage};
+use crate::docker::{BlockchainImage, Node};
 use crate::executable::btsieve::{self, Btsieve};
 use crate::executable::cnd::{self, Cnd};
 use crate::executable::Executable;
