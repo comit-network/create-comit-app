@@ -6,4 +6,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+Yet to be released...
+
 [Unreleased]: https://github.com/comit-network/create-comit-app/compare/447a4bde8914c1641deef83d2f3280002e01db53...HEAD
