@@ -8,7 +8,7 @@ Set up a local development environment to build COMIT apps by running one comman
 
 1. Install Docker.
 2. Install yarn or npm 
-3. Go get the latest version for your platforms in the [release](https://github.com/comit-network/create-comit-app/releases).
+3. Go get the latest [release](https://github.com/comit-network/create-comit-app/releases) for your platform.
 4. Unzip & done!
 
 ### The Hard Way
