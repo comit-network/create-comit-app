@@ -17,7 +17,6 @@ use rust_bitcoin::Amount;
 use secp256k1::SecretKey;
 use std::io::Write;
 use std::path::PathBuf;
-use std::str::FromStr;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::thread::sleep;
@@ -353,7 +352,10 @@ fn temp_folder() -> PathBuf {
     // However this is not a "shared path" by default for Docker
     // (see Docker > Preferences)
     #[cfg(target_os = "macos")]
-    let mut config_folder = PathBuf::from_str("/tmp/create-comit-app").expect("Infaillible");
+    let mut config_folder = {
+        use std::str::FromStr;
+        PathBuf::from_str("/tmp/create-comit-app").expect("Infaillible")
+    };
     #[cfg(not(target_os = "macos"))]
     let mut config_folder = std::env::temp_dir();
     config_folder.push(folder_name);
