@@ -52,19 +52,17 @@ impl Default for Comit {
 
 impl Default for Network {
     fn default() -> Network {
-        let port = port_check::free_local_port().expect("Could not find a free port");
         Network {
-            listen: vec![format!("/ip4/0.0.0.0/tcp/{}", port)],
+            listen: vec!["/ip4/0.0.0.0/tcp/9939".into()],
         }
     }
 }
 
 impl Default for HttpSocket {
     fn default() -> HttpSocket {
-        let port = port_check::free_local_port().expect("Could not find a free port");
         HttpSocket {
             address: IpAddr::V4(Ipv4Addr::UNSPECIFIED),
-            port,
+            port: 8080,
         }
     }
 }
