@@ -25,7 +25,6 @@ tiny-keccak = "1.5.0"
 tokio = "0.1"
 tokio-process = "0.2"
 toml = "0.5"
+unzip = "0.1"
+ureq = { version = "0.11", features = ["rustls"]}
 web3 = "0.8"
-
-[dev-dependencies]
-ureq = "0.11"

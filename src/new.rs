@@ -1,16 +1,25 @@
-use git2::IndexAddOption;
-use git2::Repository;
-use git2::ResetType;
-use std::fs::remove_dir_all;
+use git2::{IndexAddOption, Repository, ResetType};
+use std::io::{Read, Write};
 
-const HELLO_SWAP_GIT: &str = "https://github.com/comit-network/hello-swap/";
+const HELLO_SWAP_ZIP: &str = "https://github.com/comit-network/hello-swap/archive/master.zip";
 
 pub fn new(name: String) {
-    let _ = Repository::clone(HELLO_SWAP_GIT, name.clone())
-        .map_err(|e| panic!("Failed to clone hello-swap: {:?}", e))
-        .and_then(|_| remove_dir_all(format!("./{}/.git", name)))
-        .map_err(|e| panic!("Failed to clean up hello-swap/.git folder: {:?}", e))
-        .and_then(|_| Repository::init(format!("./{}", name)))
+    let mut tempfile = tempfile::tempfile().expect("Could not create temp file");
+    let mut buffer = Vec::new();
+    ureq::get(HELLO_SWAP_ZIP)
+        .call()
+        .into_reader()
+        .read_to_end(&mut buffer)
+        .expect("Could not download hello swap zip file");
+    tempfile
+        .write_all(&buffer)
+        .expect("Could not write hello swap zip file");
+    unzip::Unzipper::new(tempfile, format!("./{}", name))
+        .strip_components(1)
+        .unzip()
+        .expect("Could not unzip bundle");
+
+    let _ = Repository::init(format!("./{}", name))
         .map_err(|e| panic!("Failed to create an empty Git repository: {:?}", e))
         .and_then(create_initial_commit)
         .map_err(|e| panic!("Failed to create initial commit: {:?}", e));
