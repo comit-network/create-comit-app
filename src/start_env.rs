@@ -352,10 +352,7 @@ fn temp_folder() -> PathBuf {
     // However this is not a "shared path" by default for Docker
     // (see Docker > Preferences)
     #[cfg(target_os = "macos")]
-    let mut config_folder = {
-        use std::str::FromStr;
-        PathBuf::from_str("/tmp/create-comit-app").expect("Infaillible")
-    };
+    let mut config_folder: PathBuf = "/tmp/create-comit-app".parse().expect("Infaillible");
     #[cfg(not(target_os = "macos"))]
     let mut config_folder = std::env::temp_dir();
     config_folder.push(folder_name);
