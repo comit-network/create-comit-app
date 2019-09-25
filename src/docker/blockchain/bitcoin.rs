@@ -37,7 +37,7 @@ impl Image for BitcoinNode {
     ]
     }
 
-    fn expose_ports() -> Vec<ExposedPorts> {
+    fn expose_ports(_: &str) -> Vec<ExposedPorts> {
         vec![
             ExposedPorts {
                 for_client: true,

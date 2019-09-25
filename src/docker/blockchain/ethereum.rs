@@ -29,7 +29,8 @@ impl Image for EthereumNode {
         ]
     }
 
-    fn expose_ports() -> Vec<ExposedPorts> {
+    // TODO: Probably actually use the name instead of HTTP_URL_KEY
+    fn expose_ports(_: &str) -> Vec<ExposedPorts> {
         vec![ExposedPorts {
             for_client: true,
             srcport: 8545,

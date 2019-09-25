@@ -1,6 +1,6 @@
 use crate::docker::{ExposedPorts, Image};
 
-const HTTP_URL_CND: &str = "HTTP_URL_CND";
+const HTTP_URL_PREFIX: &str = "HTTP_URL_";
 
 pub struct Cnd;
 
@@ -12,11 +12,15 @@ impl Image for Cnd {
         vec!["--", "cnd", "--config=/config/cnd.toml"]
     }
 
-    fn expose_ports() -> Vec<ExposedPorts> {
+    fn expose_ports(name: &str) -> Vec<ExposedPorts> {
         vec![ExposedPorts {
             for_client: true,
             srcport: 8080,
-            env_file_key: HTTP_URL_CND.to_string(),
+            env_file_key: format!(
+                "{}{}",
+                HTTP_URL_PREFIX,
+                name.to_string().to_ascii_uppercase()
+            ),
             env_file_value: Box::new(|port| format!("http://localhost:{}", port)),
         }]
     }
