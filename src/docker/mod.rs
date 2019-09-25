@@ -1,11 +1,20 @@
 use envfile::EnvFile;
 use futures::stream::Stream;
 use futures::Future;
-use shiplift::{ContainerOptions, Docker, LogsOptions, PullOptions, RmContainerOptions};
+use shiplift::builder::ContainerOptionsBuilder;
+use shiplift::{
+    ContainerOptions, Docker, LogsOptions, NetworkCreateOptions, PullOptions, RmContainerOptions,
+};
 use std::path::PathBuf;
 
-pub mod bitcoin;
-pub mod ethereum;
+pub mod blockchain;
+pub mod btsieve;
+pub mod cnd;
+
+pub use self::blockchain::{bitcoin, ethereum};
+pub use self::{btsieve::Btsieve, cnd::Cnd};
+
+pub const DOCKER_NETWORK: &str = "create-comit-app";
 
 pub struct ExposedPorts {
     pub for_client: bool,
@@ -14,56 +23,93 @@ pub struct ExposedPorts {
     pub env_file_value: Box<dyn Fn(u32) -> String>,
 }
 
-pub trait NodeImage {
+pub trait Image {
     const IMAGE: &'static str;
     const LOG_READY: &'static str;
-    type Address;
-    type Amount;
-    type TxId;
-    type ClientError;
 
     fn arguments_for_create() -> Vec<&'static str>;
     fn expose_ports() -> Vec<ExposedPorts>;
-    fn new(endpoint: String) -> Self;
-    fn fund(
-        &self,
-        address: Self::Address,
-        value: Self::Amount,
-    ) -> Box<dyn Future<Item = Self::TxId, Error = Self::ClientError> + Send + Sync>;
+    // TODO: Need to rethink that, probably blockchain specific. Need to remove option
+    fn new(endpoint: Option<String>) -> Self;
     fn post_start_actions(&self);
 }
 
-pub struct Node<I: NodeImage> {
+pub struct Node<I: Image> {
     container_id: String,
     pub node_image: I,
 }
 
 // TODO: Move all envfile stuff outside
+// TODO: Probably good idea to convert into a builder
 // TODO: Move free_local_port outside
-impl<I: NodeImage> Node<I> {
+impl<I: Image> Node<I> {
     pub fn start(
         envfile_path: PathBuf,
+        name: &str,
     ) -> impl Future<Item = Self, Error = shiplift::errors::Error> {
-        let docker = Docker::new();
-        docker
+        let name = name.to_string();
+
+        let mut create_options = ContainerOptions::builder(I::IMAGE);
+        create_options.name(&name);
+        create_options.network_mode(DOCKER_NETWORK);
+        create_options.cmd(I::arguments_for_create());
+
+        let (to_write_in_env, client_endpoint, create_options) =
+            <Node<I>>::write_env_file(&mut create_options);
+
+        Docker::new()
             .images()
             .pull(&PullOptions::builder().image(I::IMAGE).build())
             // TODO: Pretty print progress
             .collect()
-            .and_then(|_| Self::start_container(envfile_path))
+            .and_then(move |_| {
+                Self::start_container(
+                    envfile_path,
+                    create_options,
+                    client_endpoint,
+                    to_write_in_env,
+                )
+            })
             .inspect(|node| {
                 node.node_image.post_start_actions();
             })
     }
 
-    fn start_container(
+    pub fn start_with_volume(
         envfile_path: PathBuf,
+        name: &str,
+        volume: &str,
     ) -> impl Future<Item = Self, Error = shiplift::errors::Error> {
-        let docker = Docker::new();
-
         let mut create_options = ContainerOptions::builder(I::IMAGE);
+        create_options.name(&name);
+        create_options.network_mode(DOCKER_NETWORK);
         create_options.cmd(I::arguments_for_create());
+        create_options.volumes(vec![volume]);
 
+        let (to_write_in_env, client_endpoint, create_options) =
+            <Node<I>>::write_env_file(&mut create_options);
+
+        Docker::new()
+            .images()
+            .pull(&PullOptions::builder().image(I::IMAGE).build())
+            // TODO: Pretty print progress
+            .collect()
+            .and_then(move |_| {
+                Self::start_container(
+                    envfile_path,
+                    create_options,
+                    client_endpoint,
+                    to_write_in_env,
+                )
+            })
+            .inspect(|node| {
+                node.node_image.post_start_actions();
+            })
+    }
+
+    fn write_env_file(
+        create_options: &mut ContainerOptionsBuilder,
+    ) -> (Vec<(String, String)>, Option<String>, ContainerOptions) {
         let mut to_write_in_env: Vec<(String, String)> = vec![];
         let mut http_url: Option<String> = None;
         for expose_port in I::expose_ports() {
@@ -78,26 +124,40 @@ impl<I: NodeImage> Node<I> {
 
             to_write_in_env.push((expose_port.env_file_key, value));
         }
-
-        let http_url: String = http_url.unwrap_or_else(|| {
-            panic!("Internal Error: Url for client should have been set.");
-        });
-
         let create_options = create_options.build();
-        docker
+        (to_write_in_env, http_url, create_options)
+    }
+
+    fn start_container(
+        envfile_path: PathBuf,
+        create_options: ContainerOptions,
+        client_endpoint: Option<String>,
+        to_write_in_env: Vec<(String, String)>,
+    ) -> impl Future<Item = Self, Error = shiplift::errors::Error> {
+        Docker::new()
             .containers()
             .create(&create_options)
+            .map_err(|e| {
+                eprintln!("Error encountered when creating container: {:?}", e);
+                e
+            })
             .and_then({
-                let docker = docker.clone();
                 move |container| {
                     let id = container.id;
-                    docker.containers().get(&id).start().map(|_| id)
+                    Docker::new()
+                        .containers()
+                        .get(&id)
+                        .start()
+                        .map(|_| id)
+                        .map_err(|e| {
+                            eprintln!("Error encountered when starting container: {:?}", e);
+                            e
+                        })
                 }
             })
             .and_then({
-                let docker = docker.clone();
                 move |id| {
-                    docker
+                    Docker::new()
                         .containers()
                         .get(&id)
                         .logs(
@@ -112,11 +172,15 @@ impl<I: NodeImage> Node<I> {
                             Ok(!log.contains(I::LOG_READY))
                         })
                         .collect()
+                        .map_err(|e| {
+                            eprintln!("Error encountered when getting logs: {:?}", e);
+                            e
+                        })
                         .map(|_| id)
                 }
             })
             .and_then({
-                let http_url = http_url.clone();
+                let http_url = client_endpoint.clone();
                 move |container_id| {
                     Ok(Self {
                         container_id,
@@ -136,22 +200,9 @@ impl<I: NodeImage> Node<I> {
                 }
             })
     }
-
-    pub fn stop_remove(&self) -> impl Future<Item = (), Error = ()> {
-        Docker::new()
-            .containers()
-            .get(&self.container_id)
-            .remove(
-                RmContainerOptions::builder()
-                    .force(true)
-                    .volumes(true)
-                    .build(),
-            )
-            .map_err(|_| ())
-    }
 }
 
-impl<I: NodeImage> Drop for Node<I> {
+impl<I: Image> Drop for Node<I> {
     fn drop(&mut self) {
         let rm_fut = Docker::new()
             .containers()
@@ -166,4 +217,41 @@ impl<I: NodeImage> Drop for Node<I> {
 
         tokio::run(rm_fut);
     }
+}
+
+pub fn create_network() -> impl Future<Item = String, Error = shiplift::Error> {
+    Docker::new()
+        .networks()
+        .get(DOCKER_NETWORK)
+        .inspect()
+        .map(|info| {
+            eprintln!(
+                "\n[warn] {} Docker network already exist, re-using it.",
+                DOCKER_NETWORK
+            );
+            info.id
+        })
+        .or_else(|_| {
+            Docker::new()
+                .networks()
+                .create(
+                    &NetworkCreateOptions::builder(DOCKER_NETWORK)
+                        .driver("bridge")
+                        .build(),
+                )
+                .and_then(|info| Ok(info.id))
+        })
+}
+
+pub fn delete_network() -> impl Future<Item = (), Error = shiplift::Error> {
+    Docker::new().networks().get(DOCKER_NETWORK).delete()
+}
+
+pub fn delete_container(name: &str) -> impl Future<Item = (), Error = shiplift::Error> {
+    Docker::new().containers().get(name).remove(
+        RmContainerOptions::builder()
+            .force(true)
+            .volumes(true)
+            .build(),
+    )
 }

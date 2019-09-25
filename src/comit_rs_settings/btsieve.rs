@@ -1,4 +1,3 @@
-use crate::executable::Program;
 use serde::Serialize;
 use std::net::{IpAddr, Ipv4Addr};
 
@@ -42,17 +41,9 @@ impl Default for LogLevels {
 
 impl Default for HttpApi {
     fn default() -> HttpApi {
-        let port_bind = port_check::free_local_port().expect("Could not find a free port");
         HttpApi {
             address_bind: IpAddr::V4(Ipv4Addr::UNSPECIFIED),
-            port_bind,
+            port_bind: 8080,
         }
     }
-}
-
-pub struct Btsieve;
-
-impl Program for Btsieve {
-    const COMMAND: &'static str = "btsieve";
-    const LOG_READY: &'static str = "warp drive engaged";
 }

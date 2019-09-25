@@ -1,4 +1,3 @@
-use crate::executable::Program;
 use rand;
 use rand::Rng;
 use serde::Serialize;
@@ -53,19 +52,17 @@ impl Default for Comit {
 
 impl Default for Network {
     fn default() -> Network {
-        let port = port_check::free_local_port().expect("Could not find a free port");
         Network {
-            listen: vec![format!("/ip4/0.0.0.0/tcp/{}", port)],
+            listen: vec!["/ip4/0.0.0.0/tcp/9939".into()],
         }
     }
 }
 
 impl Default for HttpSocket {
     fn default() -> HttpSocket {
-        let port = port_check::free_local_port().expect("Could not find a free port");
         HttpSocket {
             address: IpAddr::V4(Ipv4Addr::UNSPECIFIED),
-            port,
+            port: 8080,
         }
     }
 }
@@ -84,11 +81,4 @@ impl Default for Btsieve {
             },
         }
     }
-}
-
-pub struct Cnd;
-
-impl Program for Cnd {
-    const COMMAND: &'static str = "cnd";
-    const LOG_READY: &'static str = "Starting HTTP server on";
 }
