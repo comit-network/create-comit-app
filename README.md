@@ -13,6 +13,8 @@ Set up a local development environment to build COMIT apps by running one comman
 
 ### The Hard Way
 
+Swedish style, build it yourself.
+
 1. Install Docker,
 2. Install Rust: `curl https://sh.rustup.rs -sSf | sh`,
 3. Checkout the repo: `git clone https://github.com/comit-network/create-comit-app/`,
