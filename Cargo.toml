@@ -26,5 +26,5 @@ tokio = "0.1"
 tokio-process = "0.2"
 toml = "0.5"
 unzip = "0.1"
-ureq = { version = "0.11", features = ["rustls"]}
+ureq = { version = "0.11", features = ["rustls"] }
 web3 = "0.8"
