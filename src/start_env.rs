@@ -71,11 +71,7 @@ fn bitcoin_generate_blocks(
         .for_each({
             let bitcoin_node = bitcoin_node.clone();
             move |_| {
-                let _ = bitcoin_node
-                    .node_image
-                    .rpc_client
-                    .generate(1, None)
-                    .map_err(|err| eprintln!("Issue with bitcoin block generation: {:?}", err));
+                let _ = bitcoin_node.node_image.rpc_client.generate(1, None);
                 Ok(())
             }
         })
