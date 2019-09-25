@@ -1,6 +1,6 @@
 # Create Comit App (cca)
 
-Set up a local development environment to build COMIT apps by running one command. 
+Set up a local development environment for COMIT apps with one command. 
 
 ## Install
 
