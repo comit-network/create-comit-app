@@ -10,19 +10,17 @@ config = { version = "0.9", features = ["toml"] }
 envfile = "0.2"
 futures = "0.1"
 git2 = { version = "0.10", default-features = false, features = ["vendored-openssl"] }
-hdwallet = "0.2"
 hex = "0.3"
 hex-serde = "0.1.0"
 port_check = "0.1"
-rand = "0.7"
+rand = "0.4"
 rust_bitcoin = { version = "0.19.1", package = "bitcoin" }
-secp256k1 = "0.12"
+secp256k1 = { version = "0.12", features = ["rand"] }
 serde = "1"
 shiplift = "0.5"
 signal-hook = { version = "0.1", features = ["tokio-support"] }
 structopt = "0.3"
 tempfile = "3.1.0"
-testcontainers = "0.7"
 tiny-keccak = "1.5.0"
 tokio = "0.1"
 tokio-process = "0.2"

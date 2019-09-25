@@ -5,16 +5,16 @@ use crate::docker::ethereum::{self, EthereumNode};
 use crate::docker::Cnd;
 use crate::docker::{blockchain::BlockchainImage, create_network, delete_network, Node};
 use crate::docker::{delete_container, Btsieve};
+use bitcoincore_rpc::RpcApi;
 use envfile::EnvFile;
 use futures;
 use futures::stream;
 use futures::{Future, Stream};
-use hdwallet::traits::Serialize;
-use hdwallet::{ExtendedPrivKey, KeyIndex};
-use rand::distributions::Alphanumeric;
 use rand::{thread_rng, Rng};
+use rust_bitcoin::util::bip32::ChildNumber;
+use rust_bitcoin::util::bip32::ExtendedPrivKey;
 use rust_bitcoin::Amount;
-use secp256k1::SecretKey;
+use secp256k1::{Secp256k1, SecretKey};
 use std::io::Write;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -22,6 +22,7 @@ use std::sync::Arc;
 use std::thread::sleep;
 use std::time::Duration;
 use tokio::runtime::Runtime;
+use tokio::timer::Interval;
 use web3::types::U256;
 
 // TODO: Ensure that the .env file can only be written to by only one process at a time
@@ -71,21 +72,40 @@ fn start_all() -> Result<
     Error,
 > {
     let mut bitcoin_hd_keys = vec![];
-    let mut ethereum_hd_keys = vec![];
-    for _ in 0..2 {
-        bitcoin_hd_keys.push(ExtendedPrivKey::random().expect("Could not generate HD key"));
-        ethereum_hd_keys.push(ExtendedPrivKey::random().expect("Could not generate HD key"));
-    }
-
-    let mut bitcoin_priv_keys = vec![];
-    for hd_key in &bitcoin_hd_keys {
-        bitcoin_priv_keys.push(derive_key(hd_key).expect("Could not derive keys"));
-    }
-
     let mut ethereum_priv_keys = vec![];
-    for hd_key in &ethereum_hd_keys {
-        ethereum_priv_keys.push(derive_key(hd_key).expect("Could not derive keys"));
+
+    for _ in 0..2 {
+        bitcoin_hd_keys.push(
+            ExtendedPrivKey::new_master(rust_bitcoin::Network::Regtest, &{
+                let mut seed = [0u8; 32];
+                thread_rng().fill_bytes(&mut seed);
+
+                seed
+            })
+            .expect("Could not generate HD key"),
+        );
+        ethereum_priv_keys.push(SecretKey::new(&mut thread_rng()));
     }
+
+    let bitcoin_priv_keys = bitcoin_hd_keys
+        .iter()
+        .map(|hd_key| {
+            hd_key
+                .derive_priv(
+                    &Secp256k1::new(),
+                    &vec![
+                        ChildNumber::from_hardened_idx(44).unwrap(),
+                        ChildNumber::from_hardened_idx(1).unwrap(),
+                        ChildNumber::from_hardened_idx(0).unwrap(),
+                        ChildNumber::from_normal_idx(0).unwrap(),
+                        ChildNumber::from_normal_idx(0).unwrap(),
+                    ],
+                )
+                .unwrap()
+                .private_key
+                .key
+        })
+        .collect::<Vec<_>>();
 
     let envfile_path = PathBuf::from(ENV_FILE_PATH);
     std::fs::File::create(envfile_path.clone())
@@ -129,6 +149,18 @@ fn start_all() -> Result<
         .map(Arc::new)?;
     println!("✓");
 
+    runtime.spawn(
+        Interval::new_interval(Duration::from_secs(2))
+            .map_err(|_| ())
+            .for_each({
+                let bitcoin_node = bitcoin_node.clone();
+                move |_| {
+                    let _ = bitcoin_node.node_image.rpc_client.generate(1, None);
+                    Ok(())
+                }
+            }),
+    );
+
     print_progress!("Starting Ethereum node");
     let ethereum_node = runtime
         .block_on(ethereum_node)
@@ -149,7 +181,7 @@ fn start_all() -> Result<
     for (i, hd_key) in bitcoin_hd_keys.iter().enumerate() {
         envfile.update(
             format!("BITCOIN_HD_KEY_{}", i).as_str(),
-            hex::encode(&hd_key.serialize()).as_str(),
+            format!("{}", hd_key).as_str(),
         );
     }
 
@@ -198,20 +230,12 @@ fn start_all() -> Result<
 
 #[derive(Debug)]
 enum Error {
-    HdKey(hdwallet::error::Error),
     BitcoinFunding(bitcoincore_rpc::Error),
     EtherFunding(web3::Error),
     Docker(shiplift::Error),
     CreateDir(std::io::Error),
     WriteConfig(std::io::Error),
     Unimplemented,
-}
-
-fn derive_key(hd_key: &ExtendedPrivKey) -> Result<SecretKey, Error> {
-    Ok(hd_key
-        .derive_private_key(KeyIndex::Normal(0))
-        .map_err(Error::HdKey)?
-        .private_key)
 }
 
 fn start_bitcoin_node(
@@ -223,7 +247,10 @@ fn start_bitcoin_node(
         .and_then(move |node| {
             stream::iter_ok(secret_keys).fold(node, |node, key| {
                 node.node_image
-                    .fund(bitcoin::derive_address(key), Amount::from_sat(100_000_000))
+                    .fund(
+                        bitcoin::derive_address(key),
+                        Amount::from_sat(1_000_000_000),
+                    )
                     .map_err(Error::BitcoinFunding)
                     .map(|_| node)
             })
@@ -346,17 +373,9 @@ fn start_cnds(envfile_path: &PathBuf) -> impl Future<Item = Vec<Node<Cnd>>, Erro
 }
 
 fn temp_folder() -> PathBuf {
-    let rng = thread_rng();
-    let folder_name: String = rng.sample_iter(Alphanumeric).take(7).collect();
-    // Default $TMPDIR in Mac OS is under /var/folders/
-    // However this is not a "shared path" by default for Docker
-    // (see Docker > Preferences)
-    #[cfg(target_os = "macos")]
-    let mut config_folder: PathBuf = "/tmp/create-comit-app".parse().expect("Infaillible");
-    #[cfg(not(target_os = "macos"))]
-    let mut config_folder = std::env::temp_dir();
-    config_folder.push(folder_name);
-    config_folder
+    tempfile::tempdir_in("/tmp/create-comit-app")
+        .unwrap()
+        .into_path()
 }
 
 fn handle_signal() -> impl Future<Item = (), Error = ()> {
