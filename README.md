@@ -28,4 +28,4 @@ Swedish style, build it yourself.
    - `cd my-cool-app`,
    - Install dependencies: `yarn install` (or `npm install`),
    - Run the [hello-swap](https://github.com/comit-network/hello-swap/) example: `yarn start` (or `npm start`),
-   - CTRL-C once the swap is done.
+   - Hit `CTRL-C` once the swap is done.
