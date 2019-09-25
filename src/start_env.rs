@@ -1,10 +1,10 @@
 use crate::docker::bitcoin::{self, BitcoinNode};
-use crate::docker::btsieve::Btsieve;
 use crate::docker::ethereum::{self, EthereumNode};
+use crate::docker::Btsieve;
+use crate::docker::Cnd;
 use crate::docker::{create_network, delete_network, BlockchainImage, Node};
 use crate::executable::btsieve::{self};
-use crate::executable::cnd::{self, Cnd};
-use crate::executable::Executable;
+use crate::executable::cnd::{self};
 use envfile::EnvFile;
 use futures;
 use futures::stream;
@@ -24,9 +24,6 @@ use std::thread::sleep;
 use std::time::Duration;
 use tokio::runtime::Runtime;
 use web3::types::U256;
-
-const HTTP_PORT_BTSIEVE: &str = "HTTP_PORT_BTSIEVE";
-const HTTP_PORT_CND: &str = "HTTP_PORT_CND";
 
 // TODO: Ensure that the .env file can only be written to by only one process at a time
 // TODO: Proper error handling in particular to allow for cleanup of state after a runtime error
@@ -75,6 +72,10 @@ pub fn start_env() {
 
     let btsieves = start_btsieves(&envfile_path).map_err(|e| {
         eprintln!("Issue starting btsieves: {:?}", e);
+    });
+
+    let cnds = start_cnds(&envfile_path).map_err(|e| {
+        eprintln!("Issue starting cnds: {:?}", e);
     });
 
     let mut runtime = Runtime::new().unwrap();
@@ -200,9 +201,27 @@ pub fn start_env() {
         .unwrap();
     println!("✓");
 
-    //    print_progress!("Starting two cnds");
-    //    start_cnds(&mut runtime, &mut envfile);
-    //    println!("✓");
+    print_progress!("Starting two cnds");
+    let cnds = runtime
+        .block_on(cnds)
+        .map_err({
+            let envfile_path = envfile_path.clone();
+            let bitcoin_node = bitcoin_node.clone();
+            let ethereum_node = ethereum_node.clone();
+
+            |e| {
+                eprintln!("Could not start cnds, cleaning up...\n{:?}", e);
+                clean_up(
+                    &mut runtime,
+                    envfile_path,
+                    Some(bitcoin_node),
+                    Some(ethereum_node),
+                );
+            }
+        })
+        .map(Arc::new)
+        .unwrap();
+    println!("✓");
 
     println!("🎉 Environment is ready, time to create a COMIT app!");
     handle_signal(
@@ -282,19 +301,7 @@ fn start_btsieves(envfile_path: &PathBuf) -> impl Future<Item = Vec<Node<Btsieve
         ..Default::default()
     };
 
-    let rng = thread_rng();
-    let folder_name: String = rng.sample_iter(Alphanumeric).take(7).collect();
-
-    // Default $TMPDIR in Mac OS is under /var/folders/
-    // However this is not a "shared path" by default for Docker
-    // (see Docker > Preferences)
-    #[cfg(target_os = "macos")]
-    let mut config_folder = PathBuf::from_str("/tmp/create-comit-app").expect("Infaillible");
-    #[cfg(not(target_os = "macos"))]
-    let mut config_folder = std::env::temp_dir();
-
-    config_folder.push(folder_name);
-
+    let config_folder = temp_folder();
     let config_file = config_folder.clone().join("btsieve.toml");
 
     let settings = toml::to_string(&settings).expect("could not serialize settings");
@@ -325,39 +332,67 @@ fn start_btsieves(envfile_path: &PathBuf) -> impl Future<Item = Vec<Node<Btsieve
         })
 }
 
-fn start_cnds(runtime: &mut Runtime, envfile: &mut EnvFile) {
-    for i in 0..2 {
-        let btsieve_port = envfile
-            .get(format!("{}_{}", HTTP_PORT_BTSIEVE, i).as_str())
-            .expect("could not find var in envfile");
-        let btsieve_url = format!("http://localhost:{}", btsieve_port);
+fn start_cnds(envfile_path: &PathBuf) -> impl Future<Item = Vec<Node<Cnd>>, Error = Error> {
+    stream::iter_ok(vec![0, 1])
+        .and_then({
+            let envfile_path = envfile_path.clone();
 
-        let settings = cnd::Settings {
-            btsieve: cnd::Btsieve {
-                url: btsieve_url,
-                ..Default::default()
-            },
-            ..Default::default()
-        };
+            move |i| {
+                let config_folder = temp_folder();
 
-        envfile
-            .update(
-                format!("{}_{}", HTTP_PORT_CND, i).as_str(),
-                &settings.http_api.port.to_string(),
-            )
-            .write()
-            .unwrap();
+                tokio::fs::create_dir_all(config_folder.clone())
+                    .map_err(Error::CreateDir)
+                    .and_then({
+                        let config_folder = config_folder.clone();
 
-        let cnd = Executable::start::<Cnd, _>(settings);
+                        move |_| {
+                            let settings = cnd::Settings {
+                                btsieve: cnd::Btsieve {
+                                    url: format!("http://btsieve_{}:8080", i),
+                                    ..Default::default()
+                                },
+                                ..Default::default()
+                            };
 
-        // May be better for cnd to be a future which spawns a process,
-        // waits for a second and then returns
-        runtime.spawn(cnd.future);
+                            let config_file = config_folder.join("cnd.toml");
+                            let settings =
+                                toml::to_string(&settings).expect("could not serialize settings");
 
-        // TODO: Should wait until cnd logs
-        // "Starting HTTP server on V4(0.0.0.0:8000)" instead
-        std::thread::sleep(std::time::Duration::from_millis(1000));
-    }
+                            tokio::fs::write(config_file, settings).map_err(Error::WriteConfig)
+                        }
+                    })
+                    .and_then({
+                        let config_folder = config_folder.clone();
+                        let envfile_path = envfile_path.clone();
+
+                        move |_| {
+                            let volume = format!("{}:/config", config_folder.to_str().unwrap());
+
+                            Node::<Cnd>::start_with_volume(
+                                envfile_path.to_path_buf(),
+                                format!("cnd_{}", i).as_str(),
+                                &volume,
+                            )
+                            .map_err(Error::Docker)
+                        }
+                    })
+            }
+        })
+        .collect()
+}
+
+fn temp_folder() -> PathBuf {
+    let rng = thread_rng();
+    let folder_name: String = rng.sample_iter(Alphanumeric).take(7).collect();
+    // Default $TMPDIR in Mac OS is under /var/folders/
+    // However this is not a "shared path" by default for Docker
+    // (see Docker > Preferences)
+    #[cfg(target_os = "macos")]
+    let mut config_folder = PathBuf::from_str("/tmp/create-comit-app").expect("Infaillible");
+    #[cfg(not(target_os = "macos"))]
+    let mut config_folder = std::env::temp_dir();
+    config_folder.push(folder_name);
+    config_folder
 }
 
 fn handle_signal(

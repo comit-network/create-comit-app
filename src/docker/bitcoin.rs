@@ -54,7 +54,11 @@ impl Image for BitcoinNode {
         ]
     }
 
-    fn new(endpoint: String) -> Self {
+    fn new(endpoint: Option<String>) -> Self {
+        let endpoint: String = endpoint.unwrap_or_else(|| {
+            panic!("Internal Error: Url for bitcoin client should have been set.");
+        });
+
         let rpc_client = bitcoincore_rpc::Client::new(
             endpoint.clone(),
             bitcoincore_rpc::Auth::UserPass(Self::USERNAME.to_string(), Self::PASSWORD.to_string()),

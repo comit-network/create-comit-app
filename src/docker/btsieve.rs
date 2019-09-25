@@ -14,7 +14,7 @@ impl Image for Btsieve {
         vec![]
     }
 
-    fn new(_: String) -> Self {
+    fn new(_: Option<String>) -> Self {
         Self
     }
     fn post_start_actions(&self) {}

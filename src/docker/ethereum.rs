@@ -38,7 +38,10 @@ impl Image for EthereumNode {
         }]
     }
 
-    fn new(endpoint: String) -> Self {
+    fn new(endpoint: Option<String>) -> Self {
+        let endpoint: String = endpoint.unwrap_or_else(|| {
+            panic!("Internal Error: Url for web3 client should have been set.");
+        });
         let (_event_loop, transport) = Http::new(&endpoint).unwrap();
         let http_client = Web3::new(transport);
         Self {

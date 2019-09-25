@@ -9,7 +9,10 @@ use std::path::PathBuf;
 
 pub mod bitcoin;
 pub mod btsieve;
+pub mod cnd;
 pub mod ethereum;
+
+pub use self::{btsieve::Btsieve, cnd::Cnd};
 
 pub const DOCKER_NETWORK: &str = "create-comit-app";
 
@@ -26,7 +29,8 @@ pub trait Image {
 
     fn arguments_for_create() -> Vec<&'static str>;
     fn expose_ports() -> Vec<ExposedPorts>;
-    fn new(endpoint: String) -> Self;
+    // TODO: Need to rethink that, probably blockchain specific. Need to remove option
+    fn new(endpoint: Option<String>) -> Self;
     fn post_start_actions(&self);
 }
 
@@ -118,7 +122,7 @@ impl<I: Image> Node<I> {
 
     fn write_env_file(
         create_options: &mut ContainerOptionsBuilder,
-    ) -> (Vec<(String, String)>, String, ContainerOptions) {
+    ) -> (Vec<(String, String)>, Option<String>, ContainerOptions) {
         let mut to_write_in_env: Vec<(String, String)> = vec![];
         let mut http_url: Option<String> = None;
         for expose_port in I::expose_ports() {
@@ -133,9 +137,6 @@ impl<I: Image> Node<I> {
 
             to_write_in_env.push((expose_port.env_file_key, value));
         }
-        let http_url: String = http_url.unwrap_or_else(|| {
-            panic!("Internal Error: Url for client should have been set.");
-        });
         let create_options = create_options.build();
         (to_write_in_env, http_url, create_options)
     }
@@ -143,7 +144,7 @@ impl<I: Image> Node<I> {
     fn start_container(
         envfile_path: PathBuf,
         create_options: ContainerOptions,
-        client_endpoint: String,
+        client_endpoint: Option<String>,
         to_write_in_env: Vec<(String, String)>,
     ) -> impl Future<Item = Self, Error = shiplift::errors::Error> {
         Docker::new()

@@ -6,6 +6,8 @@ use tempfile;
 use tempfile::TempPath;
 use tokio_process::CommandExt;
 
+// TODO: Delete unuse code and rename crate "settings"
+
 pub mod btsieve;
 pub mod cnd;
 
