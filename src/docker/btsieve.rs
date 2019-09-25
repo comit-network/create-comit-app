@@ -17,5 +17,6 @@ impl Image for Btsieve {
     fn new(_: Option<String>) -> Self {
         Self
     }
+
     fn post_start_actions(&self) {}
 }

@@ -24,5 +24,6 @@ impl Image for Cnd {
     fn new(_: Option<String>) -> Self {
         Self
     }
+
     fn post_start_actions(&self) {}
 }
