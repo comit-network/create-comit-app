@@ -8,6 +8,6 @@ fn main() {
 
     match create_comit_app {
         CreateComitApp::StartEnv => start_env(),
-        CreateComitApp::New => new(),
+        CreateComitApp::New { name } => new(name),
     }
 }
