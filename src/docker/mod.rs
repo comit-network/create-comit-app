@@ -7,11 +7,11 @@ use shiplift::{
 };
 use std::path::PathBuf;
 
-pub mod bitcoin;
+pub mod blockchain;
 pub mod btsieve;
 pub mod cnd;
-pub mod ethereum;
 
+pub use self::blockchain::{bitcoin, ethereum};
 pub use self::{btsieve::Btsieve, cnd::Cnd};
 
 pub const DOCKER_NETWORK: &str = "create-comit-app";
@@ -32,19 +32,6 @@ pub trait Image {
     // TODO: Need to rethink that, probably blockchain specific. Need to remove option
     fn new(endpoint: Option<String>) -> Self;
     fn post_start_actions(&self);
-}
-
-pub trait BlockchainImage: Image {
-    type Address;
-    type Amount;
-    type TxId;
-    type ClientError;
-
-    fn fund(
-        &self,
-        address: Self::Address,
-        value: Self::Amount,
-    ) -> Box<dyn Future<Item = Self::TxId, Error = Self::ClientError> + Send + Sync>;
 }
 
 pub struct Node<I: Image> {

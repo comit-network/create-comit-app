@@ -4,7 +4,7 @@ use crate::docker::bitcoin::{self, BitcoinNode};
 use crate::docker::ethereum::{self, EthereumNode};
 use crate::docker::Btsieve;
 use crate::docker::Cnd;
-use crate::docker::{create_network, delete_network, BlockchainImage, Node};
+use crate::docker::{blockchain::BlockchainImage, create_network, delete_network, Node};
 use envfile::EnvFile;
 use futures;
 use futures::stream;

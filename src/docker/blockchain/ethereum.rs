@@ -1,4 +1,4 @@
-use crate::docker::{BlockchainImage, ExposedPorts, Image};
+use crate::docker::{blockchain::BlockchainImage, ExposedPorts, Image};
 use tiny_keccak;
 use web3::transports::EventLoopHandle;
 use web3::{

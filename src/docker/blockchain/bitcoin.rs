@@ -1,4 +1,4 @@
-use crate::docker::{BlockchainImage, ExposedPorts, Image};
+use crate::docker::{blockchain::BlockchainImage, ExposedPorts, Image};
 use bitcoincore_rpc::RpcApi;
 use futures::future::Future;
 use futures::IntoFuture;
@@ -113,7 +113,6 @@ fn derive_p2wpkh_regtest_address(public_key: secp256k1::PublicKey) -> Address {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::docker::BlockchainImage;
     use crate::docker::Node;
     use envfile::EnvFile;
     use rust_bitcoin::{Address, TxOut};
