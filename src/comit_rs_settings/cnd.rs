@@ -44,7 +44,7 @@ pub struct PollParameters {
 impl Default for Comit {
     fn default() -> Comit {
         let mut secret_seed = [0u8; 32];
-        rand::thread_rng().fill(&mut secret_seed);
+        rand::thread_rng().fill_bytes(&mut secret_seed);
 
         Comit { secret_seed }
     }
