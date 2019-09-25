@@ -6,9 +6,6 @@ before_script:
   - rustup component add clippy
   - which cargo-tomlfmt || cargo install cargo-tomlfmt
   - which sccache || cargo install sccache
-  - export COMIT_VERSION=$(cat ./comit-rs_version)
-  - wget https://github.com/comit-network/comit-rs/releases/download/${COMIT_VERSION}/comit-rs_${COMIT_VERSION}_Linux_x86_64.tar.gz
-  - tar xavf comit-rs_${COMIT_VERSION}_Linux_x86_64.tar.gz -C ${HOME}/bin
 script:
   - ./.githooks/pre-commit
   - RUSTC_WRAPPER=~/.cargo/bin/sccache cargo build --all-targets
