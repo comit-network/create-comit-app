@@ -2,9 +2,9 @@ use crate::comit_rs_settings::btsieve::{self};
 use crate::comit_rs_settings::cnd::{self};
 use crate::docker::bitcoin::{self, BitcoinNode};
 use crate::docker::ethereum::{self, EthereumNode};
-use crate::docker::Btsieve;
 use crate::docker::Cnd;
 use crate::docker::{blockchain::BlockchainImage, create_network, delete_network, Node};
+use crate::docker::{delete_container, Btsieve};
 use envfile::EnvFile;
 use futures;
 use futures::stream;
@@ -30,6 +30,8 @@ use web3::types::U256;
 // TODO: Improve logs
 // TODO: Refactor to reduce code duplication
 
+const ENV_FILE_PATH: &str = ".env";
+
 macro_rules! print_progress {
     ($($arg:tt)*) => ({
         print!($($arg)*);
@@ -42,22 +44,33 @@ pub fn start_env() {
     let mut runtime = Runtime::new().expect("Could not get runtime");
 
     match start_all() {
-        Ok(_) => runtime
-            .block_on(handle_signal())
-            .expect("Handle signal failed"),
+        Ok(_) => {
+            runtime
+                .block_on(handle_signal())
+                .expect("Handle signal failed");
+            println!("✓");
+        }
         Err(err) => {
-            eprint!("❗️Error encountered, cleaning up..");
-            std::io::stderr()
-                .flush()
-                .ok()
-                .expect("Could not flush stderr");
+            eprintln!("❗️Error encountered: {:?}]", err);
+            std::io::stderr().flush().expect("Could not flush stderr");
 
+            print_progress!("🧹 Cleaning up");
             runtime.block_on(clean_up()).expect("Clean up failed");
+            println!("✓");
         }
     }
 }
 
-fn start_all() -> Result<(), Error> {
+fn start_all() -> Result<
+    (
+        String,
+        Arc<Node<BitcoinNode>>,
+        Arc<Node<EthereumNode>>,
+        Arc<Vec<Node<Cnd>>>,
+        Arc<Vec<Node<Btsieve>>>,
+    ),
+    Error,
+> {
     let mut bitcoin_hd_keys = vec![];
     let mut ethereum_hd_keys = vec![];
     for _ in 0..2 {
@@ -75,8 +88,9 @@ fn start_all() -> Result<(), Error> {
         ethereum_priv_keys.push(derive_key(hd_key).expect("Could not derive keys"));
     }
 
-    let envfile_path = PathBuf::from(".env");
-    std::fs::File::create(envfile_path.clone()).expect("Could not create .env file");
+    let envfile_path = PathBuf::from(ENV_FILE_PATH);
+    std::fs::File::create(envfile_path.clone())
+        .unwrap_or_else(|_| panic!("Could not create {} file", ENV_FILE_PATH));
 
     let docker_network_create = create_network();
 
@@ -125,9 +139,12 @@ fn start_all() -> Result<(), Error> {
         .map(Arc::new)?;
     println!("✓");
 
-    print_progress!("Writing configuration in `.env` file");
+    print_progress!("Writing configuration in `{}` file", ENV_FILE_PATH);
     let mut envfile = EnvFile::new(envfile_path.clone()).map_err(|e| {
-        eprintln!("Could not read .env file, aborting...\n{:?}", e);
+        eprintln!(
+            "Could not read {} file, aborting...\n{:?}",
+            ENV_FILE_PATH, e
+        );
     })?;
 
     for (i, hd_key) in bitcoin_hd_keys.iter().enumerate() {
@@ -145,7 +162,10 @@ fn start_all() -> Result<(), Error> {
     }
 
     envfile.write().map_err(|e| {
-        eprintln!("Could not write .env file, aborting...\n{:?}", e);
+        eprintln!(
+            "Could not write {} file, aborting...\n{:?}",
+            ENV_FILE_PATH, e
+        );
     })?;
     println!("✓");
 
@@ -168,7 +188,13 @@ fn start_all() -> Result<(), Error> {
     println!("✓");
 
     println!("🎉 Environment is ready, time to create a COMIT app!");
-    Ok(())
+    Ok((
+        docker_network_id,
+        bitcoin_node,
+        ethereum_node,
+        cnds,
+        btsieves,
+    ))
 }
 
 #[derive(Debug)]
@@ -342,15 +368,33 @@ fn handle_signal() -> impl Future<Item = (), Error = ()> {
         .expect("Could not register SIGINT");
     signal_hook::flag::register(signal_hook::SIGQUIT, Arc::clone(&terminate))
         .expect("Could not register SIGQUIT");
+    // TODO: Probably need to make this async
     while !terminate.load(Ordering::Relaxed) {
         sleep(Duration::from_millis(50))
     }
     println!("Signal received, terminating...");
+    print_progress!("🧹 Cleaning up");
     clean_up()
 }
 
 fn clean_up() -> impl Future<Item = (), Error = ()> {
-    futures::future::ok(())
+    // TODO Delete temp folders used for docker volumes
+    tokio::fs::remove_file(ENV_FILE_PATH)
+        .then(|_| {
+            delete_container("bitcoin")
+                .then(|_| delete_container("ethereum"))
+                .then(|_| {
+                    stream::iter_ok(vec![0, 1])
+                        .and_then(move |i| {
+                            delete_container(format!("cnd_{}", i).as_str())
+                                .then(move |_| delete_container(format!("btsieve_{}", i).as_str()))
+                        })
+                        .collect()
+                })
+                .then(|_| delete_network())
+                .map_err(|_| ())
+        })
+        .map_err(|_| ())
 }
 
 // TODO: Use proper conversion

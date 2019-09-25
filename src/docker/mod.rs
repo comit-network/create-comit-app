@@ -200,19 +200,6 @@ impl<I: Image> Node<I> {
                 }
             })
     }
-
-    pub fn stop_remove(&self) -> impl Future<Item = (), Error = ()> {
-        Docker::new()
-            .containers()
-            .get(&self.container_id)
-            .remove(
-                RmContainerOptions::builder()
-                    .force(true)
-                    .volumes(true)
-                    .build(),
-            )
-            .map_err(|_| ())
-    }
 }
 
 impl<I: Image> Drop for Node<I> {
@@ -256,6 +243,15 @@ pub fn create_network() -> impl Future<Item = String, Error = shiplift::Error> {
         })
 }
 
-pub fn delete_network(id: String) -> impl Future<Item = (), Error = shiplift::Error> {
-    Docker::new().networks().get(id.clone().as_str()).delete()
+pub fn delete_network() -> impl Future<Item = (), Error = shiplift::Error> {
+    Docker::new().networks().get(DOCKER_NETWORK).delete()
+}
+
+pub fn delete_container(name: &str) -> impl Future<Item = (), Error = shiplift::Error> {
+    Docker::new().containers().get(name).remove(
+        RmContainerOptions::builder()
+            .force(true)
+            .volumes(true)
+            .build(),
+    )
 }
