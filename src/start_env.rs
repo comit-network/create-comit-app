@@ -39,6 +39,25 @@ macro_rules! print_progress {
 }
 
 pub fn start_env() {
+    let mut runtime = Runtime::new().expect("Could not get runtime");
+
+    match start_all() {
+        Ok(_) => runtime
+            .block_on(handle_signal())
+            .expect("Handle signal failed"),
+        Err(err) => {
+            eprint!("❗️Error encountered, cleaning up..");
+            std::io::stderr()
+                .flush()
+                .ok()
+                .expect("Could not flush stderr");
+
+            runtime.block_on(clean_up()).expect("Clean up failed");
+        }
+    }
+}
+
+fn start_all() -> Result<(), Error> {
     let mut bitcoin_hd_keys = vec![];
     let mut ethereum_hd_keys = vec![];
     for _ in 0..2 {
@@ -78,19 +97,12 @@ pub fn start_env() {
         eprintln!("Issue starting cnds: {:?}", e);
     });
 
-    let mut runtime = Runtime::new().unwrap();
+    let mut runtime = Runtime::new().expect("Could not get runtime");
 
     print_progress!("Creating Docker network (create-comit-app)");
-    let docker_network_id = runtime
-        .block_on(docker_network_create)
-        .map_err({
-            let envfile_path = envfile_path.clone();
-            |e| {
-                eprintln!("Could not create docker network, cleaning up...\n{:?}", e);
-                clean_up(&mut runtime, envfile_path, None, None);
-            }
-        })
-        .unwrap();
+    let docker_network_id = runtime.block_on(docker_network_create).map_err(|e| {
+        eprintln!("Could not create docker network, aborting...\n{:?}", e);
+    })?;
     println!("✓");
 
     // TODO: use await to avoid all these clones
@@ -98,52 +110,25 @@ pub fn start_env() {
     print_progress!("Starting Bitcoin node");
     let bitcoin_node = runtime
         .block_on(bitcoin_node)
-        .map_err({
-            let envfile_path = envfile_path.clone();
-            |e| {
-                eprintln!("Could not start bitcoin node, cleaning up...\n{:?}", e);
-                // TODO: The clean up should also try to delete the bitcoin container if it exists
-                clean_up(&mut runtime, envfile_path, None, None);
-            }
+        .map_err(|e| {
+            eprintln!("Could not start bitcoin node, aborting...\n{:?}", e);
         })
-        .map(Arc::new)
-        .unwrap();
+        .map(Arc::new)?;
     println!("✓");
 
     print_progress!("Starting Ethereum node");
     let ethereum_node = runtime
         .block_on(ethereum_node)
-        .map_err({
-            let envfile_path = envfile_path.clone();
-            let bitcoin_node = bitcoin_node.clone();
-
-            |e| {
-                eprintln!("Could not start Ethereum node, cleaning up...\n{:?}", e);
-                clean_up(&mut runtime, envfile_path, Some(bitcoin_node), None);
-            }
+        .map_err(|e| {
+            eprintln!("Could not start Ethereum node, aborting...\n{:?}", e);
         })
-        .map(Arc::new)
-        .unwrap();
+        .map(Arc::new)?;
     println!("✓");
 
     print_progress!("Writing configuration in `.env` file");
-    let mut envfile = EnvFile::new(envfile_path.clone())
-        .map_err({
-            let envfile_path = envfile_path.clone();
-            let bitcoin_node = bitcoin_node.clone();
-            let ethereum_node = ethereum_node.clone();
-
-            |e| {
-                eprintln!("Could not read .env file, cleaning up...\n{:?}", e);
-                clean_up(
-                    &mut runtime,
-                    envfile_path,
-                    Some(bitcoin_node),
-                    Some(ethereum_node),
-                );
-            }
-        })
-        .unwrap();
+    let mut envfile = EnvFile::new(envfile_path.clone()).map_err(|e| {
+        eprintln!("Could not read .env file, aborting...\n{:?}", e);
+    })?;
 
     for (i, hd_key) in bitcoin_hd_keys.iter().enumerate() {
         envfile.update(
@@ -159,78 +144,31 @@ pub fn start_env() {
         );
     }
 
-    envfile
-        .write()
-        .map_err({
-            let envfile_path = envfile_path.clone();
-            let bitcoin_node = bitcoin_node.clone();
-            let ethereum_node = ethereum_node.clone();
-
-            |e| {
-                eprintln!("Could not write .env file, cleaning up...\n{:?}", e);
-                clean_up(
-                    &mut runtime,
-                    envfile_path,
-                    Some(bitcoin_node),
-                    Some(ethereum_node),
-                );
-            }
-        })
-        .unwrap();
+    envfile.write().map_err(|e| {
+        eprintln!("Could not write .env file, aborting...\n{:?}", e);
+    })?;
     println!("✓");
 
     print_progress!("Starting two btsieves");
     let btsieves = runtime
         .block_on(btsieves)
-        .map_err({
-            let envfile_path = envfile_path.clone();
-            let bitcoin_node = bitcoin_node.clone();
-            let ethereum_node = ethereum_node.clone();
-
-            |e| {
-                eprintln!("Could not start btsieves, cleaning up...\n{:?}", e);
-                clean_up(
-                    &mut runtime,
-                    envfile_path,
-                    Some(bitcoin_node),
-                    Some(ethereum_node),
-                );
-            }
+        .map_err(|e| {
+            eprintln!("Could not start btsieves, aborting...\n{:?}", e);
         })
-        .map(Arc::new)
-        .unwrap();
+        .map(Arc::new)?;
     println!("✓");
 
     print_progress!("Starting two cnds");
     let cnds = runtime
         .block_on(cnds)
-        .map_err({
-            let envfile_path = envfile_path.clone();
-            let bitcoin_node = bitcoin_node.clone();
-            let ethereum_node = ethereum_node.clone();
-
-            |e| {
-                eprintln!("Could not start cnds, cleaning up...\n{:?}", e);
-                clean_up(
-                    &mut runtime,
-                    envfile_path,
-                    Some(bitcoin_node),
-                    Some(ethereum_node),
-                );
-            }
+        .map_err(|e| {
+            eprintln!("Could not start cnds, cleaning up...\n{:?}", e);
         })
-        .map(Arc::new)
-        .unwrap();
+        .map(Arc::new)?;
     println!("✓");
 
     println!("🎉 Environment is ready, time to create a COMIT app!");
-    handle_signal(
-        &mut runtime,
-        envfile_path,
-        bitcoin_node,
-        ethereum_node,
-        docker_network_id,
-    );
+    Ok(())
 }
 
 #[derive(Debug)]
@@ -241,6 +179,7 @@ enum Error {
     Docker(shiplift::Error),
     CreateDir(std::io::Error),
     WriteConfig(std::io::Error),
+    Unimplemented,
 }
 
 fn derive_key(hd_key: &ExtendedPrivKey) -> Result<SecretKey, Error> {
@@ -395,13 +334,7 @@ fn temp_folder() -> PathBuf {
     config_folder
 }
 
-fn handle_signal(
-    runtime: &mut Runtime,
-    envfile_path: PathBuf,
-    bitcoin_node: Arc<Node<BitcoinNode>>,
-    ethereum_node: Arc<Node<EthereumNode>>,
-    docker_network_id: String,
-) {
+fn handle_signal() -> impl Future<Item = (), Error = ()> {
     let terminate = Arc::new(AtomicBool::new(false));
     signal_hook::flag::register(signal_hook::SIGTERM, Arc::clone(&terminate))
         .expect("Could not register SIGTERM");
@@ -413,38 +346,16 @@ fn handle_signal(
         sleep(Duration::from_millis(50))
     }
     println!("Signal received, terminating...");
-    clean_up(
-        runtime,
-        envfile_path,
-        Some(bitcoin_node),
-        Some(ethereum_node),
-    );
-    clean_up_docker_network(runtime, docker_network_id)
+    clean_up()
 }
 
-// TODO: Split this method, return futures
-fn clean_up(
-    runtime: &mut Runtime,
-    envfile_path: PathBuf,
-    bitcoin_node: Option<Arc<Node<BitcoinNode>>>,
-    ethereum_node: Option<Arc<Node<EthereumNode>>>,
-) {
-    if let Some(bitcoin_node) = bitcoin_node {
-        let _ = runtime
-            .block_on(bitcoin_node.stop_remove())
-            .map_err(|e| eprintln!("Runtime could not run bitcoin docker terminate: {:?}", e));
-    };
-    if let Some(ethereum_node) = ethereum_node {
-        let _ = runtime
-            .block_on(ethereum_node.stop_remove())
-            .map_err(|e| eprintln!("Runtime could not run ethereum docker terminate: {:?}", e));
-    };
-    let _ = std::fs::remove_file(envfile_path)
-        .map_err(|e| eprintln!("Could not remove .env file: {:?}", e));
+fn clean_up() -> impl Future<Item = (), Error = ()> {
+    futures::future::ok(())
 }
 
-fn clean_up_docker_network(runtime: &mut Runtime, id: String) {
-    let _ = runtime
-        .block_on(delete_network(id))
-        .map_err(|e| eprintln!("Runtime could not delete docker network: {:?}", e));
+// TODO: Use proper conversion
+impl From<()> for Error {
+    fn from(_: ()) -> Self {
+        Error::Unimplemented
+    }
 }
