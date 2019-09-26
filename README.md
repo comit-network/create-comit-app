@@ -23,9 +23,10 @@ Swedish style, build it yourself.
 ## Profit!
 
 1. Create a new COMIT app project: `create-comit-app new my-cool-app`,
-2. Start local blockchain nodes & COMIT nodes: `create-comit-app start-env`,
-3. Open a new terminal:
-   - `cd my-cool-app`,
+2. `cd my-cool-app`.
+3. Start local blockchain nodes & COMIT nodes: `create-comit-app start-env`,
+4. Open a new terminal:
+   - `cd <path-to-my-cool-app>`,
    - Install dependencies: `yarn install` (or `npm install`),
    - Run the [hello-swap](https://github.com/comit-network/hello-swap/) example: `yarn start` (or `npm start`),
    - Hit `CTRL-C` once the swap is done.
