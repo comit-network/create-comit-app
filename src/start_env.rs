@@ -377,7 +377,11 @@ fn start_cnds(envfile_path: &PathBuf) -> impl Future<Item = Vec<Node<Cnd>>, Erro
 }
 
 fn temp_folder() -> PathBuf {
-    tempfile::tempdir_in("/tmp").unwrap().into_path()
+    let path = "/tmp/create-comit-app";
+
+    std::fs::create_dir_all(path)
+        .unwrap_or_else(|e| panic!("Could not create directory inside {}: {}", path, e));
+    tempfile::tempdir_in(&path).unwrap().into_path()
 }
 
 fn handle_signal() -> impl Future<Item = (), Error = ()> {
