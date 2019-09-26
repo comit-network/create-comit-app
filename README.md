@@ -23,8 +23,8 @@ Swedish style, build it yourself.
 ## Profit!
 
 1. Create a new COMIT app project: `create-comit-app new my-cool-app`,
-2. `cd my-cool-app`.
-3. Start local blockchain nodes & COMIT nodes: `create-comit-app start-env`,
+2. `cd my-cool-app`,
+3. Start local blockchain nodes & COMIT nodes: `../create-comit-app start-env`,
 4. Open a new terminal:
    - `cd <path-to-my-cool-app>`,
    - Install dependencies: `yarn install` (or `npm install`),
