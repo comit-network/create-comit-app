@@ -204,7 +204,7 @@ fn start_all() -> Result<Services, Error> {
     })?;
     println!("✓");
 
-    print_progress!("Starting two btsieves");
+    print_progress!("Starting two btsieve nodes");
     let btsieves = runtime
         .block_on(btsieves)
         .map_err(|e| {
@@ -213,7 +213,7 @@ fn start_all() -> Result<Services, Error> {
         .map(Arc::new)?;
     println!("✓");
 
-    print_progress!("Starting two cnds");
+    print_progress!("Starting two cnd nodes");
     let cnds = runtime
         .block_on(cnds)
         .map_err(|e| {
