@@ -44,7 +44,9 @@ pub fn start_env() {
     let mut runtime = Runtime::new().expect("Could not get runtime");
 
     match start_all() {
-        Ok(_) => {
+        Ok(Services { bitcoin_node, .. }) => {
+            runtime.spawn(bitcoin_generate_blocks(bitcoin_node.clone()));
+
             runtime
                 .block_on(handle_signal())
                 .expect("Handle signal failed");
@@ -61,16 +63,30 @@ pub fn start_env() {
     }
 }
 
-fn start_all() -> Result<
-    (
-        String,
-        Arc<Node<BitcoinNode>>,
-        Arc<Node<EthereumNode>>,
-        Arc<Vec<Node<Cnd>>>,
-        Arc<Vec<Node<Btsieve>>>,
-    ),
-    Error,
-> {
+fn bitcoin_generate_blocks(
+    bitcoin_node: Arc<Node<BitcoinNode>>,
+) -> impl Future<Item = (), Error = ()> {
+    Interval::new_interval(Duration::from_secs(2))
+        .map_err(|_| eprintln!("Issue getting an interval."))
+        .for_each({
+            let bitcoin_node = bitcoin_node.clone();
+            move |_| {
+                let _ = bitcoin_node.node_image.rpc_client.generate(1, None);
+                Ok(())
+            }
+        })
+}
+
+#[allow(dead_code)]
+struct Services {
+    docker_network_id: String,
+    bitcoin_node: Arc<Node<BitcoinNode>>,
+    ethereum_node: Arc<Node<EthereumNode>>,
+    cnds: Arc<Vec<Node<Cnd>>>,
+    btsieves: Arc<Vec<Node<Btsieve>>>,
+}
+
+fn start_all() -> Result<Services, Error> {
     let mut bitcoin_hd_keys = vec![];
     let mut ethereum_priv_keys = vec![];
 
@@ -149,18 +165,6 @@ fn start_all() -> Result<
         .map(Arc::new)?;
     println!("✓");
 
-    runtime.spawn(
-        Interval::new_interval(Duration::from_secs(2))
-            .map_err(|_| ())
-            .for_each({
-                let bitcoin_node = bitcoin_node.clone();
-                move |_| {
-                    let _ = bitcoin_node.node_image.rpc_client.generate(1, None);
-                    Ok(())
-                }
-            }),
-    );
-
     print_progress!("Starting Ethereum node");
     let ethereum_node = runtime
         .block_on(ethereum_node)
@@ -219,13 +223,13 @@ fn start_all() -> Result<
     println!("✓");
 
     println!("🎉 Environment is ready, time to create a COMIT app!");
-    Ok((
+    Ok(Services {
         docker_network_id,
         bitcoin_node,
         ethereum_node,
         cnds,
         btsieves,
-    ))
+    })
 }
 
 #[derive(Debug)]

@@ -28,7 +28,7 @@ pub trait Image {
     const LOG_READY: &'static str;
 
     fn arguments_for_create() -> Vec<&'static str>;
-    fn expose_ports() -> Vec<ExposedPorts>;
+    fn expose_ports(name: &str) -> Vec<ExposedPorts>;
     // TODO: Need to rethink that, probably blockchain specific. Need to remove option
     fn new(endpoint: Option<String>) -> Self;
     fn post_start_actions(&self);
@@ -55,7 +55,7 @@ impl<I: Image> Node<I> {
         create_options.cmd(I::arguments_for_create());
 
         let (to_write_in_env, client_endpoint, create_options) =
-            <Node<I>>::write_env_file(&mut create_options);
+            <Node<I>>::write_env_file(&name, &mut create_options);
 
         Docker::new()
             .images()
@@ -87,7 +87,7 @@ impl<I: Image> Node<I> {
         create_options.volumes(vec![volume]);
 
         let (to_write_in_env, client_endpoint, create_options) =
-            <Node<I>>::write_env_file(&mut create_options);
+            <Node<I>>::write_env_file(&name, &mut create_options);
 
         Docker::new()
             .images()
@@ -108,11 +108,12 @@ impl<I: Image> Node<I> {
     }
 
     fn write_env_file(
+        name: &str,
         create_options: &mut ContainerOptionsBuilder,
     ) -> (Vec<(String, String)>, Option<String>, ContainerOptions) {
         let mut to_write_in_env: Vec<(String, String)> = vec![];
         let mut http_url: Option<String> = None;
-        for expose_port in I::expose_ports() {
+        for expose_port in I::expose_ports(name) {
             let port: u32 = port_check::free_local_port().unwrap().into();
             create_options.expose(expose_port.srcport, "tcp", port);
 

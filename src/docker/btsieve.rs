@@ -10,7 +10,7 @@ impl Image for Btsieve {
         vec!["--", "btsieve", "--config=/config/btsieve.toml"]
     }
 
-    fn expose_ports() -> Vec<ExposedPorts> {
+    fn expose_ports(_: &str) -> Vec<ExposedPorts> {
         vec![]
     }
 
