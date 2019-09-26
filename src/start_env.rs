@@ -1,5 +1,5 @@
-use crate::comit_rs_settings::btsieve::{self};
-use crate::comit_rs_settings::cnd::{self};
+use crate::comit_rs_settings::btsieve;
+use crate::comit_rs_settings::cnd;
 use crate::docker::bitcoin::{self, BitcoinNode};
 use crate::docker::ethereum::{self, EthereumNode};
 use crate::docker::Cnd;
@@ -377,9 +377,7 @@ fn start_cnds(envfile_path: &PathBuf) -> impl Future<Item = Vec<Node<Cnd>>, Erro
 }
 
 fn temp_folder() -> PathBuf {
-    tempfile::tempdir_in("/tmp/create-comit-app")
-        .unwrap()
-        .into_path()
+    tempfile::tempdir_in("/tmp").unwrap().into_path()
 }
 
 fn handle_signal() -> impl Future<Item = (), Error = ()> {
