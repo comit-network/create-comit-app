@@ -59,7 +59,6 @@ impl<I: Image> Node<I> {
         Docker::new()
             .images()
             .pull(&PullOptions::builder().image(I::IMAGE).build())
-            // TODO: Pretty print progress
             .collect()
             .and_then(move |_| {
                 Self::start_container(
@@ -91,7 +90,6 @@ impl<I: Image> Node<I> {
         Docker::new()
             .images()
             .pull(&PullOptions::builder().image(I::IMAGE).build())
-            // TODO: Pretty print progress
             .collect()
             .and_then(move |_| {
                 Self::start_container(
