@@ -154,8 +154,6 @@ fn start_all() -> Result<Services, Error> {
     })?;
     println!("✓");
 
-    // TODO: use await to avoid all these clones
-
     print_progress!("Starting Bitcoin node");
     let bitcoin_node = runtime
         .block_on(bitcoin_node)
