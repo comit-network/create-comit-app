@@ -68,7 +68,6 @@ impl Image for BitcoinNode {
         Self { rpc_client }
     }
     fn post_start_actions(&self) {
-        // TODO: Properly handle failure
         self.rpc_client.generate(101, None).unwrap();
     }
 }

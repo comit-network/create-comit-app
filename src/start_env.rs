@@ -418,7 +418,6 @@ fn clean_up() -> impl Future<Item = (), Error = ()> {
         .map_err(|_| ())
 }
 
-// TODO: Use proper conversion
 impl From<()> for Error {
     fn from(_: ()) -> Self {
         Error::Unimplemented
