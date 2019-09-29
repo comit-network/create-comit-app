@@ -12,7 +12,6 @@ pub struct BitcoinNode {
 }
 
 impl BitcoinNode {
-    // TODO: use cookie file instead
     const USERNAME: &'static str = "bitcoin";
     const PASSWORD: &'static str = "t68ej4UX2pB0cLlGwSwHFBLKxXYgomkXyFyxuBmm2U8=";
 }
