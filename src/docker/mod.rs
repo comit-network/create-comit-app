@@ -29,7 +29,6 @@ pub trait Image {
 
     fn arguments_for_create() -> Vec<&'static str>;
     fn expose_ports(name: &str) -> Vec<ExposedPorts>;
-    // TODO: Need to rethink that, probably blockchain specific. Need to remove option
     fn new(endpoint: Option<String>) -> Self;
     fn post_start_actions(&self);
 }
