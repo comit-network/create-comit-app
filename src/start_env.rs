@@ -400,7 +400,6 @@ fn handle_signal() -> impl Future<Item = (), Error = ()> {
 }
 
 fn clean_up() -> impl Future<Item = (), Error = ()> {
-    // TODO Delete temp folders used for docker volumes
     tokio::fs::remove_file(ENV_FILE_PATH)
         .then(|_| {
             delete_container("bitcoin")
