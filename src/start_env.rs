@@ -25,7 +25,6 @@ use tokio::runtime::Runtime;
 use tokio::timer::Interval;
 use web3::types::U256;
 
-// TODO: Ensure that the .env file can only be written to by only one process at a time
 // TODO: Proper error handling in particular to allow for cleanup of state after a runtime error
 // TODO: Improve logs
 // TODO: Refactor to reduce code duplication
