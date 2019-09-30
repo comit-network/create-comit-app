@@ -25,7 +25,7 @@ use tokio::runtime::Runtime;
 use tokio::timer::Interval;
 use web3::types::U256;
 
-const ENV_FILE_PATH: &str = ".env";
+mod path;
 
 macro_rules! print_progress {
     ($($arg:tt)*) => ({
@@ -118,26 +118,25 @@ fn start_all() -> Result<Services, Error> {
         })
         .collect::<Vec<_>>();
 
-    let envfile_path = PathBuf::from(ENV_FILE_PATH);
-    std::fs::File::create(envfile_path.clone())
-        .unwrap_or_else(|_| panic!("Could not create {} file", ENV_FILE_PATH));
+    let env_file_path = path::env_file_path();
+    path::create_env_file().unwrap_or_else(|_| panic!("Could not create {:?} file", env_file_path));
 
     let docker_network_create = create_network();
 
-    let bitcoin_node = start_bitcoin_node(&envfile_path, bitcoin_priv_keys).map_err(|e| {
+    let bitcoin_node = start_bitcoin_node(&env_file_path, bitcoin_priv_keys).map_err(|e| {
         eprintln!("Issue starting Bitcoin node: {:?}", e);
     });
 
     let ethereum_node =
-        start_ethereum_node(&envfile_path, ethereum_priv_keys.clone()).map_err(|e| {
+        start_ethereum_node(&env_file_path, ethereum_priv_keys.clone()).map_err(|e| {
             eprintln!("Issue starting Ethereum node: {:?}", e);
         });
 
-    let btsieves = start_btsieves(&envfile_path).map_err(|e| {
+    let btsieves = start_btsieves(&env_file_path).map_err(|e| {
         eprintln!("Issue starting btsieves: {:?}", e);
     });
 
-    let cnds = start_cnds(&envfile_path).map_err(|e| {
+    let cnds = start_cnds(&env_file_path).map_err(|e| {
         eprintln!("Issue starting cnds: {:?}", e);
     });
 
@@ -167,11 +166,12 @@ fn start_all() -> Result<Services, Error> {
         .map(Arc::new)?;
     println!("✓");
 
-    print_progress!("Writing configuration in `{}` file", ENV_FILE_PATH);
-    let mut envfile = EnvFile::new(envfile_path.clone()).map_err(|e| {
+    print_progress!("Writing configuration in env file");
+    let mut envfile = EnvFile::new(env_file_path.clone()).map_err(|e| {
         eprintln!(
             "Could not read {} file, aborting...\n{:?}",
-            ENV_FILE_PATH, e
+            path::env_file_str(),
+            e
         );
     })?;
 
@@ -192,7 +192,8 @@ fn start_all() -> Result<Services, Error> {
     envfile.write().map_err(|e| {
         eprintln!(
             "Could not write {} file, aborting...\n{:?}",
-            ENV_FILE_PATH, e
+            path::env_file_str(),
+            e
         );
     })?;
     println!("✓");
@@ -369,10 +370,15 @@ fn start_cnds(envfile_path: &PathBuf) -> impl Future<Item = Vec<Node<Cnd>>, Erro
 }
 
 fn temp_folder() -> PathBuf {
-    let path = "/tmp/create-comit-app";
+    let path = path::dir_path();
 
-    std::fs::create_dir_all(path)
-        .unwrap_or_else(|e| panic!("Could not create directory inside {}: {}", path, e));
+    std::fs::create_dir_all(&path).unwrap_or_else(|e| {
+        panic!(
+            "Could not create directory inside {}: {}",
+            path::dir_path_str(),
+            e
+        )
+    });
     tempfile::tempdir_in(&path).unwrap().into_path()
 }
 
@@ -394,7 +400,7 @@ fn handle_signal() -> impl Future<Item = (), Error = ()> {
 }
 
 fn clean_up() -> impl Future<Item = (), Error = ()> {
-    tokio::fs::remove_file(ENV_FILE_PATH)
+    tokio::fs::remove_file(path::env_file_path())
         .then(|_| {
             delete_container("bitcoin")
                 .then(|_| delete_container("ethereum"))
