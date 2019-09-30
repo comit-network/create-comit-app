@@ -400,21 +400,18 @@ fn handle_signal() -> impl Future<Item = (), Error = ()> {
 }
 
 fn clean_up() -> impl Future<Item = (), Error = ()> {
-    tokio::fs::remove_file(path::env_file_path())
+    delete_container("bitcoin")
+        .then(|_| delete_container("ethereum"))
         .then(|_| {
-            delete_container("bitcoin")
-                .then(|_| delete_container("ethereum"))
-                .then(|_| {
-                    stream::iter_ok(vec![0, 1])
-                        .and_then(move |i| {
-                            delete_container(format!("cnd_{}", i).as_str())
-                                .then(move |_| delete_container(format!("btsieve_{}", i).as_str()))
-                        })
-                        .collect()
+            stream::iter_ok(vec![0, 1])
+                .and_then(move |i| {
+                    delete_container(format!("cnd_{}", i).as_str())
+                        .then(move |_| delete_container(format!("btsieve_{}", i).as_str()))
                 })
-                .then(|_| delete_network())
-                .map_err(|_| ())
+                .collect()
         })
+        .then(|_| delete_network())
+        .then(|_| std::fs::remove_dir_all(path::dir_path()))
         .map_err(|_| ())
 }
 
