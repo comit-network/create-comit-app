@@ -38,6 +38,11 @@ macro_rules! print_progress {
 pub fn start_env() {
     let mut runtime = Runtime::new().expect("Could not get runtime");
 
+    if path::dir_exist() {
+        eprintln!("It seems that `create-comit-app start-env` is already running.\nIf it is not the case, delete lock directory ~/{} and try again.", path::DIR_NAME);
+        ::std::process::exit(1);
+    }
+
     match start_all() {
         Ok(Services { bitcoin_node, .. }) => {
             runtime.spawn(bitcoin_generate_blocks(bitcoin_node.clone()));

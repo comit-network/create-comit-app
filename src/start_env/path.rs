@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-const DIR_NAME: &str = ".create-comit-app";
+pub const DIR_NAME: &str = ".create-comit-app";
 const ENV_FILE_NAME: &str = "env";
 
 fn home() -> PathBuf {
@@ -41,4 +41,8 @@ pub fn create_env_file() -> Result<(), std::io::Error> {
     std::fs::create_dir_all(dir_path())?;
     std::fs::File::create(env_file_path())?;
     Ok(())
+}
+
+pub fn dir_exist() -> bool {
+    std::fs::read_dir(dir_path()).is_ok()
 }
