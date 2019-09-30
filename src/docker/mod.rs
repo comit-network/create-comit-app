@@ -38,7 +38,6 @@ pub struct Node<I: Image> {
     pub node_image: I,
 }
 
-// TODO: Move all envfile stuff outside
 // TODO: Probably good idea to convert into a builder
 // TODO: Move free_local_port outside
 impl<I: Image> Node<I> {
