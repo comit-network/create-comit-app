@@ -295,7 +295,6 @@ fn start_btsieves(envfile_path: &PathBuf) -> impl Future<Item = Vec<Node<Btsieve
     let settings = toml::to_string(&settings).expect("could not serialize settings");
     let volume = format!("{}:/config", config_folder.clone().to_str().unwrap());
 
-    // TODO: delete folder at clean up
     tokio::fs::create_dir_all(config_folder.clone())
         .map_err(Error::CreateDir)
         .and_then(|_| tokio::fs::write(config_file, settings).map_err(Error::WriteConfig))
