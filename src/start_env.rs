@@ -25,11 +25,6 @@ use tokio::runtime::Runtime;
 use tokio::timer::Interval;
 use web3::types::U256;
 
-// TODO: Ensure that the .env file can only be written to by only one process at a time
-// TODO: Proper error handling in particular to allow for cleanup of state after a runtime error
-// TODO: Improve logs
-// TODO: Refactor to reduce code duplication
-
 const ENV_FILE_PATH: &str = ".env";
 
 macro_rules! print_progress {
@@ -153,8 +148,6 @@ fn start_all() -> Result<Services, Error> {
         eprintln!("Could not create docker network, aborting...\n{:?}", e);
     })?;
     println!("✓");
-
-    // TODO: use await to avoid all these clones
 
     print_progress!("Starting Bitcoin node");
     let bitcoin_node = runtime
@@ -302,7 +295,6 @@ fn start_btsieves(envfile_path: &PathBuf) -> impl Future<Item = Vec<Node<Btsieve
     let settings = toml::to_string(&settings).expect("could not serialize settings");
     let volume = format!("{}:/config", config_folder.clone().to_str().unwrap());
 
-    // TODO: delete folder at clean up
     tokio::fs::create_dir_all(config_folder.clone())
         .map_err(Error::CreateDir)
         .and_then(|_| tokio::fs::write(config_file, settings).map_err(Error::WriteConfig))
@@ -402,7 +394,6 @@ fn handle_signal() -> impl Future<Item = (), Error = ()> {
 }
 
 fn clean_up() -> impl Future<Item = (), Error = ()> {
-    // TODO Delete temp folders used for docker volumes
     tokio::fs::remove_file(ENV_FILE_PATH)
         .then(|_| {
             delete_container("bitcoin")
@@ -421,7 +412,6 @@ fn clean_up() -> impl Future<Item = (), Error = ()> {
         .map_err(|_| ())
 }
 
-// TODO: Use proper conversion
 impl From<()> for Error {
     fn from(_: ()) -> Self {
         Error::Unimplemented

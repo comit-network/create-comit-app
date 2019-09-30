@@ -38,7 +38,6 @@ fn create_initial_commit(repo: Repository) -> Result<(), git2::Error> {
     let commit = repo.commit(Some("HEAD"), &sig, &sig, "Initial commit", &tree, &[])?;
 
     // Otherwise the index is in a weird state after the commit.
-    // TODO: Look into why this is the case
     let obj = repo.find_object(commit, None)?;
     repo.reset(&obj, ResetType::Hard, None)?;
 

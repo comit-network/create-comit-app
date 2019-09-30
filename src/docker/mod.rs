@@ -29,7 +29,6 @@ pub trait Image {
 
     fn arguments_for_create() -> Vec<&'static str>;
     fn expose_ports(name: &str) -> Vec<ExposedPorts>;
-    // TODO: Need to rethink that, probably blockchain specific. Need to remove option
     fn new(endpoint: Option<String>) -> Self;
     fn post_start_actions(&self);
 }
@@ -39,7 +38,6 @@ pub struct Node<I: Image> {
     pub node_image: I,
 }
 
-// TODO: Move all envfile stuff outside
 // TODO: Probably good idea to convert into a builder
 // TODO: Move free_local_port outside
 impl<I: Image> Node<I> {
@@ -60,7 +58,6 @@ impl<I: Image> Node<I> {
         Docker::new()
             .images()
             .pull(&PullOptions::builder().image(I::IMAGE).build())
-            // TODO: Pretty print progress
             .collect()
             .and_then(move |_| {
                 Self::start_container(
@@ -92,7 +89,6 @@ impl<I: Image> Node<I> {
         Docker::new()
             .images()
             .pull(&PullOptions::builder().image(I::IMAGE).build())
-            // TODO: Pretty print progress
             .collect()
             .and_then(move |_| {
                 Self::start_container(
