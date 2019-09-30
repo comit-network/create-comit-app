@@ -25,8 +25,6 @@ use tokio::runtime::Runtime;
 use tokio::timer::Interval;
 use web3::types::U256;
 
-// TODO: Refactor to reduce code duplication
-
 const ENV_FILE_PATH: &str = ".env";
 
 macro_rules! print_progress {
