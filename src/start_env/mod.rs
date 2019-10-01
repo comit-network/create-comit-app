@@ -121,8 +121,7 @@ fn start_all() -> Result<Services, Error> {
         .collect::<Result<Vec<_>, _>>()?;
 
     let env_file_path = temp_fs::env_file_path();
-    temp_fs::create_env_file()
-        .unwrap_or_else(|_| panic!("Could not create {:?} file", env_file_path));
+    temp_fs::create_env_file().map_err(Error::CreateTmpFiles)?;
 
     let docker_network_create = create_network();
 
@@ -234,7 +233,7 @@ enum Error {
     BitcoinFunding(bitcoincore_rpc::Error),
     EtherFunding(web3::Error),
     Docker(shiplift::Error),
-    CreateDir(std::io::Error),
+    CreateTmpFiles(std::io::Error),
     WriteConfig(std::io::Error),
     DeriveKeys(rust_bitcoin::util::bip32::Error),
     Unimplemented,
@@ -301,7 +300,7 @@ fn start_btsieves(envfile_path: &PathBuf) -> impl Future<Item = Vec<Node<Btsieve
     let volume = format!("{}:/config", config_folder.clone().to_str().unwrap());
 
     tokio::fs::create_dir_all(config_folder.clone())
-        .map_err(Error::CreateDir)
+        .map_err(Error::CreateTmpFiles)
         .and_then(|_| tokio::fs::write(config_file, settings).map_err(Error::WriteConfig))
         .and_then({
             let envfile_path = envfile_path.clone();
@@ -333,7 +332,7 @@ fn start_cnds(envfile_path: &PathBuf) -> impl Future<Item = Vec<Node<Cnd>>, Erro
                 let config_folder = temp_folder();
 
                 tokio::fs::create_dir_all(config_folder.clone())
-                    .map_err(Error::CreateDir)
+                    .map_err(Error::CreateTmpFiles)
                     .and_then({
                         let config_folder = config_folder.clone();
 
