@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 
 ## Added
-- Ensure that all temporary folder are cleaned up when shutting down start-env.
+- Ensure that all temporary folders are cleaned up when shutting down start-env.
 - Display clear message if start-env is started twice on the same machine.
 
 ## Changed
