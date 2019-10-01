@@ -134,13 +134,19 @@ fn start_all() -> Result<Services, Error> {
             eprintln!("Issue starting Ethereum node: {:?}", e);
         });
 
-    let btsieves = start_btsieves(&env_file_path).map_err(|e| {
-        eprintln!("Issue starting btsieves: {:?}", e);
-    });
+    let btsieves = {
+        let (path, string) = temp_folder()?;
+        start_btsieves(&env_file_path, path, string).map_err(|e| {
+            eprintln!("Issue starting btsieves: {:?}", e);
+        })
+    };
 
-    let cnds = start_cnds(&env_file_path).map_err(|e| {
-        eprintln!("Issue starting cnds: {:?}", e);
-    });
+    let cnds = {
+        let (path, string) = temp_folder()?;
+        start_cnds(&env_file_path, path, string).map_err(|e| {
+            eprintln!("Issue starting cnds: {:?}", e);
+        })
+    };
 
     let mut runtime = Runtime::new().expect("Could not get runtime");
 
@@ -234,6 +240,7 @@ enum Error {
     EtherFunding(web3::Error),
     Docker(shiplift::Error),
     CreateTmpFiles(std::io::Error),
+    PathToStr,
     WriteConfig(std::io::Error),
     DeriveKeys(rust_bitcoin::util::bip32::Error),
     Unimplemented,
@@ -277,7 +284,11 @@ fn start_ethereum_node(
         })
 }
 
-fn start_btsieves(envfile_path: &PathBuf) -> impl Future<Item = Vec<Node<Btsieve>>, Error = Error> {
+fn start_btsieves(
+    envfile_path: &PathBuf,
+    config_folder: PathBuf,
+    config_folder_str: String,
+) -> impl Future<Item = Vec<Node<Btsieve>>, Error = Error> {
     let settings = btsieve::Settings {
         http_api: btsieve::HttpApi {
             port_bind: 8080,
@@ -293,11 +304,9 @@ fn start_btsieves(envfile_path: &PathBuf) -> impl Future<Item = Vec<Node<Btsieve
         ..Default::default()
     };
 
-    let config_folder = temp_folder();
     let config_file = config_folder.clone().join("btsieve.toml");
-
     let settings = toml::to_string(&settings).expect("could not serialize settings");
-    let volume = format!("{}:/config", config_folder.clone().to_str().unwrap());
+    let volume = format!("{}:/config", config_folder_str);
 
     tokio::fs::create_dir_all(config_folder.clone())
         .map_err(Error::CreateTmpFiles)
@@ -323,14 +332,16 @@ fn start_btsieves(envfile_path: &PathBuf) -> impl Future<Item = Vec<Node<Btsieve
         })
 }
 
-fn start_cnds(envfile_path: &PathBuf) -> impl Future<Item = Vec<Node<Cnd>>, Error = Error> {
+fn start_cnds(
+    envfile_path: &PathBuf,
+    config_folder: PathBuf,
+    config_folder_str: String,
+) -> impl Future<Item = Vec<Node<Cnd>>, Error = Error> {
     stream::iter_ok(vec![0, 1])
         .and_then({
             let envfile_path = envfile_path.clone();
 
             move |i| {
-                let config_folder = temp_folder();
-
                 tokio::fs::create_dir_all(config_folder.clone())
                     .map_err(Error::CreateTmpFiles)
                     .and_then({
@@ -353,11 +364,10 @@ fn start_cnds(envfile_path: &PathBuf) -> impl Future<Item = Vec<Node<Cnd>>, Erro
                         }
                     })
                     .and_then({
-                        let config_folder = config_folder.clone();
                         let envfile_path = envfile_path.clone();
-
+                        let config_folder_str = config_folder_str.clone();
                         move |_| {
-                            let volume = format!("{}:/config", config_folder.to_str().unwrap());
+                            let volume = format!("{}:/config", config_folder_str);
 
                             Node::<Cnd>::start_with_volume(
                                 envfile_path.to_path_buf(),
@@ -372,17 +382,15 @@ fn start_cnds(envfile_path: &PathBuf) -> impl Future<Item = Vec<Node<Cnd>>, Erro
         .collect()
 }
 
-fn temp_folder() -> PathBuf {
+fn temp_folder() -> Result<(PathBuf, String), Error> {
     let path = temp_fs::dir_path();
 
-    std::fs::create_dir_all(&path).unwrap_or_else(|e| {
-        panic!(
-            "Could not create directory inside {}: {}",
-            temp_fs::dir_path_str(),
-            e
-        )
-    });
-    tempfile::tempdir_in(&path).unwrap().into_path()
+    std::fs::create_dir_all(&path).map_err(Error::CreateTmpFiles)?;
+    let path = tempfile::tempdir_in(&path)
+        .map_err(Error::CreateTmpFiles)?
+        .into_path();
+    let string = path.clone().to_str().ok_or(Error::PathToStr)?.to_string();
+    Ok((path, string))
 }
 
 fn handle_signal() -> impl Future<Item = (), Error = ()> {

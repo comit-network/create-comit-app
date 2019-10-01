@@ -27,16 +27,6 @@ pub fn env_file_str() -> String {
     )
 }
 
-pub fn dir_path_str() -> String {
-    format!(
-        "{}/{}",
-        home()
-            .to_str()
-            .expect("Could not get home directory as str"),
-        DIR_NAME
-    )
-}
-
 pub fn create_env_file() -> Result<(), std::io::Error> {
     std::fs::create_dir_all(dir_path())?;
     std::fs::File::create(env_file_path())?;
