@@ -135,14 +135,14 @@ fn start_all() -> Result<Services, Error> {
         });
 
     let btsieves = {
-        let (path, string) = temp_folder()?;
+        let (path, string) = temp_fs::temp_folder()?;
         start_btsieves(&env_file_path, path, string).map_err(|e| {
             eprintln!("Issue starting btsieves: {:?}", e);
         })
     };
 
     let cnds = {
-        let (path, string) = temp_folder()?;
+        let (path, string) = temp_fs::temp_folder()?;
         start_cnds(&env_file_path, path, string).map_err(|e| {
             eprintln!("Issue starting cnds: {:?}", e);
         })
@@ -235,7 +235,7 @@ fn start_all() -> Result<Services, Error> {
 }
 
 #[derive(Debug)]
-enum Error {
+pub enum Error {
     BitcoinFunding(bitcoincore_rpc::Error),
     EtherFunding(web3::Error),
     Docker(shiplift::Error),
@@ -380,17 +380,6 @@ fn start_cnds(
             }
         })
         .collect()
-}
-
-fn temp_folder() -> Result<(PathBuf, String), Error> {
-    let path = temp_fs::dir_path();
-
-    std::fs::create_dir_all(&path).map_err(Error::CreateTmpFiles)?;
-    let path = tempfile::tempdir_in(&path)
-        .map_err(Error::CreateTmpFiles)?
-        .into_path();
-    let string = path.clone().to_str().ok_or(Error::PathToStr)?.to_string();
-    Ok((path, string))
 }
 
 fn handle_signal() -> impl Future<Item = (), Error = ()> {

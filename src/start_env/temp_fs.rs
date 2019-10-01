@@ -1,4 +1,5 @@
 use std::path::PathBuf;
+use crate::start_env::Error;
 
 pub const DIR_NAME: &str = ".create-comit-app";
 const ENV_FILE_NAME: &str = "env";
@@ -35,4 +36,15 @@ pub fn create_env_file() -> Result<(), std::io::Error> {
 
 pub fn dir_exist() -> bool {
     std::fs::read_dir(dir_path()).is_ok()
+}
+
+pub fn temp_folder() -> Result<(PathBuf, String), Error> {
+    let path = dir_path();
+
+    std::fs::create_dir_all(&path).map_err(Error::CreateTmpFiles)?;
+    let path = tempfile::tempdir_in(&path)
+        .map_err(Error::CreateTmpFiles)?
+        .into_path();
+    let string = path.clone().to_str().ok_or(Error::PathToStr)?.to_string();
+    Ok((path, string))
 }
