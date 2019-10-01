@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+
+## Added
+- Ensure that all temporary folders are cleaned up when shutting down start-env.
+- Display clear message if start-env is started twice on the same machine.
+
+## Changed
+- Move start-env env file to `~/.create-comit-app/env` so that the user does not have to start it from inside the project folder.
+
 ## 0.1.0 - 2019-09-26
 
 First Release 🎉

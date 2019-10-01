@@ -25,7 +25,7 @@ use tokio::runtime::Runtime;
 use tokio::timer::Interval;
 use web3::types::U256;
 
-const ENV_FILE_PATH: &str = ".env";
+mod temp_fs;
 
 macro_rules! print_progress {
     ($($arg:tt)*) => ({
@@ -37,6 +37,11 @@ macro_rules! print_progress {
 
 pub fn start_env() {
     let mut runtime = Runtime::new().expect("Could not get runtime");
+
+    if temp_fs::dir_exist() {
+        eprintln!("It seems that `create-comit-app start-env` is already running.\nIf it is not the case, delete lock directory ~/{} and try again.", temp_fs::DIR_NAME);
+        ::std::process::exit(1);
+    }
 
     match start_all() {
         Ok(Services { bitcoin_node, .. }) => {
@@ -118,26 +123,26 @@ fn start_all() -> Result<Services, Error> {
         })
         .collect::<Vec<_>>();
 
-    let envfile_path = PathBuf::from(ENV_FILE_PATH);
-    std::fs::File::create(envfile_path.clone())
-        .unwrap_or_else(|_| panic!("Could not create {} file", ENV_FILE_PATH));
+    let env_file_path = temp_fs::env_file_path();
+    temp_fs::create_env_file()
+        .unwrap_or_else(|_| panic!("Could not create {:?} file", env_file_path));
 
     let docker_network_create = create_network();
 
-    let bitcoin_node = start_bitcoin_node(&envfile_path, bitcoin_priv_keys).map_err(|e| {
+    let bitcoin_node = start_bitcoin_node(&env_file_path, bitcoin_priv_keys).map_err(|e| {
         eprintln!("Issue starting Bitcoin node: {:?}", e);
     });
 
     let ethereum_node =
-        start_ethereum_node(&envfile_path, ethereum_priv_keys.clone()).map_err(|e| {
+        start_ethereum_node(&env_file_path, ethereum_priv_keys.clone()).map_err(|e| {
             eprintln!("Issue starting Ethereum node: {:?}", e);
         });
 
-    let btsieves = start_btsieves(&envfile_path).map_err(|e| {
+    let btsieves = start_btsieves(&env_file_path).map_err(|e| {
         eprintln!("Issue starting btsieves: {:?}", e);
     });
 
-    let cnds = start_cnds(&envfile_path).map_err(|e| {
+    let cnds = start_cnds(&env_file_path).map_err(|e| {
         eprintln!("Issue starting cnds: {:?}", e);
     });
 
@@ -167,11 +172,12 @@ fn start_all() -> Result<Services, Error> {
         .map(Arc::new)?;
     println!("✓");
 
-    print_progress!("Writing configuration in `{}` file", ENV_FILE_PATH);
-    let mut envfile = EnvFile::new(envfile_path.clone()).map_err(|e| {
+    print_progress!("Writing configuration in env file");
+    let mut envfile = EnvFile::new(env_file_path.clone()).map_err(|e| {
         eprintln!(
             "Could not read {} file, aborting...\n{:?}",
-            ENV_FILE_PATH, e
+            temp_fs::env_file_str(),
+            e
         );
     })?;
 
@@ -192,7 +198,8 @@ fn start_all() -> Result<Services, Error> {
     envfile.write().map_err(|e| {
         eprintln!(
             "Could not write {} file, aborting...\n{:?}",
-            ENV_FILE_PATH, e
+            temp_fs::env_file_str(),
+            e
         );
     })?;
     println!("✓");
@@ -369,10 +376,15 @@ fn start_cnds(envfile_path: &PathBuf) -> impl Future<Item = Vec<Node<Cnd>>, Erro
 }
 
 fn temp_folder() -> PathBuf {
-    let path = "/tmp/create-comit-app";
+    let path = temp_fs::dir_path();
 
-    std::fs::create_dir_all(path)
-        .unwrap_or_else(|e| panic!("Could not create directory inside {}: {}", path, e));
+    std::fs::create_dir_all(&path).unwrap_or_else(|e| {
+        panic!(
+            "Could not create directory inside {}: {}",
+            temp_fs::dir_path_str(),
+            e
+        )
+    });
     tempfile::tempdir_in(&path).unwrap().into_path()
 }
 
@@ -394,21 +406,18 @@ fn handle_signal() -> impl Future<Item = (), Error = ()> {
 }
 
 fn clean_up() -> impl Future<Item = (), Error = ()> {
-    tokio::fs::remove_file(ENV_FILE_PATH)
+    delete_container("bitcoin")
+        .then(|_| delete_container("ethereum"))
         .then(|_| {
-            delete_container("bitcoin")
-                .then(|_| delete_container("ethereum"))
-                .then(|_| {
-                    stream::iter_ok(vec![0, 1])
-                        .and_then(move |i| {
-                            delete_container(format!("cnd_{}", i).as_str())
-                                .then(move |_| delete_container(format!("btsieve_{}", i).as_str()))
-                        })
-                        .collect()
+            stream::iter_ok(vec![0, 1])
+                .and_then(move |i| {
+                    delete_container(format!("cnd_{}", i).as_str())
+                        .then(move |_| delete_container(format!("btsieve_{}", i).as_str()))
                 })
-                .then(|_| delete_network())
-                .map_err(|_| ())
+                .collect()
         })
+        .then(|_| delete_network())
+        .then(|_| std::fs::remove_dir_all(temp_fs::dir_path()))
         .map_err(|_| ())
 }
 
