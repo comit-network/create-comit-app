@@ -103,25 +103,22 @@ fn start_all() -> Result<Services, Error> {
         ethereum_priv_keys.push(SecretKey::new(&mut thread_rng()));
     }
 
+    let derivation_path = vec![
+        ChildNumber::from_hardened_idx(44)?,
+        ChildNumber::from_hardened_idx(1)?,
+        ChildNumber::from_hardened_idx(0)?,
+        ChildNumber::from_normal_idx(0)?,
+        ChildNumber::from_normal_idx(0)?,
+    ];
+
     let bitcoin_priv_keys = bitcoin_hd_keys
         .iter()
         .map(|hd_key| {
             hd_key
-                .derive_priv(
-                    &Secp256k1::new(),
-                    &vec![
-                        ChildNumber::from_hardened_idx(44).unwrap(),
-                        ChildNumber::from_hardened_idx(1).unwrap(),
-                        ChildNumber::from_hardened_idx(0).unwrap(),
-                        ChildNumber::from_normal_idx(0).unwrap(),
-                        ChildNumber::from_normal_idx(0).unwrap(),
-                    ],
-                )
-                .unwrap()
-                .private_key
-                .key
+                .derive_priv(&Secp256k1::new(), &derivation_path)
+                .map(|secret_key| secret_key.private_key.key)
         })
-        .collect::<Vec<_>>();
+        .collect::<Result<Vec<_>, _>>()?;
 
     let env_file_path = temp_fs::env_file_path();
     temp_fs::create_env_file()
@@ -239,6 +236,7 @@ enum Error {
     Docker(shiplift::Error),
     CreateDir(std::io::Error),
     WriteConfig(std::io::Error),
+    DeriveKeys(rust_bitcoin::util::bip32::Error),
     Unimplemented,
 }
 
@@ -424,5 +422,11 @@ fn clean_up() -> impl Future<Item = (), Error = ()> {
 impl From<()> for Error {
     fn from(_: ()) -> Self {
         Error::Unimplemented
+    }
+}
+
+impl From<rust_bitcoin::util::bip32::Error> for Error {
+    fn from(err: rust_bitcoin::util::bip32::Error) -> Self {
+        Error::DeriveKeys(err)
     }
 }
