@@ -25,7 +25,7 @@ use tokio::runtime::Runtime;
 use tokio::timer::Interval;
 use web3::types::U256;
 
-mod path;
+mod temp_fs;
 
 macro_rules! print_progress {
     ($($arg:tt)*) => ({
@@ -38,8 +38,8 @@ macro_rules! print_progress {
 pub fn start_env() {
     let mut runtime = Runtime::new().expect("Could not get runtime");
 
-    if path::dir_exist() {
-        eprintln!("It seems that `create-comit-app start-env` is already running.\nIf it is not the case, delete lock directory ~/{} and try again.", path::DIR_NAME);
+    if temp_fs::dir_exist() {
+        eprintln!("It seems that `create-comit-app start-env` is already running.\nIf it is not the case, delete lock directory ~/{} and try again.", temp_fs::DIR_NAME);
         ::std::process::exit(1);
     }
 
@@ -123,8 +123,9 @@ fn start_all() -> Result<Services, Error> {
         })
         .collect::<Vec<_>>();
 
-    let env_file_path = path::env_file_path();
-    path::create_env_file().unwrap_or_else(|_| panic!("Could not create {:?} file", env_file_path));
+    let env_file_path = temp_fs::env_file_path();
+    temp_fs::create_env_file()
+        .unwrap_or_else(|_| panic!("Could not create {:?} file", env_file_path));
 
     let docker_network_create = create_network();
 
@@ -175,7 +176,7 @@ fn start_all() -> Result<Services, Error> {
     let mut envfile = EnvFile::new(env_file_path.clone()).map_err(|e| {
         eprintln!(
             "Could not read {} file, aborting...\n{:?}",
-            path::env_file_str(),
+            temp_fs::env_file_str(),
             e
         );
     })?;
@@ -197,7 +198,7 @@ fn start_all() -> Result<Services, Error> {
     envfile.write().map_err(|e| {
         eprintln!(
             "Could not write {} file, aborting...\n{:?}",
-            path::env_file_str(),
+            temp_fs::env_file_str(),
             e
         );
     })?;
@@ -375,12 +376,12 @@ fn start_cnds(envfile_path: &PathBuf) -> impl Future<Item = Vec<Node<Cnd>>, Erro
 }
 
 fn temp_folder() -> PathBuf {
-    let path = path::dir_path();
+    let path = temp_fs::dir_path();
 
     std::fs::create_dir_all(&path).unwrap_or_else(|e| {
         panic!(
             "Could not create directory inside {}: {}",
-            path::dir_path_str(),
+            temp_fs::dir_path_str(),
             e
         )
     });
@@ -416,7 +417,7 @@ fn clean_up() -> impl Future<Item = (), Error = ()> {
                 .collect()
         })
         .then(|_| delete_network())
-        .then(|_| std::fs::remove_dir_all(path::dir_path()))
+        .then(|_| std::fs::remove_dir_all(temp_fs::dir_path()))
         .map_err(|_| ())
 }
 
