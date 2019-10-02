@@ -30,7 +30,6 @@ pub trait Image {
     fn arguments_for_create() -> Vec<&'static str>;
     fn expose_ports(name: &str) -> Vec<ExposedPorts>;
     fn new(endpoint: Option<String>) -> Self;
-    fn post_start_actions(&self);
 }
 
 pub struct Node<I: Image> {
@@ -67,9 +66,6 @@ impl<I: Image> Node<I> {
                     to_write_in_env,
                 )
             })
-            .inspect(|node| {
-                node.node_image.post_start_actions();
-            })
     }
 
     pub fn start_with_volume(
@@ -97,9 +93,6 @@ impl<I: Image> Node<I> {
                     client_endpoint,
                     to_write_in_env,
                 )
-            })
-            .inspect(|node| {
-                node.node_image.post_start_actions();
             })
     }
 

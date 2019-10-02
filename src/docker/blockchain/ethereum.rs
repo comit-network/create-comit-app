@@ -50,8 +50,6 @@ impl Image for EthereumNode {
             _event_loop,
         }
     }
-
-    fn post_start_actions(&self) {}
 }
 
 impl BlockchainImage for EthereumNode {
