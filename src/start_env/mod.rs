@@ -43,7 +43,7 @@ pub fn start_env() {
         ::std::process::exit(1);
     }
 
-    match start_all() {
+    match start_all(&mut runtime) {
         Ok(Services { bitcoin_node, .. }) => {
             runtime.spawn(bitcoin_generate_blocks(bitcoin_node.clone()));
             let terminate = register_signals().expect("Could not register signals");
@@ -86,10 +86,21 @@ struct Services {
     btsieves: Arc<Vec<Node<Btsieve>>>,
 }
 
-fn start_all() -> Result<Services, Error> {
+fn all_futures() -> Result<
+    (
+        Vec<ExtendedPrivKey>,
+        Vec<SecretKey>,
+        PathBuf,
+        impl Future<Item = String, Error = ()>,
+        impl Future<Item = Node<BitcoinNode>, Error = ()>,
+        impl Future<Item = Node<EthereumNode>, Error = ()>,
+        impl Future<Item = Vec<Node<Btsieve>>, Error = ()>,
+        impl Future<Item = Vec<Node<Cnd>>, Error = ()>,
+    ),
+    Error,
+> {
     let mut bitcoin_hd_keys = vec![];
     let mut ethereum_priv_keys = vec![];
-
     for _ in 0..2 {
         bitcoin_hd_keys.push(ExtendedPrivKey::new_master(
             rust_bitcoin::Network::Regtest,
@@ -102,7 +113,6 @@ fn start_all() -> Result<Services, Error> {
         )?);
         ethereum_priv_keys.push(SecretKey::new(&mut thread_rng()));
     }
-
     let derivation_path = vec![
         ChildNumber::from_hardened_idx(44)?,
         ChildNumber::from_hardened_idx(1)?,
@@ -110,7 +120,6 @@ fn start_all() -> Result<Services, Error> {
         ChildNumber::from_normal_idx(0)?,
         ChildNumber::from_normal_idx(0)?,
     ];
-
     let bitcoin_priv_keys = bitcoin_hd_keys
         .iter()
         .map(|hd_key| {
@@ -119,35 +128,52 @@ fn start_all() -> Result<Services, Error> {
                 .map(|secret_key| secret_key.private_key.key)
         })
         .collect::<Result<Vec<_>, _>>()?;
-
     let env_file_path = temp_fs::env_file_path();
-
-    let docker_network_create = create_network();
-
+    let docker_network_create = create_network().map_err(|e| {
+        eprintln!("Issue creating Docker network: {:?}", e);
+    });
     let bitcoin_node = start_bitcoin_node(&env_file_path, bitcoin_priv_keys).map_err(|e| {
         eprintln!("Issue starting Bitcoin node: {:?}", e);
     });
-
     let ethereum_node =
         start_ethereum_node(&env_file_path, ethereum_priv_keys.clone()).map_err(|e| {
             eprintln!("Issue starting Ethereum node: {:?}", e);
         });
-
     let btsieves = {
         let (path, string) = temp_fs::temp_folder()?;
         start_btsieves(&env_file_path, path, string).map_err(|e| {
             eprintln!("Issue starting btsieves: {:?}", e);
         })
     };
-
     let cnds = {
         let (path, string) = temp_fs::temp_folder()?;
         start_cnds(&env_file_path, path, string).map_err(|e| {
             eprintln!("Issue starting cnds: {:?}", e);
         })
     };
+    Ok((
+        bitcoin_hd_keys,
+        ethereum_priv_keys,
+        env_file_path,
+        docker_network_create,
+        bitcoin_node,
+        ethereum_node,
+        btsieves,
+        cnds,
+    ))
+}
 
-    let mut runtime = Runtime::new().expect("Could not get runtime");
+fn start_all(runtime: &mut Runtime) -> Result<Services, Error> {
+    let (
+        bitcoin_hd_keys,
+        ethereum_priv_keys,
+        env_file_path,
+        docker_network_create,
+        bitcoin_node,
+        ethereum_node,
+        btsieves,
+        cnds,
+    ) = all_futures()?;
 
     temp_fs::create_env_file().map_err(Error::CreateTmpFiles)?;
 
