@@ -128,7 +128,7 @@ fn all_futures() -> Result<
                 .map(|secret_key| secret_key.private_key.key)
         })
         .collect::<Result<Vec<_>, _>>()?;
-    let env_file_path = temp_fs::env_file_path();
+    let env_file_path = temp_fs::env_file_path()?;
     let docker_network_create = create_network().map_err(|e| {
         eprintln!("Issue creating Docker network: {:?}", e);
     });
@@ -175,7 +175,8 @@ fn start_all(runtime: &mut Runtime) -> Result<Services, Error> {
         cnds,
     ) = all_futures()?;
 
-    temp_fs::create_env_file().map_err(Error::CreateTmpFiles)?;
+    temp_fs::create_env_file()?;
+    let env_file_str = temp_fs::env_file_str()?;
 
     print_progress!("Creating Docker network (create-comit-app)");
     let docker_network_id = runtime.block_on(docker_network_create).map_err(|e| {
@@ -203,11 +204,7 @@ fn start_all(runtime: &mut Runtime) -> Result<Services, Error> {
 
     print_progress!("Writing configuration in env file");
     let mut envfile = EnvFile::new(env_file_path.clone()).map_err(|e| {
-        eprintln!(
-            "Could not read {} file, aborting...\n{:?}",
-            temp_fs::env_file_str(),
-            e
-        );
+        eprintln!("Could not read {} file, aborting...\n{:?}", env_file_str, e);
     })?;
 
     for (i, hd_key) in bitcoin_hd_keys.iter().enumerate() {
@@ -227,8 +224,7 @@ fn start_all(runtime: &mut Runtime) -> Result<Services, Error> {
     envfile.write().map_err(|e| {
         eprintln!(
             "Could not write {} file, aborting...\n{:?}",
-            temp_fs::env_file_str(),
-            e
+            env_file_str, e
         );
     })?;
     println!("✓");
@@ -270,6 +266,7 @@ pub enum Error {
     PathToStr,
     WriteConfig(std::io::Error),
     DeriveKeys(rust_bitcoin::util::bip32::Error),
+    HomeDir,
     Unimplemented,
 }
 
@@ -440,8 +437,11 @@ fn clean_up() -> impl Future<Item = (), Error = ()> {
                 .collect()
         })
         .then(|_| delete_network())
-        .then(|_| std::fs::remove_dir_all(temp_fs::dir_path()))
-        .map_err(|_| ())
+        .then(|_| {
+            let _ = temp_fs::dir_path().map(std::fs::remove_dir_all);
+            Ok(())
+        })
+        .map_err(|_: ()| ())
 }
 
 impl From<()> for Error {
