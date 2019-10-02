@@ -63,8 +63,10 @@ impl BlockchainImage for EthereumNode {
         address: Self::Address,
         value: Self::Amount,
     ) -> Box<dyn Future<Item = Self::TxId, Error = Self::ClientError> + Send + Sync> {
-        let parity_dev_account: web3::types::Address =
-            "00a329c0648769a73afac7f9381e08fb43dbea72".parse().unwrap();
+        // expect: Should always be able to parse
+        let parity_dev_account: web3::types::Address = "00a329c0648769a73afac7f9381e08fb43dbea72"
+            .parse()
+            .expect("Could not parse DEV account address");
 
         let future = self.http_client.personal().send_transaction(
             TransactionRequest {
