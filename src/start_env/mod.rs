@@ -46,9 +46,9 @@ pub fn start_env() {
     match start_all() {
         Ok(Services { bitcoin_node, .. }) => {
             runtime.spawn(bitcoin_generate_blocks(bitcoin_node.clone()));
-
+            let terminate = register_signals().expect("Could not register signals");
             runtime
-                .block_on(handle_signal())
+                .block_on(handle_signal(terminate))
                 .expect("Handle signal failed");
             println!("✓");
         }
@@ -91,15 +91,15 @@ fn start_all() -> Result<Services, Error> {
     let mut ethereum_priv_keys = vec![];
 
     for _ in 0..2 {
-        bitcoin_hd_keys.push(
-            ExtendedPrivKey::new_master(rust_bitcoin::Network::Regtest, &{
+        bitcoin_hd_keys.push(ExtendedPrivKey::new_master(
+            rust_bitcoin::Network::Regtest,
+            &{
                 let mut seed = [0u8; 32];
                 thread_rng().fill_bytes(&mut seed);
 
                 seed
-            })
-            .expect("Could not generate HD key"),
-        );
+            },
+        )?);
         ethereum_priv_keys.push(SecretKey::new(&mut thread_rng()));
     }
 
@@ -121,7 +121,6 @@ fn start_all() -> Result<Services, Error> {
         .collect::<Result<Vec<_>, _>>()?;
 
     let env_file_path = temp_fs::env_file_path();
-    temp_fs::create_env_file().map_err(Error::CreateTmpFiles)?;
 
     let docker_network_create = create_network();
 
@@ -149,6 +148,8 @@ fn start_all() -> Result<Services, Error> {
     };
 
     let mut runtime = Runtime::new().expect("Could not get runtime");
+
+    temp_fs::create_env_file().map_err(Error::CreateTmpFiles)?;
 
     print_progress!("Creating Docker network (create-comit-app)");
     let docker_network_id = runtime.block_on(docker_network_create).map_err(|e| {
@@ -305,6 +306,7 @@ fn start_btsieves(
     };
 
     let config_file = config_folder.clone().join("btsieve.toml");
+    // expect: settings are hard coded
     let settings = toml::to_string(&settings).expect("could not serialize settings");
     let volume = format!("{}:/config", config_folder_str);
 
@@ -357,6 +359,7 @@ fn start_cnds(
                             };
 
                             let config_file = config_folder.join("cnd.toml");
+                            // expect: settings are hard coded
                             let settings =
                                 toml::to_string(&settings).expect("could not serialize settings");
 
@@ -382,21 +385,21 @@ fn start_cnds(
         .collect()
 }
 
-fn handle_signal() -> impl Future<Item = (), Error = ()> {
-    let terminate = Arc::new(AtomicBool::new(false));
-    signal_hook::flag::register(signal_hook::SIGTERM, Arc::clone(&terminate))
-        .expect("Could not register SIGTERM");
-    signal_hook::flag::register(signal_hook::SIGINT, Arc::clone(&terminate))
-        .expect("Could not register SIGINT");
-    signal_hook::flag::register(signal_hook::SIGQUIT, Arc::clone(&terminate))
-        .expect("Could not register SIGQUIT");
-    // TODO: Probably need to make this async
+fn handle_signal(terminate: Arc<AtomicBool>) -> impl Future<Item = (), Error = ()> {
     while !terminate.load(Ordering::Relaxed) {
         sleep(Duration::from_millis(50))
     }
     println!("Signal received, terminating...");
     print_progress!("🧹 Cleaning up");
     clean_up()
+}
+
+fn register_signals() -> Result<Arc<AtomicBool>, std::io::Error> {
+    let terminate = Arc::new(AtomicBool::new(false));
+    signal_hook::flag::register(signal_hook::SIGTERM, Arc::clone(&terminate))?;
+    signal_hook::flag::register(signal_hook::SIGINT, Arc::clone(&terminate))?;
+    signal_hook::flag::register(signal_hook::SIGQUIT, Arc::clone(&terminate))?;
+    Ok(terminate)
 }
 
 fn clean_up() -> impl Future<Item = (), Error = ()> {
