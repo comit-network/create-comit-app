@@ -35,18 +35,26 @@ pub fn start_env() {
         ::std::process::exit(1);
     }
 
-    match start_all(&mut runtime) {
+    let terminate = register_signals().expect("Could not register signals");
+
+    match start_all(&mut runtime, &terminate) {
         Ok(Services { bitcoin_node, .. }) => {
             runtime.spawn(bitcoin_generate_blocks(bitcoin_node.clone()));
-            let terminate = register_signals().expect("Could not register signals");
+
             runtime
                 .block_on(handle_signal(terminate))
                 .expect("Handle signal failed");
             println!("✓");
         }
         Err(err) => {
-            eprintln!("❗️Error encountered: {:?}]", err);
-            std::io::stderr().flush().expect("Could not flush stderr");
+            match &err {
+                Error::SignalReceived => {
+                    println!("Signal received, terminating...");
+                }
+                _ => {
+                    eprintln!("❗️Error encountered: {:?}]", err);
+                }
+            }
 
             print_progress!("🧹 Cleaning up");
             runtime.block_on(clean_up()).expect("Clean up failed");
@@ -77,7 +85,15 @@ struct Services {
     cnds: Arc<Vec<Node<Cnd>>>,
 }
 
-fn start_all(runtime: &mut Runtime) -> Result<Services, Error> {
+fn check_signal(terminate: &Arc<AtomicBool>) -> Result<(), Error> {
+    if terminate.load(Ordering::Relaxed) {
+        Err(Error::SignalReceived)
+    } else {
+        Ok(())
+    }
+}
+
+fn start_all(runtime: &mut Runtime, terminate: &Arc<AtomicBool>) -> Result<Services, Error> {
     let (
         bitcoin_hd_keys,
         ethereum_priv_keys,
@@ -95,6 +111,7 @@ fn start_all(runtime: &mut Runtime) -> Result<Services, Error> {
         eprintln!("Could not create docker network, aborting...\n{:?}", e);
     })?;
     println!("✓");
+    check_signal(terminate)?;
 
     print_progress!("Starting Bitcoin node");
     let bitcoin_node = runtime
@@ -104,6 +121,7 @@ fn start_all(runtime: &mut Runtime) -> Result<Services, Error> {
         })
         .map(Arc::new)?;
     println!("✓");
+    check_signal(terminate)?;
 
     print_progress!("Starting Ethereum node");
     let ethereum_node = runtime
@@ -113,6 +131,7 @@ fn start_all(runtime: &mut Runtime) -> Result<Services, Error> {
         })
         .map(Arc::new)?;
     println!("✓");
+    check_signal(terminate)?;
 
     print_progress!("Writing configuration in env file");
     let mut envfile = EnvFile::new(env_file_path.clone()).map_err(|e| {
@@ -140,6 +159,7 @@ fn start_all(runtime: &mut Runtime) -> Result<Services, Error> {
         );
     })?;
     println!("✓");
+    check_signal(terminate)?;
 
     print_progress!("Starting two cnds");
     let cnds = runtime
@@ -149,6 +169,7 @@ fn start_all(runtime: &mut Runtime) -> Result<Services, Error> {
         })
         .map(Arc::new)?;
     println!("✓");
+    check_signal(terminate)?;
 
     println!("🎉 Environment is ready, time to create a COMIT app!");
     Ok(Services {
@@ -238,6 +259,7 @@ pub enum Error {
     WriteConfig(std::io::Error),
     DeriveKeys(rust_bitcoin::util::bip32::Error),
     HomeDir,
+    SignalReceived,
     Unimplemented,
 }
 
