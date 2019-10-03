@@ -1,4 +1,4 @@
-use crate::comit_rs_settings::cnd;
+use crate::cnd_settings;
 use crate::docker::bitcoin::{self, BitcoinNode};
 use crate::docker::delete_container;
 use crate::docker::ethereum::{self, EthereumNode};
@@ -278,12 +278,12 @@ fn start_cnds(envfile_path: &PathBuf) -> impl Future<Item = Vec<Node<Cnd>>, Erro
                         let config_folder = config_folder.clone();
 
                         move |_| {
-                            let settings = cnd::Settings {
-                                bitcoin: cnd::Bitcoin {
+                            let settings = cnd_settings::Settings {
+                                bitcoin: cnd_settings::Bitcoin {
                                     network: String::from("regtest"),
                                     node_url: "http://bitcoin:18443".to_string(),
                                 },
-                                ethereum: cnd::Ethereum {
+                                ethereum: cnd_settings::Ethereum {
                                     network: String::from("regtest"),
                                     node_url: "http://ethereum:8545".to_string(),
                                 },
