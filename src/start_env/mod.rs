@@ -1,10 +1,9 @@
-use crate::comit_rs_settings::btsieve;
-use crate::comit_rs_settings::cnd;
+use crate::cnd_settings;
 use crate::docker::bitcoin::{self, BitcoinNode};
+use crate::docker::delete_container;
 use crate::docker::ethereum::{self, EthereumNode};
 use crate::docker::Cnd;
 use crate::docker::{blockchain::BlockchainImage, create_network, delete_network, Node};
-use crate::docker::{delete_container, Btsieve};
 use bitcoincore_rpc::RpcApi;
 use envfile::EnvFile;
 use futures;
@@ -83,7 +82,6 @@ struct Services {
     bitcoin_node: Arc<Node<BitcoinNode>>,
     ethereum_node: Arc<Node<EthereumNode>>,
     cnds: Arc<Vec<Node<Cnd>>>,
-    btsieves: Arc<Vec<Node<Btsieve>>>,
 }
 
 fn start_all() -> Result<Services, Error> {
@@ -137,10 +135,6 @@ fn start_all() -> Result<Services, Error> {
         start_ethereum_node(&env_file_path, ethereum_priv_keys.clone()).map_err(|e| {
             eprintln!("Issue starting Ethereum node: {:?}", e);
         });
-
-    let btsieves = start_btsieves(&env_file_path).map_err(|e| {
-        eprintln!("Issue starting btsieves: {:?}", e);
-    });
 
     let cnds = start_cnds(&env_file_path).map_err(|e| {
         eprintln!("Issue starting cnds: {:?}", e);
@@ -204,15 +198,6 @@ fn start_all() -> Result<Services, Error> {
     })?;
     println!("✓");
 
-    print_progress!("Starting two btsieves");
-    let btsieves = runtime
-        .block_on(btsieves)
-        .map_err(|e| {
-            eprintln!("Could not start btsieves, aborting...\n{:?}", e);
-        })
-        .map(Arc::new)?;
-    println!("✓");
-
     print_progress!("Starting two cnds");
     let cnds = runtime
         .block_on(cnds)
@@ -228,7 +213,6 @@ fn start_all() -> Result<Services, Error> {
         bitcoin_node,
         ethereum_node,
         cnds,
-        btsieves,
     })
 }
 
@@ -280,52 +264,6 @@ fn start_ethereum_node(
         })
 }
 
-fn start_btsieves(envfile_path: &PathBuf) -> impl Future<Item = Vec<Node<Btsieve>>, Error = Error> {
-    let settings = btsieve::Settings {
-        http_api: btsieve::HttpApi {
-            port_bind: 8080,
-            ..Default::default()
-        },
-        bitcoin: Some(btsieve::Bitcoin {
-            network: String::from("regtest"),
-            node_url: "http://bitcoin:18443".to_string(),
-        }),
-        ethereum: Some(btsieve::Ethereum {
-            node_url: "http://ethereum:8545".to_string(),
-        }),
-        ..Default::default()
-    };
-
-    let config_folder = temp_folder();
-    let config_file = config_folder.clone().join("btsieve.toml");
-
-    let settings = toml::to_string(&settings).expect("could not serialize settings");
-    let volume = format!("{}:/config", config_folder.clone().to_str().unwrap());
-
-    tokio::fs::create_dir_all(config_folder.clone())
-        .map_err(Error::CreateDir)
-        .and_then(|_| tokio::fs::write(config_file, settings).map_err(Error::WriteConfig))
-        .and_then({
-            let envfile_path = envfile_path.clone();
-            move |_| {
-                stream::iter_ok(vec![0, 1])
-                    .and_then({
-                        let volume = volume.clone();
-                        let envfile_path = envfile_path.clone();
-                        move |i| {
-                            Node::<Btsieve>::start_with_volume(
-                                envfile_path.to_path_buf(),
-                                format!("btsieve_{}", i).as_str(),
-                                &volume,
-                            )
-                            .map_err(Error::Docker)
-                        }
-                    })
-                    .collect()
-            }
-        })
-}
-
 fn start_cnds(envfile_path: &PathBuf) -> impl Future<Item = Vec<Node<Cnd>>, Error = Error> {
     stream::iter_ok(vec![0, 1])
         .and_then({
@@ -340,10 +278,14 @@ fn start_cnds(envfile_path: &PathBuf) -> impl Future<Item = Vec<Node<Cnd>>, Erro
                         let config_folder = config_folder.clone();
 
                         move |_| {
-                            let settings = cnd::Settings {
-                                btsieve: cnd::Btsieve {
-                                    url: format!("http://btsieve_{}:8080", i),
-                                    ..Default::default()
+                            let settings = cnd_settings::Settings {
+                                bitcoin: cnd_settings::Bitcoin {
+                                    network: String::from("regtest"),
+                                    node_url: "http://bitcoin:18443".to_string(),
+                                },
+                                ethereum: cnd_settings::Ethereum {
+                                    network: String::from("regtest"),
+                                    node_url: "http://ethereum:8545".to_string(),
                                 },
                                 ..Default::default()
                             };
@@ -410,10 +352,7 @@ fn clean_up() -> impl Future<Item = (), Error = ()> {
         .then(|_| delete_container("ethereum"))
         .then(|_| {
             stream::iter_ok(vec![0, 1])
-                .and_then(move |i| {
-                    delete_container(format!("cnd_{}", i).as_str())
-                        .then(move |_| delete_container(format!("btsieve_{}", i).as_str()))
-                })
+                .and_then(move |i| delete_container(format!("cnd_{}", i).as_str()))
                 .collect()
         })
         .then(|_| delete_network())
