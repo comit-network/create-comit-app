@@ -1,0 +1,29 @@
+{
+  "name": "create-comit-app",
+  "version": "0.1.0",
+  "description": " Set up a local development environment for COMIT apps with one command.",
+  "main": "create-comit-app",
+  "scripts": {
+    "preinstall": "node ./download.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/comit-network/create-comit-app.git"
+  },
+  "keywords": [
+    "comit",
+    "cross-blockchain",
+    "decentralised",
+    "xdapps"
+  ],
+  "author": "CoBloX Team",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/comit-network/create-comit-app/issues"
+  },
+  "homepage": "https://github.com/comit-network/create-comit-app#readme",
+  "bin": {
+    "create-comit-app": "./create-comit-app"
+  }
+}
