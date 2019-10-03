@@ -13,6 +13,7 @@ futures = "0.1"
 git2 = { version = "0.10", default-features = false, features = ["vendored-openssl"] }
 hex = "0.3"
 hex-serde = "0.1.0"
+lazy_static = "1.4"
 port_check = "0.1"
 rand = "0.4"
 rust_bitcoin = { version = "0.19.1", package = "bitcoin" }
