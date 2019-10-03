@@ -5,7 +5,7 @@ const HTTP_URL_PREFIX: &str = "HTTP_URL_";
 pub struct Cnd;
 
 impl Image for Cnd {
-    const IMAGE: &'static str = "comitnetwork/cnd:0.2.1";
+    const IMAGE: &'static str = "comitnetwork/cnd:0.3.0";
     const LOG_READY: &'static str = "Starting HTTP server on";
 
     fn arguments_for_create() -> Vec<&'static str> {

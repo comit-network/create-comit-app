@@ -8,11 +8,10 @@ use shiplift::{
 use std::path::PathBuf;
 
 pub mod blockchain;
-pub mod btsieve;
 pub mod cnd;
 
 pub use self::blockchain::{bitcoin, ethereum};
-pub use self::{btsieve::Btsieve, cnd::Cnd};
+pub use self::cnd::Cnd;
 
 pub const DOCKER_NETWORK: &str = "create-comit-app";
 
