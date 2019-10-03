@@ -4,6 +4,7 @@ use crate::docker::delete_container;
 use crate::docker::ethereum::{self, EthereumNode};
 use crate::docker::Cnd;
 use crate::docker::{blockchain::BlockchainImage, create_network, delete_network, Node};
+use crate::print_progress;
 use bitcoincore_rpc::RpcApi;
 use envfile::EnvFile;
 use futures;
@@ -25,14 +26,6 @@ use tokio::timer::Interval;
 use web3::types::U256;
 
 mod temp_fs;
-
-macro_rules! print_progress {
-    ($($arg:tt)*) => ({
-        print!($($arg)*);
-        print!("...");
-        std::io::stdout().flush().ok().expect("Could not flush stdout");
-    })
-}
 
 pub fn start_env() {
     let mut runtime = Runtime::new().expect("Could not get runtime");
