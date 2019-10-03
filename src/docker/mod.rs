@@ -1,10 +1,13 @@
+use crate::print_progress;
 use envfile::EnvFile;
+use futures::future::Either;
 use futures::stream::Stream;
 use futures::Future;
 use shiplift::builder::ContainerOptionsBuilder;
 use shiplift::{
     ContainerOptions, Docker, LogsOptions, NetworkCreateOptions, PullOptions, RmContainerOptions,
 };
+use std::io::Write;
 use std::path::PathBuf;
 
 pub mod blockchain;
@@ -53,25 +56,21 @@ impl<I: Image> Node<I> {
         let (to_write_in_env, client_endpoint, create_options) =
             <Node<I>>::write_env_file(&name, &mut create_options);
 
-        Docker::new()
-            .images()
-            .pull(&PullOptions::builder().image(I::IMAGE).build())
-            .collect()
-            .and_then(move |_| {
-                Self::start_container(
-                    envfile_path,
-                    create_options,
-                    client_endpoint,
-                    to_write_in_env,
-                )
-            })
+        Self::get_image().and_then(move |_| {
+            Self::start_container(
+                envfile_path,
+                create_options,
+                client_endpoint,
+                to_write_in_env,
+            )
+        })
     }
 
     pub fn start_with_volume(
         envfile_path: PathBuf,
         name: &str,
         volume: &str,
-    ) -> impl Future<Item = Self, Error = shiplift::errors::Error> {
+    ) -> impl Future<Item = Self, Error = shiplift::Error> {
         let mut create_options = ContainerOptions::builder(I::IMAGE);
         create_options.name(&name);
         create_options.network_mode(DOCKER_NETWORK);
@@ -81,17 +80,51 @@ impl<I: Image> Node<I> {
         let (to_write_in_env, client_endpoint, create_options) =
             <Node<I>>::write_env_file(&name, &mut create_options);
 
+        Self::get_image().and_then(move |_| {
+            Self::start_container(
+                envfile_path,
+                create_options,
+                client_endpoint,
+                to_write_in_env,
+            )
+        })
+    }
+
+    fn get_image() -> impl Future<Item = (), Error = shiplift::Error> {
         Docker::new()
             .images()
-            .pull(&PullOptions::builder().image(I::IMAGE).build())
-            .collect()
-            .and_then(move |_| {
-                Self::start_container(
-                    envfile_path,
-                    create_options,
-                    client_endpoint,
-                    to_write_in_env,
-                )
+            .list(&Default::default())
+            .map(|images| {
+                images
+                    .iter()
+                    .find(|image| {
+                        image
+                            .repo_tags
+                            .as_ref()
+                            .and_then(|repo_tags| {
+                                repo_tags
+                                    .iter()
+                                    .find(|tag| **tag == I::IMAGE.to_string())
+                                    .map(|_| true)
+                            })
+                            .unwrap_or(false)
+                    })
+                    .map(|_| true)
+                    .unwrap_or(false)
+            })
+            .and_then(|image_present| {
+                if !image_present {
+                    print_progress!("Downloading {}", I::IMAGE);
+                    Either::A(
+                        Docker::new()
+                            .images()
+                            .pull(&PullOptions::builder().image(I::IMAGE).build())
+                            .collect()
+                            .map(|_| ()),
+                    )
+                } else {
+                    Either::B(futures::future::ok(()))
+                }
             })
     }
 
