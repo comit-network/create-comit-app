@@ -1,4 +1,5 @@
 use crate::docker::{blockchain::BlockchainImage, ExposedPorts, Image};
+use lazy_static::lazy_static;
 use tiny_keccak;
 use web3::transports::EventLoopHandle;
 use web3::{
@@ -7,6 +8,13 @@ use web3::{
     transports::Http,
     types::{Address, TransactionRequest, H256, U256},
 };
+
+lazy_static! {
+// expect: Should always be able to parse
+        static ref PARITY_DEV_ACCOUNT: web3::types::Address = "00a329c0648769a73afac7f9381e08fb43dbea72"
+            .parse()
+            .expect("Could not parse DEV account address");
+}
 
 pub const HTTP_URL_KEY: &str = "ETHEREUM_NODE_HTTP_URL";
 
@@ -63,14 +71,9 @@ impl BlockchainImage for EthereumNode {
         address: Self::Address,
         value: Self::Amount,
     ) -> Box<dyn Future<Item = Self::TxId, Error = Self::ClientError> + Send + Sync> {
-        // expect: Should always be able to parse
-        let parity_dev_account: web3::types::Address = "00a329c0648769a73afac7f9381e08fb43dbea72"
-            .parse()
-            .expect("Could not parse DEV account address");
-
         let future = self.http_client.personal().send_transaction(
             TransactionRequest {
-                from: parity_dev_account,
+                from: *PARITY_DEV_ACCOUNT,
                 to: Some(address),
                 gas: None,
                 gas_price: None,

@@ -35,18 +35,26 @@ pub fn start_env() {
         ::std::process::exit(1);
     }
 
-    match start_all(&mut runtime) {
+    let terminate = register_signals().expect("Could not register signals");
+
+    match start_all(&mut runtime, &terminate) {
         Ok(Services { bitcoin_node, .. }) => {
             runtime.spawn(bitcoin_generate_blocks(bitcoin_node.clone()));
-            let terminate = register_signals().expect("Could not register signals");
+
             runtime
                 .block_on(handle_signal(terminate))
                 .expect("Handle signal failed");
             println!("✓");
         }
         Err(err) => {
-            eprintln!("❗️Error encountered: {:?}]", err);
-            std::io::stderr().flush().expect("Could not flush stderr");
+            match &err {
+                Error::SignalReceived => {
+                    println!("Signal received, terminating...");
+                }
+                _ => {
+                    eprintln!("❗️Error encountered: {:?}]", err);
+                }
+            }
 
             print_progress!("🧹 Cleaning up");
             runtime.block_on(clean_up()).expect("Clean up failed");
@@ -75,6 +83,101 @@ struct Services {
     bitcoin_node: Arc<Node<BitcoinNode>>,
     ethereum_node: Arc<Node<EthereumNode>>,
     cnds: Arc<Vec<Node<Cnd>>>,
+}
+
+fn check_signal(terminate: &Arc<AtomicBool>) -> Result<(), Error> {
+    if terminate.load(Ordering::Relaxed) {
+        Err(Error::SignalReceived)
+    } else {
+        Ok(())
+    }
+}
+
+fn start_all(runtime: &mut Runtime, terminate: &Arc<AtomicBool>) -> Result<Services, Error> {
+    let (
+        bitcoin_hd_keys,
+        ethereum_priv_keys,
+        env_file_path,
+        docker_network_create,
+        bitcoin_node,
+        ethereum_node,
+        cnds,
+    ) = all_futures()?;
+
+    let env_file_str = temp_fs::create_env_file()?;
+
+    print_progress!("Creating Docker network (create-comit-app)");
+    let docker_network_id = runtime.block_on(docker_network_create).map_err(|e| {
+        eprintln!("Could not create docker network, aborting...\n{:?}", e);
+    })?;
+    println!("✓");
+    check_signal(terminate)?;
+
+    print_progress!("Starting Bitcoin node");
+    let bitcoin_node = runtime
+        .block_on(bitcoin_node)
+        .map_err(|e| {
+            eprintln!("Could not start bitcoin node, aborting...\n{:?}", e);
+        })
+        .map(Arc::new)?;
+    println!("✓");
+    check_signal(terminate)?;
+
+    print_progress!("Starting Ethereum node");
+    let ethereum_node = runtime
+        .block_on(ethereum_node)
+        .map_err(|e| {
+            eprintln!("Could not start Ethereum node, aborting...\n{:?}", e);
+        })
+        .map(Arc::new)?;
+    println!("✓");
+    check_signal(terminate)?;
+
+    print_progress!("Writing configuration in env file");
+    let mut envfile = EnvFile::new(env_file_path.clone()).map_err(|e| {
+        eprintln!("Could not read {} file, aborting...\n{:?}", env_file_str, e);
+    })?;
+
+    for (i, hd_key) in bitcoin_hd_keys.iter().enumerate() {
+        envfile.update(
+            format!("BITCOIN_HD_KEY_{}", i).as_str(),
+            format!("{}", hd_key).as_str(),
+        );
+    }
+
+    for (i, priv_key) in ethereum_priv_keys.iter().enumerate() {
+        envfile.update(
+            format!("ETHEREUM_KEY_{}", i).as_str(),
+            format!("{}", priv_key).as_str(),
+        );
+    }
+
+    envfile.write().map_err(|e| {
+        eprintln!(
+            "Could not write {} file, aborting...\n{:?}",
+            env_file_str, e
+        );
+    })?;
+    println!("✓");
+    check_signal(terminate)?;
+
+    print_progress!("Starting two cnds");
+    let cnds = runtime
+        .block_on(cnds)
+        .map_err(|e| {
+            eprintln!("Could not start cnds, cleaning up...\n{:?}", e);
+        })
+        .map(Arc::new)?;
+    println!("✓");
+    check_signal(terminate)?;
+
+    println!("🎉 Environment is ready, time to create a COMIT app!");
+    Ok(Services {
+        docker_network_id,
+        bitcoin_node,
+        ethereum_node,
+        cnds,
+    })
 }
 
 fn all_futures() -> Result<
@@ -146,89 +249,6 @@ fn all_futures() -> Result<
     ))
 }
 
-fn start_all(runtime: &mut Runtime) -> Result<Services, Error> {
-    let (
-        bitcoin_hd_keys,
-        ethereum_priv_keys,
-        env_file_path,
-        docker_network_create,
-        bitcoin_node,
-        ethereum_node,
-        cnds,
-    ) = all_futures()?;
-
-    temp_fs::create_env_file()?;
-    let env_file_str = temp_fs::env_file_str()?;
-
-    print_progress!("Creating Docker network (create-comit-app)");
-    let docker_network_id = runtime.block_on(docker_network_create).map_err(|e| {
-        eprintln!("Could not create docker network, aborting...\n{:?}", e);
-    })?;
-    println!("✓");
-
-    print_progress!("Starting Bitcoin node");
-    let bitcoin_node = runtime
-        .block_on(bitcoin_node)
-        .map_err(|e| {
-            eprintln!("Could not start bitcoin node, aborting...\n{:?}", e);
-        })
-        .map(Arc::new)?;
-    println!("✓");
-
-    print_progress!("Starting Ethereum node");
-    let ethereum_node = runtime
-        .block_on(ethereum_node)
-        .map_err(|e| {
-            eprintln!("Could not start Ethereum node, aborting...\n{:?}", e);
-        })
-        .map(Arc::new)?;
-    println!("✓");
-
-    print_progress!("Writing configuration in env file");
-    let mut envfile = EnvFile::new(env_file_path.clone()).map_err(|e| {
-        eprintln!("Could not read {} file, aborting...\n{:?}", env_file_str, e);
-    })?;
-
-    for (i, hd_key) in bitcoin_hd_keys.iter().enumerate() {
-        envfile.update(
-            format!("BITCOIN_HD_KEY_{}", i).as_str(),
-            format!("{}", hd_key).as_str(),
-        );
-    }
-
-    for (i, priv_key) in ethereum_priv_keys.iter().enumerate() {
-        envfile.update(
-            format!("ETHEREUM_KEY_{}", i).as_str(),
-            format!("{}", priv_key).as_str(),
-        );
-    }
-
-    envfile.write().map_err(|e| {
-        eprintln!(
-            "Could not write {} file, aborting...\n{:?}",
-            env_file_str, e
-        );
-    })?;
-    println!("✓");
-
-    print_progress!("Starting two cnds");
-    let cnds = runtime
-        .block_on(cnds)
-        .map_err(|e| {
-            eprintln!("Could not start cnds, cleaning up...\n{:?}", e);
-        })
-        .map(Arc::new)?;
-    println!("✓");
-
-    println!("🎉 Environment is ready, time to create a COMIT app!");
-    Ok(Services {
-        docker_network_id,
-        bitcoin_node,
-        ethereum_node,
-        cnds,
-    })
-}
-
 #[derive(Debug)]
 pub enum Error {
     BitcoinFunding(bitcoincore_rpc::Error),
@@ -239,6 +259,7 @@ pub enum Error {
     WriteConfig(std::io::Error),
     DeriveKeys(rust_bitcoin::util::bip32::Error),
     HomeDir,
+    SignalReceived,
     Unimplemented,
 }
 
@@ -309,9 +330,8 @@ fn start_cnds(
                             };
 
                             let config_file = config_folder.join("cnd.toml");
-                            // expect: settings are hard coded
-                            let settings =
-                                toml::to_string(&settings).expect("could not serialize settings");
+                            let settings = toml::to_string(&settings)
+                                .expect("could not serialize hardcoded settings");
 
                             tokio::fs::write(config_file, settings).map_err(Error::WriteConfig)
                         }
