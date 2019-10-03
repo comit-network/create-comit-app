@@ -4,7 +4,7 @@
   "description": " Set up a local development environment for COMIT apps with one command.",
   "main": "create-comit-app",
   "scripts": {
-    "preinstall": "node ./download.js",
+    "postinstall": "node ./download.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -25,5 +25,9 @@
   "homepage": "https://github.com/comit-network/create-comit-app#readme",
   "bin": {
     "create-comit-app": "./create-comit-app"
+  },
+  "devDependencies": {
+    "axios": "^0.19.0",
+    "unzipper": "^0.10.5"
   }
 }
