@@ -66,9 +66,6 @@ impl Image for BitcoinNode {
 
         Self { rpc_client }
     }
-    fn post_start_actions(&self) {
-        self.rpc_client.generate(101, None).unwrap();
-    }
 }
 
 impl BlockchainImage for BitcoinNode {
@@ -84,9 +81,11 @@ impl BlockchainImage for BitcoinNode {
     ) -> Box<dyn Future<Item = Self::TxId, Error = Self::ClientError> + Send + Sync> {
         let client = &self.rpc_client;
 
-        let response = client
-            .send_to_address(&address, value, None, None, None, None, None, None)
-            .and_then(|txid| client.generate(1, None).map(|_| txid));
+        let response = client.generate(101, None).and_then(|_| {
+            client
+                .send_to_address(&address, value, None, None, None, None, None, None)
+                .and_then(|txid| client.generate(1, None).map(|_| txid))
+        });
 
         Box::new(response.into_future())
     }
