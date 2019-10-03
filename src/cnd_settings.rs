@@ -8,8 +8,9 @@ pub struct Settings {
     pub comit: Comit,
     pub network: Network,
     pub http_api: HttpSocket,
-    pub btsieve: Btsieve,
-    pub web_gui: Option<HttpSocket>,
+    pub logging: Logging,
+    pub bitcoin: Bitcoin,
+    pub ethereum: Ethereum,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -29,16 +30,21 @@ pub struct HttpSocket {
 }
 
 #[derive(Clone, Debug, Serialize)]
-pub struct Btsieve {
-    pub url: String,
-    pub bitcoin: PollParameters,
-    pub ethereum: PollParameters,
+pub struct Logging {
+    pub level: String,
+    pub structured: bool,
 }
 
 #[derive(Clone, Debug, Serialize)]
-pub struct PollParameters {
-    pub poll_interval_secs: u16,
+pub struct Bitcoin {
     pub network: String,
+    pub node_url: String,
+}
+
+#[derive(Clone, Debug, Serialize)]
+pub struct Ethereum {
+    pub network: String,
+    pub node_url: String,
 }
 
 impl Default for Comit {
@@ -67,18 +73,29 @@ impl Default for HttpSocket {
     }
 }
 
-impl Default for Btsieve {
-    fn default() -> Btsieve {
-        Btsieve {
-            url: String::from("http://localhost:8181"),
-            bitcoin: PollParameters {
-                poll_interval_secs: 1,
-                network: String::from("regtest"),
-            },
-            ethereum: PollParameters {
-                poll_interval_secs: 1,
-                network: String::from("regtest"),
-            },
+impl Default for Logging {
+    fn default() -> Self {
+        Logging {
+            level: "DEBUG".to_string(),
+            structured: false,
+        }
+    }
+}
+
+impl Default for Bitcoin {
+    fn default() -> Self {
+        Bitcoin {
+            network: "regtest".to_string(),
+            node_url: "http://localhost:18443".to_string(),
+        }
+    }
+}
+
+impl Default for Ethereum {
+    fn default() -> Self {
+        Ethereum {
+            network: "regtest".to_string(),
+            node_url: "http://localhost:8545".to_string(),
         }
     }
 }
