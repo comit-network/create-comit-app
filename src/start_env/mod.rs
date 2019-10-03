@@ -157,8 +157,7 @@ fn start_all(runtime: &mut Runtime) -> Result<Services, Error> {
         cnds,
     ) = all_futures()?;
 
-    temp_fs::create_env_file()?;
-    let env_file_str = temp_fs::env_file_str()?;
+    let env_file_str = temp_fs::create_env_file()?;
 
     print_progress!("Creating Docker network (create-comit-app)");
     let docker_network_id = runtime.block_on(docker_network_create).map_err(|e| {
@@ -309,9 +308,8 @@ fn start_cnds(
                             };
 
                             let config_file = config_folder.join("cnd.toml");
-                            // expect: settings are hard coded
-                            let settings =
-                                toml::to_string(&settings).expect("could not serialize settings");
+                            let settings = toml::to_string(&settings)
+                                .expect("could not serialize hardcoded settings");
 
                             tokio::fs::write(config_file, settings).map_err(Error::WriteConfig)
                         }

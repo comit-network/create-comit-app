@@ -16,19 +16,15 @@ pub fn env_file_path() -> Result<PathBuf, Error> {
     Ok(dir_path()?.join(ENV_FILE_NAME))
 }
 
-pub fn env_file_str() -> Result<String, Error> {
+pub fn create_env_file() -> Result<String, Error> {
+    std::fs::create_dir_all(dir_path()?).map_err(Error::CreateTmpFiles)?;
+    std::fs::File::create(env_file_path()?).map_err(Error::CreateTmpFiles)?;
     Ok(format!(
         "{}/{}/{}",
         home()?.to_str().ok_or(Error::PathToStr)?,
         DIR_NAME,
         ENV_FILE_NAME
     ))
-}
-
-pub fn create_env_file() -> Result<(), Error> {
-    std::fs::create_dir_all(dir_path()?).map_err(Error::CreateTmpFiles)?;
-    std::fs::File::create(env_file_path()?).map_err(Error::CreateTmpFiles)?;
-    Ok(())
 }
 
 pub fn dir_exist() -> bool {
