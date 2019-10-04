@@ -1,4 +1,4 @@
-# Create Comit App (cca)
+# Create Comit App
 
 Set up a local development environment for COMIT apps with one command. 
 
