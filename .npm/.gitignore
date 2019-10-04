@@ -1,5 +1,4 @@
 *.zip
 create-comit-app
 .DS_Store
-README.md
 node_modules/
