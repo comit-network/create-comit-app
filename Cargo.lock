@@ -310,7 +310,7 @@ dependencies = [
 
 [[package]]
 name = "create-comit-app"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "bitcoin 0.19.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "bitcoincore-rpc 0.8.0-rc1 (registry+https://github.com/rust-lang/crates.io-index)",
