@@ -24,7 +24,7 @@
   },
   "homepage": "https://github.com/comit-network/create-comit-app#readme",
   "bin": {
-    "create-comit-app": "./create-comit-app"
+    "create-comit-app": "./bin/create-comit-app"
   },
   "devDependencies": {},
   "dependencies": {
