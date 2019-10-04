@@ -293,7 +293,7 @@ fn start_ethereum_node(
                 node.node_image
                     .fund(
                         ethereum::derive_address(key),
-                        U256::from("9000000000000000000"),
+                        U256::from(100u128*10u128.pow(18)),
                     )
                     .map_err(Error::EtherFunding)
                     .map(|_| node)
