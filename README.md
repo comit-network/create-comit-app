@@ -10,8 +10,8 @@ Set up a local development environment for COMIT apps with one command.
 
 ## 2 - Create your first project!
 
-1. Create a new COMIT app project: `create-comit-app new my-cool-app`,
-2. Start local blockchain nodes & COMIT nodes: `create-comit-app start-env`,
+1. Start local blockchain nodes & COMIT nodes: `create-comit-app start-env`,
+2. Create a new COMIT app project: `create-comit-app new my-cool-app`,
 3. Open a new terminal:
    - `cd <path-to-my-cool-app>`,
    - Install dependencies: `yarn install` (or `npm install`),
