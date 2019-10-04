@@ -17,7 +17,7 @@ async function getArch() {
 
 async function unzip(filepath) {
   const directory = await unzipper.Open.file(filepath);
-  return directory.extract({path: process.cwd()});
+  return directory.extract({path: process.cwd() + "/bin" });
 }
 
 (async () => {
@@ -28,17 +28,18 @@ async function unzip(filepath) {
     throw new Error("Could not retrieve needed information.");
   }
   const binName = "create-comit-app";
-  const filename = `create-comit-app_${version}_${system}_${arch}.zip`;
+  const binPath = `./bin/${binName}`;
+  const zipFilename = `${binName}_${version}_${system}_${arch}.zip`;
 
-  if (fs.existsSync(filename)) {
-    fs.unlinkSync(filename);
+  if (fs.existsSync(zipFilename)) {
+    fs.unlinkSync(zipFilename);
   }
 
-  if (fs.existsSync(binName)) {
-    fs.unlinkSync(binName);
+  if (fs.existsSync(binPath)) {
+    fs.unlinkSync(binPath);
   }
 
-  const url = `https://github.com/comit-network/create-comit-app/releases/download/${version}/${filename}`;
+  const url = `https://github.com/comit-network/create-comit-app/releases/download/${version}/${zipFilename}`;
 
   let response = await axios({
     url,
@@ -54,7 +55,7 @@ async function unzip(filepath) {
     });
   }
 
-  const file = fs.createWriteStream(filename);
+  const file = fs.createWriteStream(zipFilename);
 
   response.data.pipe(file);
   await new Promise((resolve, reject) => {
@@ -67,7 +68,7 @@ async function unzip(filepath) {
     })
   }).catch();
 
-  await unzip(filename);
-  fs.unlinkSync(filename);
+  await unzip(zipFilename);
+  fs.unlinkSync(zipFilename);
 })();
 
