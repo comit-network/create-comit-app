@@ -6,15 +6,13 @@ Set up a local development environment for COMIT apps with one command.
 
 1. Install Docker,
 2. Install yarn or npm, 
-3. Go get the latest [release](https://github.com/comit-network/create-comit-app/releases) for your platform,
-4. Unzip & done!
+3. Run `yarn add create-comit-app` or `npm install create-comit-app` 
 
 ## 2 - Create your first project!
 
- 1. Create a new COMIT app project: `./create-comit-app new my-cool-app`,
-2. `cd my-cool-app`,
-3. Start local blockchain nodes & COMIT nodes: `../create-comit-app start-env`,
-4. Open a new terminal:
+1. Create a new COMIT app project: `create-comit-app new my-cool-app`,
+2. Start local blockchain nodes & COMIT nodes: `create-comit-app start-env`,
+3. Open a new terminal:
    - `cd <path-to-my-cool-app>`,
    - Install dependencies: `yarn install` (or `npm install`),
    - Run the [hello-swap](https://github.com/comit-network/hello-swap/) example: `yarn start` (or `npm start`),
@@ -30,4 +28,4 @@ Important: You don't have to follow this section, the above section is actually 
 1. Install Docker,
 2. Install Rust: `curl https://sh.rustup.rs -sSf | sh`,
 3. Checkout the repo: `git clone https://github.com/comit-network/create-comit-app/`,
-4. Build and install: ` cargo install --path create-comit-app`.
+4. Build and install: `cargo install --path create-comit-app`.
