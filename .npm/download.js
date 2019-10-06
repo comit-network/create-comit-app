@@ -17,11 +17,11 @@ async function getArch() {
 
 async function unzip(filepath) {
   const directory = await unzipper.Open.file(filepath);
-  return directory.extract({path: process.cwd() });
+  return directory.extract({path: process.cwd()});
 }
 
 (async () => {
-  const version = packageJson.version;
+  const version = /^\d\.\d\.\d/.exec(packageJson.version)[0];
   const system = await getSystem();
   const arch = await getArch();
   if (!version || !system || !arch) {
