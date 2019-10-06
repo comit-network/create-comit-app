@@ -17,7 +17,7 @@ async function getArch() {
 
 async function unzip(filepath) {
   const directory = await unzipper.Open.file(filepath);
-  return directory.extract({path: process.cwd() + "/bin" });
+  return directory.extract({path: process.cwd() });
 }
 
 (async () => {
@@ -28,15 +28,14 @@ async function unzip(filepath) {
     throw new Error("Could not retrieve needed information.");
   }
   const binName = "create-comit-app";
-  const binPath = `./bin/${binName}`;
   const zipFilename = `${binName}_${version}_${system}_${arch}.zip`;
 
   if (fs.existsSync(zipFilename)) {
     fs.unlinkSync(zipFilename);
   }
 
-  if (fs.existsSync(binPath)) {
-    fs.unlinkSync(binPath);
+  if (fs.existsSync(binName)) {
+    fs.unlinkSync(binName);
   }
 
   const url = `https://github.com/comit-network/create-comit-app/releases/download/${version}/${zipFilename}`;
