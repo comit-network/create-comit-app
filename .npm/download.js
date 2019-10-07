@@ -1,7 +1,7 @@
 const fs = require("fs");
 const util = require("util");
 const exec = util.promisify(require("child_process").exec);
-const unzipper = require("unzipper");
+const extract = util.promisify(require("targz").decompress);
 const axios = require("axios");
 const path = require("path");
 
@@ -15,18 +15,13 @@ async function getArch() {
   return stdout.trim();
 }
 
-async function unzip(zipPath, binName) {
-  const directory = await unzipper.Open.file(zipPath);
-  return directory.extract({ path: process.cwd() });
-}
-
 async function download(version, binPath) {
   const system = await getSystem();
   const arch = await getArch();
   if (!version || !system || !arch) {
     throw new Error("Could not retrieve needed information.");
   }
-  const zipFilename = `create-comit-app_${version}_${system}_${arch}.zip`;
+  const zipFilename = `create-comit-app_${version}_${system}_${arch}.tar.gz`;
 
   if (!fs.existsSync(path.dirname(binPath))) {
     fs.mkdirSync(path.dirname(binPath));
@@ -65,7 +60,10 @@ async function download(version, binPath) {
     });
   }).catch();
 
-  await unzip(zipFilename, binPath);
+  await extract({
+    src: zipFilename,
+    dest: process.cwd()
+  });
   fs.unlinkSync(zipFilename);
   fs.renameSync("create-comit-app", binPath);
   fs.chmodSync(binPath, 755);
