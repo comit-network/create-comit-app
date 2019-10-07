@@ -3,7 +3,6 @@
 const fs = require("fs");
 const packageJson = require("./package");
 const { download } = require("./download");
-const util = require("util");
 const spawn = require("child_process").spawn;
 
 async function execute(binPath, args) {
@@ -14,11 +13,11 @@ async function execute(binPath, args) {
   });
 
   cca.stdout.on("data", data => {
-    console.log(data.toString());
+    process.stdout.write(data.toString());
   });
 
   cca.stderr.on("data", data => {
-    console.error(data.toString());
+    process.stderr.write(data.toString());
   });
 
   cca.on("exit", code => {
