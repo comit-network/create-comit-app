@@ -12,6 +12,22 @@ async function execute(binPath, args) {
     console.error("Could not execute create-comit-app:", error);
   });
 
+  async function handleSignal(code) {
+    cca.kill(code);
+  }
+
+  process.on("beforeExit", async code => {
+    await handleSignal(code);
+  });
+
+  process.on("SIGINT", async code => {
+    await handleSignal(code);
+  });
+
+  process.on("SIGTERM", async code => {
+    await handleSignal(code);
+  });
+
   cca.stdout.on("data", data => {
     process.stdout.write(data.toString());
   });
@@ -20,12 +36,8 @@ async function execute(binPath, args) {
     process.stderr.write(data.toString());
   });
 
-  cca.on("exit", code => {
+  cca.on("close", code => {
     process.exit(code);
-  });
-
-  process.on("SIGINT", () => {
-    cca.kill("SIGINT");
   });
 }
 
