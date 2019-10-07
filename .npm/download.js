@@ -1,5 +1,4 @@
 const fs = require("fs");
-const packageJson = require("./package");
 const util = require("util");
 const exec = util.promisify(require("child_process").exec);
 const unzipper = require("unzipper");
@@ -15,27 +14,24 @@ async function getArch() {
   return stdout.trim();
 }
 
-async function unzip(filepath) {
-  const directory = await unzipper.Open.file(filepath);
-  return directory.extract({ path: process.cwd() });
+async function unzip(zipPath, binName) {
+  const directory = await unzipper.Open.file(zipPath);
+  await directory.extract({ path: process.cwd() });
+  fs.unlinkSync(zipPath);
+  return fs.renameSync("create-comit-app", binName);
 }
 
-(async () => {
-  const version = /^\d\.\d\.\d/.exec(packageJson.version)[0];
+async function download(version) {
   const system = await getSystem();
   const arch = await getArch();
   if (!version || !system || !arch) {
     throw new Error("Could not retrieve needed information.");
   }
-  const binName = "create-comit-app";
-  const zipFilename = `${binName}_${version}_${system}_${arch}.zip`;
+  const binName = `create-comit-app_${version}`;
+  const zipFilename = `create-comit-app_${version}_${system}_${arch}.zip`;
 
   if (fs.existsSync(zipFilename)) {
     fs.unlinkSync(zipFilename);
-  }
-
-  if (fs.existsSync(binName)) {
-    fs.unlinkSync(binName);
   }
 
   const url = `https://github.com/comit-network/create-comit-app/releases/download/${version}/${zipFilename}`;
@@ -67,7 +63,7 @@ async function unzip(filepath) {
     });
   }).catch();
 
-  await unzip(zipFilename);
-  fs.unlinkSync(zipFilename);
-})();
+  await unzip(zipFilename, binName);
+}
 
+module.exports = { download };
