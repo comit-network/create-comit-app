@@ -15,23 +15,27 @@ async function getArch() {
   return stdout.trim();
 }
 
-async function download(version, binPath) {
+async function download(version, binTarget) {
   const system = await getSystem();
   const arch = await getArch();
   if (!version || !system || !arch) {
     throw new Error("Could not retrieve needed information.");
   }
-  const zipFilename = `create-comit-app_${version}_${system}_${arch}.tar.gz`;
 
-  if (!fs.existsSync(path.dirname(binPath))) {
-    fs.mkdirSync(path.dirname(binPath));
+  const targetDir = path.dirname(binTarget);
+
+  const archiveName = `create-comit-app_${version}_${system}_${arch}.tar.gz`;
+  const archivePath = targetDir + "/" + archiveName;
+
+  if (!fs.existsSync(targetDir)) {
+    fs.mkdirSync(targetDir);
   }
 
-  if (fs.existsSync(zipFilename)) {
-    fs.unlinkSync(zipFilename);
+  if (fs.existsSync(archivePath)) {
+    fs.unlinkSync(archivePath);
   }
 
-  const url = `https://github.com/comit-network/create-comit-app/releases/download/${version}/${zipFilename}`;
+  const url = `https://github.com/comit-network/create-comit-app/releases/download/${version}/${archiveName}`;
 
   let response = await axios({
     url,
@@ -47,7 +51,7 @@ async function download(version, binPath) {
     });
   }
 
-  const file = fs.createWriteStream(zipFilename);
+  const file = fs.createWriteStream(archivePath);
 
   response.data.pipe(file);
   await new Promise((resolve, reject) => {
@@ -61,12 +65,12 @@ async function download(version, binPath) {
   }).catch();
 
   await extract({
-    src: zipFilename,
-    dest: process.cwd()
+    src: archivePath,
+    dest: targetDir
   });
-  fs.unlinkSync(zipFilename);
-  fs.renameSync("create-comit-app", binPath);
-  fs.chmodSync(binPath, 755);
+  fs.unlinkSync(archivePath);
+  fs.renameSync(targetDir + "/create-comit-app", binTarget);
+  fs.chmodSync(binTarget, 755);
 }
 
 module.exports = { download };
