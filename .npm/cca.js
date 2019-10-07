@@ -29,13 +29,16 @@ async function execute(binPath, args) {
 (async () => {
   const ccaVersion = /^\d\.\d\.\d/.exec(packageJson.version)[0];
   const binPath = `./create-comit-app_${ccaVersion}`;
+  let args = process.argv;
+  args.shift(); // node
+  args.shift(); // .../cca.js
 
   try {
     if (!fs.existsSync(binPath)) {
       await download(ccaVersion);
     }
 
-    await execute(binPath, []);
+    await execute(binPath, args);
   } catch (error) {
     console.error("Issue encountered:", error);
   }
