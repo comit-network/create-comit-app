@@ -9,20 +9,24 @@ const spawn = require("child_process").spawn;
 async function execute(binPath, args) {
   const cca = spawn(binPath, args);
 
-  cca.on("error", function(error) {
+  cca.on("error", error => {
     console.error("Could not execute create-comit-app:", error);
   });
 
-  cca.stdout.on("data", function(data) {
+  cca.stdout.on("data", data => {
     console.log(data.toString());
   });
 
-  cca.stderr.on("data", function(data) {
+  cca.stderr.on("data", data => {
     console.error(data.toString());
   });
 
-  cca.on("exit", function(code) {
+  cca.on("exit", code => {
     process.exit(code);
+  });
+
+  process.on("SIGINT", () => {
+    cca.kill("SIGINT");
   });
 }
 
