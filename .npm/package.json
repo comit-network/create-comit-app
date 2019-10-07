@@ -1,11 +1,11 @@
 {
   "name": "create-comit-app",
-  "version": "0.2.1",
+  "version": "0.2.1-rc2",
   "description": " Set up a local development environment for COMIT apps with one command.",
-  "main": "create-comit-app",
+  "main": "create-comit-app.js",
   "scripts": {
-    "postinstall": "node ./download.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node ./create-comit-app.js",
+    "fix": "prettier --write '**/*.{ts,js,json,yml}'"
   },
   "repository": {
     "type": "git",
@@ -24,9 +24,11 @@
   },
   "homepage": "https://github.com/comit-network/create-comit-app#readme",
   "bin": {
-    "create-comit-app": "./bin/create-comit-app"
+    "create-comit-app": "./create-comit-app.js"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "prettier": "^1.18.2"
+  },
   "dependencies": {
     "axios": "^0.19.0",
     "unzipper": "^0.10.5"

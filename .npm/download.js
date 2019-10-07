@@ -1,23 +1,23 @@
-const fs = require('fs');
+const fs = require("fs");
 const packageJson = require("./package");
-const util = require('util');
-const exec = util.promisify(require('child_process').exec);
+const util = require("util");
+const exec = util.promisify(require("child_process").exec);
 const unzipper = require("unzipper");
-const axios = require('axios');
+const axios = require("axios");
 
 async function getSystem() {
-  const {stdout} = await exec("uname -s");
+  const { stdout } = await exec("uname -s");
   return stdout.trim();
 }
 
 async function getArch() {
-  const {stdout} = await exec("uname -m");
+  const { stdout } = await exec("uname -m");
   return stdout.trim();
 }
 
 async function unzip(filepath) {
   const directory = await unzipper.Open.file(filepath);
-  return directory.extract({path: process.cwd()});
+  return directory.extract({ path: process.cwd() });
 }
 
 (async () => {
@@ -42,15 +42,15 @@ async function unzip(filepath) {
 
   let response = await axios({
     url,
-    method: 'GET',
-    responseType: 'stream'
+    method: "GET",
+    responseType: "stream"
   });
 
   if (response.status === 302) {
     response = await axios({
       url: response.headers.location,
-      method: 'GET',
-      responseType: 'stream'
+      method: "GET",
+      responseType: "stream"
     });
   }
 
@@ -58,13 +58,13 @@ async function unzip(filepath) {
 
   response.data.pipe(file);
   await new Promise((resolve, reject) => {
-    response.data.on('end', () => {
-      resolve()
+    response.data.on("end", () => {
+      resolve();
     });
 
-    response.data.on('error', err => {
+    response.data.on("error", err => {
       reject(err);
-    })
+    });
   }).catch();
 
   await unzip(zipFilename);
