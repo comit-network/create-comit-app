@@ -43,14 +43,18 @@ async function execute(binPath, args) {
 
 (async () => {
   const ccaVersion = /^\d\.\d\.\d/.exec(packageJson.version)[0];
-  const binPath = `./create-comit-app_${ccaVersion}`;
+  const binPath = `./bin/create-comit-app_${ccaVersion}`;
   let args = process.argv;
   args.shift(); // node
   args.shift(); // .../cca.js
 
   try {
     if (!fs.existsSync(binPath)) {
-      await download(ccaVersion);
+      process.stdout.write(
+        `First time execution, downloading create-comit-app ${ccaVersion}...`
+      );
+      await download(ccaVersion, binPath);
+      console.log("✓");
     }
 
     await execute(binPath, args);

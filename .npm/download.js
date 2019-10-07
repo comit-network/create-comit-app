@@ -3,6 +3,7 @@ const util = require("util");
 const exec = util.promisify(require("child_process").exec);
 const unzipper = require("unzipper");
 const axios = require("axios");
+const path = require("path");
 
 async function getSystem() {
   const { stdout } = await exec("uname -s");
@@ -16,19 +17,20 @@ async function getArch() {
 
 async function unzip(zipPath, binName) {
   const directory = await unzipper.Open.file(zipPath);
-  await directory.extract({ path: process.cwd() });
-  fs.unlinkSync(zipPath);
-  return fs.renameSync("create-comit-app", binName);
+  return directory.extract({ path: process.cwd() });
 }
 
-async function download(version) {
+async function download(version, binPath) {
   const system = await getSystem();
   const arch = await getArch();
   if (!version || !system || !arch) {
     throw new Error("Could not retrieve needed information.");
   }
-  const binName = `create-comit-app_${version}`;
   const zipFilename = `create-comit-app_${version}_${system}_${arch}.zip`;
+
+  if (!fs.existsSync(path.dirname(binPath))) {
+    fs.mkdirSync(path.dirname(binPath));
+  }
 
   if (fs.existsSync(zipFilename)) {
     fs.unlinkSync(zipFilename);
@@ -63,7 +65,10 @@ async function download(version) {
     });
   }).catch();
 
-  await unzip(zipFilename, binName);
+  await unzip(zipFilename, binPath);
+  fs.unlinkSync(zipFilename);
+  fs.renameSync("create-comit-app", binPath);
+  fs.chmodSync(binPath, 755);
 }
 
 module.exports = { download };
