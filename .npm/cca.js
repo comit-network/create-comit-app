@@ -4,6 +4,7 @@ const fs = require("fs");
 const packageJson = require("./package");
 const { download } = require("./download");
 const spawn = require("child_process").spawn;
+const path = require("path");
 
 async function execute(binPath, args) {
   const cca = spawn(binPath, args);
@@ -42,11 +43,13 @@ async function execute(binPath, args) {
 }
 
 (async () => {
-  const ccaVersion = /^\d\.\d\.\d/.exec(packageJson.version)[0];
-  const binPath = `./bin/create-comit-app_${ccaVersion}`;
   let args = process.argv;
   args.shift(); // node
+  const dirPath = path.dirname(args[0]);
   args.shift(); // .../cca.js
+
+  const ccaVersion = /^\d\.\d\.\d/.exec(packageJson.version)[0];
+  const binPath = `${dirPath}/bin/create-comit-app_${ccaVersion}`;
 
   try {
     if (!fs.existsSync(binPath)) {
