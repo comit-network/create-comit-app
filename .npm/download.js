@@ -28,7 +28,7 @@ async function download(version, binTarget) {
   const archivePath = targetDir + "/" + archiveName;
 
   if (!fs.existsSync(targetDir)) {
-    fs.mkdirSync(targetDir);
+    fs.mkdirSync(targetDir, { recursive: true });
   }
 
   if (fs.existsSync(archivePath)) {

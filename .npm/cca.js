@@ -49,7 +49,7 @@ async function execute(binPath, args) {
   args.shift(); // .../cca.js
 
   const ccaVersion = /^\d\.\d\.\d/.exec(packageJson.version)[0];
-  const binPath = `${dirPath}/bin/${ccaVersion}/create-comit-app`;
+  const binPath = `${dirPath}/create-comit-app_${ccaVersion}/create-comit-app`;
 
   try {
     if (!fs.existsSync(binPath)) {
