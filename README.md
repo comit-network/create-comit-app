@@ -6,19 +6,17 @@ Set up a local development environment for COMIT apps with one command.
 
 1. Install Docker,
 2. Install yarn or npm, 
-3. Run `yarn create comit-app` to install globally (or `npx create-comit-app` to keep it local).
-
+3. Download and unzip the latest [release](https://github.com/comit-network/create-comit-app/releases) (`zip` or `tar.gz`)
+4. Add the `create-comit-app` binary to `$PATH`
 
 ## 2 - Create your first project!
 
-1. Start local blockchain nodes & COMIT nodes: `create-comit-app start-env` (or `npx create-comit-app start-env`), 
-2. Create a new COMIT app project: `create-comit-app new my-cool-app` (or `npx create-comit-app new my-cool-app`),
-3. Open a new terminal:
-   - `cd <path-to-my-cool-app>`,
-   - Install dependencies: `yarn install` (or `npm install`),
-   - Run the [hello-swap](https://github.com/comit-network/hello-swap/) example: `yarn start` (or `npm start`),
-   - Hit `CTRL-C` once the swap is done.
-   
+1. Create [hello-swap](https://github.com/comit-network/hello-swap/) app: `create-comit-app new hello-swap`,
+2. Start environment (blockchain nodes and COMIT nodes): `create-comit-app start-env`
+3. Run hello-swap (in separate terminal):
+    1. Navigate to the example app directory `cd <path-to-hello-swap>`
+    2. `yarn install` (or `npm install`) to install dependencies
+    3. `yarn start` (or `npm start`) to run the application
 
 # Appendix
 
