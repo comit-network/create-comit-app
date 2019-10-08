@@ -1,6 +1,6 @@
 {
   "name": "create-comit-app",
-  "version": "0.2.1-rc5",
+  "version": "0.2.1-rc6",
   "description": " Set up a local development environment for COMIT apps with one command.",
   "main": "cca.js",
   "scripts": {
