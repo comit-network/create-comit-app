@@ -6,7 +6,7 @@ Set up a local development environment for COMIT apps with one command.
 
 1. Install Docker,
 2. Install [yarn](https://yarnpkg.com/lang/en/docs/install/) or npm,
-4. `create-comit-app` can now be run with either:
+3. `create-comit-app` can now be run with either:
   - `yarn create comit-app --help`
   - `npx create-comit-app --help` (need to install npx first: `npm install --global npx`)
 
