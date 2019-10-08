@@ -26,5 +26,5 @@ Important: You don't have to follow this section, the above section is actually 
 
 1. Install Docker,
 2. Install Rust: `curl https://sh.rustup.rs -sSf | sh`,
-3. Checkout the repo: `git clone https://github.com/comit-network/create-comit-app/`,
-4. Build and install: `cargo install --path create-comit-app`.
+3. Checkout the repo: `git clone https://github.com/comit-network/create-comit-app/; cd create-comit-app`,
+4. Build and install: `cargo install --path . create-comit-app`.
