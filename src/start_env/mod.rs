@@ -66,7 +66,7 @@ pub fn start_env() {
 fn bitcoin_generate_blocks(
     bitcoin_node: Arc<Node<BitcoinNode>>,
 ) -> impl Future<Item = (), Error = ()> {
-    Interval::new_interval(Duration::from_secs(2))
+    Interval::new_interval(Duration::from_secs(1))
         .map_err(|_| eprintln!("Issue getting an interval."))
         .for_each({
             let bitcoin_node = bitcoin_node.clone();
