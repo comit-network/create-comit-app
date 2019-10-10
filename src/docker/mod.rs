@@ -224,23 +224,6 @@ impl<I: Image> Node<I> {
     }
 }
 
-impl<I: Image> Drop for Node<I> {
-    fn drop(&mut self) {
-        let rm_fut = Docker::new()
-            .containers()
-            .get(&self.container_id)
-            .remove(
-                RmContainerOptions::builder()
-                    .force(true)
-                    .volumes(true)
-                    .build(),
-            )
-            .map_err(|_| ());
-
-        tokio::run(rm_fut);
-    }
-}
-
 pub fn create_network() -> impl Future<Item = String, Error = shiplift::Error> {
     Docker::new()
         .networks()
