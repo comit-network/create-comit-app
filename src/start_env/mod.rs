@@ -192,20 +192,10 @@ fn all_futures() -> Result<
     ),
     Error,
 > {
-    let mut bitcoin_hd_keys = vec![];
-    let mut ethereum_priv_keys = vec![];
-    for _ in 0..2 {
-        bitcoin_hd_keys.push(ExtendedPrivKey::new_master(
-            rust_bitcoin::Network::Regtest,
-            &{
-                let mut seed = [0u8; 32];
-                thread_rng().fill_bytes(&mut seed);
-
-                seed
-            },
-        )?);
-        ethereum_priv_keys.push(SecretKey::new(&mut thread_rng()));
-    }
+    let bitcoin_hd_keys = vec![
+        new_extended_regtest_priv_key()?,
+        new_extended_regtest_priv_key()?,
+    ];
     let derivation_path = vec![
         ChildNumber::from_hardened_idx(44)?,
         ChildNumber::from_hardened_idx(1)?,
@@ -221,6 +211,11 @@ fn all_futures() -> Result<
                 .map(|secret_key| secret_key.private_key.key)
         })
         .collect::<Result<Vec<_>, _>>()?;
+    let ethereum_priv_keys = vec![
+        SecretKey::new(&mut thread_rng()),
+        SecretKey::new(&mut thread_rng()),
+    ];
+
     let env_file_path = temp_fs::env_file_path()?;
     let docker_network_create = create_network().map_err(|e| {
         eprintln!("Issue creating Docker network: {:?}", e);
@@ -247,6 +242,15 @@ fn all_futures() -> Result<
         ethereum_node,
         cnds,
     ))
+}
+
+fn new_extended_regtest_priv_key() -> Result<ExtendedPrivKey, rust_bitcoin::util::bip32::Error> {
+    ExtendedPrivKey::new_master(rust_bitcoin::Network::Regtest, &{
+        let mut seed = [0u8; 32];
+        thread_rng().fill_bytes(&mut seed);
+
+        seed
+    })
 }
 
 #[derive(Debug)]
