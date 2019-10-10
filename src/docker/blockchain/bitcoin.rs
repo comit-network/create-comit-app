@@ -1,8 +1,8 @@
 use crate::docker::{ExposedPorts, Image};
 use bitcoincore_rpc::RpcApi;
-use futures::future::Future;
-use futures::IntoFuture;
 use rust_bitcoin::{self, hashes::sha256d, Address, Amount, Network};
+use tokio::prelude::future::Future;
+use tokio::prelude::IntoFuture;
 
 pub const P2P_URI_KEY: &str = "BITCOIN_P2P_URI";
 pub const HTTP_URL_KEY: &str = "BITCOIN_NODE_RPC_URL";

@@ -1,14 +1,14 @@
 use crate::print_progress;
 use envfile::EnvFile;
-use futures::future::Either;
-use futures::stream::Stream;
-use futures::Future;
 use shiplift::builder::ContainerOptionsBuilder;
 use shiplift::{
     ContainerOptions, Docker, LogsOptions, NetworkCreateOptions, PullOptions, RmContainerOptions,
 };
 use std::io::Write;
 use std::path::PathBuf;
+use tokio::prelude::future::Either;
+use tokio::prelude::stream::Stream;
+use tokio::prelude::Future;
 
 pub mod blockchain;
 pub mod cnd;
@@ -123,7 +123,7 @@ impl<I: Image> Node<I> {
                             .map(|_| ()),
                     )
                 } else {
-                    Either::B(futures::future::ok(()))
+                    Either::B(tokio::prelude::future::ok(()))
                 }
             })
     }

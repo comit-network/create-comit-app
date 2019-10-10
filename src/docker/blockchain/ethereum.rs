@@ -1,10 +1,10 @@
 use crate::docker::{ExposedPorts, Image};
 use lazy_static::lazy_static;
 use tiny_keccak;
+use tokio::prelude::Future;
 use web3::transports::EventLoopHandle;
 use web3::{
     api::Web3,
-    futures::Future,
     transports::Http,
     types::{Address, TransactionRequest, H256, U256},
 };
