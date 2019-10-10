@@ -1,4 +1,4 @@
-use crate::docker::{blockchain::BlockchainImage, ExposedPorts, Image};
+use crate::docker::{ExposedPorts, Image};
 use bitcoincore_rpc::RpcApi;
 use futures::future::Future;
 use futures::IntoFuture;
@@ -68,27 +68,18 @@ impl Image for BitcoinNode {
     }
 }
 
-impl BlockchainImage for BitcoinNode {
-    type Address = Address;
-    type Amount = Amount;
-    type TxId = sha256d::Hash;
-    type ClientError = bitcoincore_rpc::Error;
+pub fn fund(
+    client: &bitcoincore_rpc::Client,
+    address: Address,
+    amount: Amount,
+) -> impl Future<Item = sha256d::Hash, Error = bitcoincore_rpc::Error> {
+    let response = client.generate(101, None).and_then(|_| {
+        client
+            .send_to_address(&address, amount, None, None, None, None, None, None)
+            .and_then(|txid| client.generate(1, None).map(|_| txid))
+    });
 
-    fn fund(
-        &self,
-        address: Self::Address,
-        value: Self::Amount,
-    ) -> Box<dyn Future<Item = Self::TxId, Error = Self::ClientError> + Send + Sync> {
-        let client = &self.rpc_client;
-
-        let response = client.generate(101, None).and_then(|_| {
-            client
-                .send_to_address(&address, value, None, None, None, None, None, None)
-                .and_then(|txid| client.generate(1, None).map(|_| txid))
-        });
-
-        Box::new(response.into_future())
-    }
+    response.into_future()
 }
 
 pub fn derive_address(secret_key: secp256k1::SecretKey) -> Address {

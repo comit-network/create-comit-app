@@ -3,7 +3,7 @@ use crate::docker::bitcoin::{self, BitcoinNode};
 use crate::docker::delete_container;
 use crate::docker::ethereum::{self, EthereumNode};
 use crate::docker::Cnd;
-use crate::docker::{blockchain::BlockchainImage, create_network, delete_network, Node};
+use crate::docker::{create_network, delete_network, Node};
 use crate::print_progress;
 use bitcoincore_rpc::RpcApi;
 use envfile::EnvFile;
@@ -275,13 +275,13 @@ fn start_bitcoin_node(
         .map_err(Error::Docker)
         .and_then(move |node| {
             stream::iter_ok(secret_keys).fold(node, |node, key| {
-                node.node_image
-                    .fund(
-                        bitcoin::derive_address(key),
-                        Amount::from_sat(1_000_000_000),
-                    )
-                    .map_err(Error::BitcoinFunding)
-                    .map(|_| node)
+                bitcoin::fund(
+                    &node.node_image.rpc_client,
+                    bitcoin::derive_address(key),
+                    Amount::from_sat(1_000_000_000),
+                )
+                .map_err(Error::BitcoinFunding)
+                .map(|_| node)
             })
         })
 }
@@ -294,16 +294,22 @@ fn start_ethereum_node(
         .map_err(Error::Docker)
         .and_then(move |node| {
             stream::iter_ok(secret_keys).fold(node, |node, key| {
-                node.node_image
-                    .fund(
-                        ethereum::derive_address(key),
-                        U256::from(100u128 * 10u128.pow(18)),
-                    )
-                    .map_err(Error::EtherFunding)
-                    .map(|_| node)
+                ethereum::fund(
+                    &node.node_image.http_client,
+                    ethereum::derive_address(key),
+                    U256::from(100u128 * 10u128.pow(18)),
+                )
+                .map_err(Error::EtherFunding)
+                .map(|_| node)
             })
         })
 }
+
+//fn deploy_er20_and_mint_tokens(node: Node<EthereumNode>, keys: impl Iterator<Item = SecretKey>) -> impl Future {
+//    let client = node.node_image.http_client;
+//
+//    client.eth()
+//}
 
 fn start_cnds(
     envfile_path: &PathBuf,

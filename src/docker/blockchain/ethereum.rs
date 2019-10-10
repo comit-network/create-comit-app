@@ -1,4 +1,4 @@
-use crate::docker::{blockchain::BlockchainImage, ExposedPorts, Image};
+use crate::docker::{ExposedPorts, Image};
 use lazy_static::lazy_static;
 use tiny_keccak;
 use web3::transports::EventLoopHandle;
@@ -60,32 +60,24 @@ impl Image for EthereumNode {
     }
 }
 
-impl BlockchainImage for EthereumNode {
-    type Address = Address;
-    type Amount = U256;
-    type TxId = H256;
-    type ClientError = web3::error::Error;
-
-    fn fund(
-        &self,
-        address: Self::Address,
-        value: Self::Amount,
-    ) -> Box<dyn Future<Item = Self::TxId, Error = Self::ClientError> + Send + Sync> {
-        let future = self.http_client.personal().send_transaction(
-            TransactionRequest {
-                from: *PARITY_DEV_ACCOUNT,
-                to: Some(address),
-                gas: None,
-                gas_price: None,
-                value: Some(value),
-                data: None,
-                nonce: None,
-                condition: None,
-            },
-            "",
-        );
-        Box::new(future)
-    }
+pub fn fund(
+    web3: &Web3<Http>,
+    address: Address,
+    amount: U256,
+) -> impl Future<Item = H256, Error = web3::Error> {
+    web3.personal().send_transaction(
+        TransactionRequest {
+            from: *PARITY_DEV_ACCOUNT,
+            to: Some(address),
+            gas: None,
+            gas_price: None,
+            value: Some(amount),
+            data: None,
+            nonce: None,
+            condition: None,
+        },
+        "",
+    )
 }
 
 pub fn derive_address(secret_key: secp256k1::SecretKey) -> Address {
