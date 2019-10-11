@@ -7,6 +7,7 @@ use crate::docker::{create_network, delete_network, Node};
 use crate::print_progress;
 use bitcoincore_rpc::RpcApi;
 use envfile::EnvFile;
+use futures::{FutureExt, TryFutureExt};
 use rand::{thread_rng, Rng};
 use rust_bitcoin::util::bip32::ChildNumber;
 use rust_bitcoin::util::bip32::ExtendedPrivKey;
@@ -22,7 +23,7 @@ use tokio::prelude::stream;
 use tokio::prelude::{Future, Stream};
 use tokio::runtime::Runtime;
 use tokio::timer::Interval;
-use web3::types::U256;
+use web3::types::{Address, U256};
 
 mod temp_fs;
 
@@ -112,21 +113,21 @@ fn start_all(runtime: &mut Runtime, terminate: &Arc<AtomicBool>) -> Result<Servi
     println!("✓");
     check_signal(terminate)?;
 
+    print_progress!("Starting Ethereum node");
+    let (contract_address, ethereum_node) = runtime
+        .block_on(ethereum_node)
+        .map_err(|e| {
+            eprintln!("Could not start Ethereum node, aborting...\n{:?}", e);
+        })
+        .map(|(contract_address, node)| (contract_address, Arc::new(node)))?;
+    println!("✓");
+    check_signal(terminate)?;
+
     print_progress!("Starting Bitcoin node");
     let bitcoin_node = runtime
         .block_on(bitcoin_node)
         .map_err(|e| {
             eprintln!("Could not start bitcoin node, aborting...\n{:?}", e);
-        })
-        .map(Arc::new)?;
-    println!("✓");
-    check_signal(terminate)?;
-
-    print_progress!("Starting Ethereum node");
-    let ethereum_node = runtime
-        .block_on(ethereum_node)
-        .map_err(|e| {
-            eprintln!("Could not start Ethereum node, aborting...\n{:?}", e);
         })
         .map(Arc::new)?;
     println!("✓");
@@ -150,6 +151,11 @@ fn start_all(runtime: &mut Runtime, terminate: &Arc<AtomicBool>) -> Result<Servi
             format!("{}", priv_key).as_str(),
         );
     }
+
+    envfile.update(
+        "ERC20_CONTRACT_ADDRESS",
+        format!("{}", contract_address).as_str(),
+    );
 
     envfile.write().map_err(|e| {
         eprintln!(
@@ -186,7 +192,7 @@ fn all_futures() -> Result<
         PathBuf,
         impl Future<Item = String, Error = ()>,
         impl Future<Item = Node<BitcoinNode>, Error = ()>,
-        impl Future<Item = Node<EthereumNode>, Error = ()>,
+        impl Future<Item = (Address, Node<EthereumNode>), Error = ()>,
         impl Future<Item = Vec<Node<Cnd>>, Error = ()>,
     ),
     Error,
@@ -256,6 +262,7 @@ fn new_extended_regtest_priv_key() -> Result<ExtendedPrivKey, rust_bitcoin::util
 pub enum Error {
     BitcoinFunding(bitcoincore_rpc::Error),
     EtherFunding(web3::Error),
+    Erc20Funding(web3::Error),
     Docker(shiplift::Error),
     CreateTmpFiles(std::io::Error),
     PathToStr,
@@ -288,27 +295,32 @@ fn start_bitcoin_node(
 fn start_ethereum_node(
     envfile_path: &PathBuf,
     secret_keys: Vec<SecretKey>,
-) -> impl Future<Item = Node<EthereumNode>, Error = Error> {
+) -> impl Future<Item = (Address, Node<EthereumNode>), Error = Error> {
     Node::<EthereumNode>::start(envfile_path.clone(), "ethereum")
         .map_err(Error::Docker)
-        .and_then(move |node| {
-            stream::iter_ok(secret_keys).fold(node, |node, key| {
-                ethereum::fund(
-                    &node.node_image.http_client,
-                    ethereum::derive_address(key),
-                    U256::from(100u128 * 10u128.pow(18)),
-                )
-                .map_err(Error::EtherFunding)
-                .map(|_| node)
-            })
+        .and_then({
+            let secret_keys = secret_keys.clone();
+            |node| {
+                let web3 = node.node_image.http_client.clone();
+                ethereum::fund_ether(web3, secret_keys, U256::from(100u128 * 10u128.pow(18)))
+                    .boxed()
+                    .compat()
+                    .map_err(Error::EtherFunding)
+                    .map(|_| node)
+            }
+        })
+        .and_then({
+            let secret_keys = secret_keys.clone();
+            |node| {
+                let web3 = node.node_image.http_client.clone();
+                ethereum::fund_erc20(web3, secret_keys, U256::from(100u128 * 10u128.pow(18)))
+                    .boxed()
+                    .compat()
+                    .map_err(Error::EtherFunding)
+                    .map(|contract_address| (contract_address, node))
+            }
         })
 }
-
-//fn deploy_er20_and_mint_tokens(node: Node<EthereumNode>, keys: impl Iterator<Item = SecretKey>) -> impl Future {
-//    let client = node.node_image.http_client;
-//
-//    client.eth()
-//}
 
 fn start_cnds(
     envfile_path: &PathBuf,

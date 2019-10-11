@@ -8,10 +8,13 @@ edition = "2018"
 bitcoincore-rpc = "0.8.0-rc1"
 config = { version = "0.9", features = ["toml"] }
 dirs = "2"
+emerald-vault-core = { git = "http://github.com/thomaseizinger/emerald-vault.git", branch = "update-secp256k1-and-bitcoin" }
 envfile = "0.2"
-futures-preview = "0.3.0-alpha.19"
+ethabi = "8.0"
+futures-preview = { version = "0.3.0-alpha.19", features = ["compat"] }
 git2 = { version = "0.10", default-features = false, features = ["vendored-openssl"] }
 hex = "0.3"
+hex-literal = "0.2.1"
 hex-serde = "0.1.0"
 lazy_static = "1.4"
 port_check = "0.1"
@@ -19,11 +22,11 @@ rand = "0.4"
 rust_bitcoin = { version = "0.19.1", package = "bitcoin" }
 secp256k1 = { version = "0.12", features = ["rand"] }
 serde = "1"
+serde_json = "1"
 shiplift = "0.5"
 signal-hook = { version = "0.1", features = ["tokio-support"] }
 structopt = "0.3"
 tempfile = "3.1.0"
-tiny-keccak = "1.5.0"
 tokio = "0.1"
 tokio-process = "0.2"
 toml = "0.5"

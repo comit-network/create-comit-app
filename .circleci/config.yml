@@ -17,6 +17,9 @@ jobs:
       - restore_caches
       - install_rust
       - run:
+          name: "Install build dependencies"
+          command: sudo apt install libusb-dev
+      - run:
           name:  "Install format crates"
           command: |
             rustup component add rustfmt
@@ -91,4 +94,3 @@ commands:
           key: target-folder-{{ checksum "Cargo.lock" }}
           paths:
             - "./target"
-  
