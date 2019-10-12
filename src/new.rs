@@ -21,4 +21,6 @@ pub fn new(name: String) {
 
     let _ = Repository::init(format!("./{}", name))
         .map_err(|e| panic!("Failed to create an empty Git repository: {:?}", e));
+
+    println!("Your project `{}` has been created!\nNow, start your development environment by running `create-comit-app start-env`", name)
 }
