@@ -4,10 +4,7 @@ workflows:
   main:
     jobs:
       - check-format
-      - build
-      - test:
-          requires:
-            - build
+      - build_test
 
 jobs:
   check-format:
@@ -17,6 +14,7 @@ jobs:
       - RUST_TEST_THREADS: "8"
     steps:
       - checkout
+      - restore_rustup_cache
       - install_rust
       - run:
           name:  "Install format crates Rust"
@@ -28,7 +26,7 @@ jobs:
           command: |
             source $HOME/.cargo/env
             sh ./.githooks/pre-commit
-  build:
+  build_test:
     working_directory: ~/workspace
     machine:
       image: ubuntu-1604:201903-01
@@ -36,9 +34,8 @@ jobs:
       - RUST_TEST_THREADS: "8"
     steps:
       - checkout
+      - restore_caches
       - install_rust
-      - install_sccache
-      - restore_sccache_cache
       - run:
           name: "Build"
           command: |
@@ -50,24 +47,11 @@ jobs:
           name: "Clippy"
           command: |
             cargo clippy
-      - save_sccache_cache
-      - store_artifacts:
-          path: ./target/
-  test:
-    working_directory: ~/workspace
-    machine:
-      image: ubuntu-1604:201903-01
-    environment:
-      - RUST_TEST_THREADS: "8"
-    steps:
-      - checkout
-      - install_rust
-      - attach_workspace:
-          at: ./target
       - run:
           name: "Test"
           command: |
             cargo test
+      - save_caches
 
 commands:
   install_rust:
@@ -80,28 +64,37 @@ commands:
             echo 'export PATH=$HOME/.cargo/bin:$PATH' >> $BASH_ENV
             rustc --version --verbose
             cargo --version --verbose
-  install_sccache:
-    steps:
-      - run:
-          name: "Install sccache"
-          command: |
-            cargo install sccache
-            echo 'export "RUSTC_WRAPPER"="sccache"' >> $BASH_ENV
-            echo 'export "SCCACHE_CACHE_SIZE"="1G"' >> $BASH_ENV
-            sccache --version
-  restore_sccache_cache:
+  restore_rustup_cache:
     steps:
       - restore_cache:
-          name: "Restore sccache cache"
-          key: sccache-cache-${< rust-toolchain>}-{{ arch }}-{{ .Environment.CIRCLE_JOB }}
-  save_sccache_cache:
+          keys:
+            - rustup-{{ checksum "rust-toolchain" }}
+            # We don't want multiple toolchains to pile up in our cache, so only restore the ones we actually use.
+  restore_caches:
+    steps:
+      - restore_rustup_cache
+      - restore_cache:
+          keys:
+            - cargo-{{ .Branch }}
+            - cargo
+      - restore_cache:
+          keys:
+            - target-folder-{{ checksum "Cargo.lock" }}
+            # We don't want the target folder to blow up over time, hence we only download the cache if it exactly matches `Cargo.lock`
+  save_rustup_cache:
     steps:
       - save_cache:
-          name: "Save sccache cache"
-          # We use {{ epoch }} to always upload a fresh cache:
-          # Of course, restore_cache will not find this exact key,
-          # but it will fall back to the closest key (aka the most recent).
-          # See https://discuss.circleci.com/t/add-mechanism-to-update-existing-cache-key/9014/13
-          key: sccache-cache-${< rust-toolchain>}-{{ arch }}-{{ .Environment.CIRCLE_JOB }}-{{ epoch }}
           paths:
-            - "~/.cache/sccache"
+            - ~/.rustup
+          key: rustup-{{ checksum "rust-toolchain" }}
+  save_caches:
+    steps:
+      - save_rustup_cache
+      - save_cache:
+          paths:
+            - ~/.cargo
+          key: cargo-{{ .Branch }}
+      - save_cache:
+          key: target-folder-{{ checksum "Cargo.lock" }}
+          paths:
+            - "./target"
