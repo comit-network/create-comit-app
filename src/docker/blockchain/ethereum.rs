@@ -161,9 +161,9 @@ async fn get_chain_id(client: Web3<Http>) -> Result<u8, web3::Error> {
 }
 
 pub fn derive_address(secret_key: secp256k1::SecretKey) -> Address {
-    let address = PrivateKey::from(secret_key)
-        .to_address()
-        .expect("can never happen");
+    let address = PrivateKey::try_from(&secret_key[..])
+        .expect("can never happen")
+        .to_address();
 
     H160(address.0)
 }

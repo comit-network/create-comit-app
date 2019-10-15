@@ -8,7 +8,7 @@ edition = "2018"
 bitcoincore-rpc = "0.8.0-rc1"
 config = { version = "0.9", features = ["toml"] }
 dirs = "2"
-emerald-vault-core = { git = "http://github.com/thomaseizinger/emerald-vault.git", branch = "update-secp256k1-and-bitcoin" }
+emerald-vault-core = { git = "http://github.com/thomaseizinger/emerald-vault.git", branch = "create-comit-app-compatible", default-features = false }
 envfile = "0.2"
 ethabi = "8.0"
 futures-preview = { version = "0.3.0-alpha.19", features = ["compat"] }
