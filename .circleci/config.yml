@@ -14,7 +14,7 @@ jobs:
       - RUST_TEST_THREADS: "8"
     steps:
       - checkout
-      - restore_rustup_cache
+      - restore_caches
       - install_rust
       - run:
           name:  "Install format crates Rust"
@@ -26,6 +26,12 @@ jobs:
           command: |
             source $HOME/.cargo/env
             make check_format
+      - run:
+          name: "Install Clippy"
+          command: rustup component add clippy
+      - run:
+          name: "Clippy"
+          command: make clippy
   build_test:
     working_directory: ~/workspace
     machine:
@@ -40,12 +46,6 @@ jobs:
           name: "Build"
           command: |
             cargo build
-      - run:
-          name: "Install Clippy"
-          command: rustup component add clippy
-      - run:
-          name: "Clippy"
-          command: make clippy
       - run:
           name: "Test"
           command: |
@@ -63,15 +63,12 @@ commands:
             echo 'export PATH=$HOME/.cargo/bin:$PATH' >> $BASH_ENV
             rustc --version --verbose
             cargo --version --verbose
-  restore_rustup_cache:
+  restore_caches:
     steps:
       - restore_cache:
           keys:
             - rustup-{{ checksum "rust-toolchain" }}
             # We don't want multiple toolchains to pile up in our cache, so only restore the ones we actually use.
-  restore_caches:
-    steps:
-      - restore_rustup_cache
       - restore_cache:
           keys:
             - cargo-{{ .Branch }}
@@ -80,15 +77,12 @@ commands:
           keys:
             - target-folder-{{ checksum "Cargo.lock" }}
             # We don't want the target folder to blow up over time, hence we only download the cache if it exactly matches `Cargo.lock`
-  save_rustup_cache:
+  save_caches:
     steps:
       - save_cache:
           paths:
             - ~/.rustup
           key: rustup-{{ checksum "rust-toolchain" }}
-  save_caches:
-    steps:
-      - save_rustup_cache
       - save_cache:
           paths:
             - ~/.cargo
