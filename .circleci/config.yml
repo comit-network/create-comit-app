@@ -22,10 +22,10 @@ jobs:
             rustup component add rustfmt
             cargo install cargo-tomlfmt
       - run:
-          name: "Run Git hooks"
+          name: "Run Format check"
           command: |
             source $HOME/.cargo/env
-            sh ./.githooks/pre-commit
+            make check_format
   build_test:
     working_directory: ~/workspace
     machine:
