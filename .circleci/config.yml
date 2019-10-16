@@ -45,8 +45,7 @@ jobs:
           command: rustup component add clippy
       - run:
           name: "Clippy"
-          command: |
-            cargo clippy
+          command: make clippy
       - run:
           name: "Test"
           command: |
@@ -98,3 +97,4 @@ commands:
           key: target-folder-{{ checksum "Cargo.lock" }}
           paths:
             - "./target"
+  
