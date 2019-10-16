@@ -1,0 +1,7 @@
+{
+  "name": "new_project",
+  "version": "1.0.0",
+  "dependencies": {
+    "comit-sdk": "^0.3.2"
+  }
+}

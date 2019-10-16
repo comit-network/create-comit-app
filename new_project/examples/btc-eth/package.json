@@ -1,0 +1,44 @@
+{
+    "name": "hello_swap",
+    "version": "1.0.0",
+    "description": "A Hello World COMIT app that does a swap",
+    "main": "index.js",
+    "scripts": {
+        "check": "tsc",
+        "start": "DOTENV_CONFIG_PATH=$HOME/.create-comit-app/env ts-node -r dotenv/config ./src/index.ts",
+        "start-dev": "nodemon --exec ./node_modules/.bin/ts-node -- ./src/index.ts",
+        "fix": "tslint -p . --fix && prettier --write '**/*.{ts,js,json,yml}'",
+        "lint": "tslint -p .",
+        "prettier": "prettier --check '**/*.{ts,js,json,yml}'",
+        "test": "jest"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "devDependencies": {
+        "@types/jest": "^24.0.18",
+        "@types/minimist": "^1.2.0",
+        "jest": "^24.9.0",
+        "nodemon": "^1.19.1",
+        "prettier": "^1.18.2",
+        "ts-jest": "^24.1.0",
+        "ts-node": "^8.3.0",
+        "tslint": "^5.19.0",
+        "tslint-config-prettier": "^1.18.0",
+        "typescript": "^3.6.2"
+    },
+    "dependencies": {
+        "comit-sdk": "^0.3.2",
+        "delay": "^4.3.0",
+        "dotenv": "^8.1.0",
+        "ethers": "^4.0.37",
+        "minimist": "^1.2.0",
+        "moment": "^2.24.0",
+        "satoshi-bitcoin-ts": "^0.2.4",
+        "winston": "^3.2.1"
+    },
+    "prettier": {
+        "trailingComma": "es5",
+        "tabWidth": 4
+    }
+}
