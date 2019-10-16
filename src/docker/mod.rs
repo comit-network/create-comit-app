@@ -104,7 +104,7 @@ impl<I: Image> Node<I> {
                             .and_then(|repo_tags| {
                                 repo_tags
                                     .iter()
-                                    .find(|tag| **tag == I::IMAGE.to_string())
+                                    .find(|tag| *tag == &I::IMAGE.to_string())
                                     .map(|_| true)
                             })
                             .unwrap_or(false)
