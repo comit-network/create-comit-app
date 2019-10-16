@@ -3,11 +3,11 @@ workflows:
   version: 2
   main:
     jobs:
-      - check_format
+      - static_analysis
       - build_test
 
 jobs:
-  check_format:
+  static_analysis:
     machine:
       image: ubuntu-1604:201903-01
     environment:
@@ -17,12 +17,12 @@ jobs:
       - restore_caches
       - install_rust
       - run:
-          name:  "Install format crates Rust"
+          name:  "Install format crates"
           command: |
             rustup component add rustfmt
             cargo install cargo-tomlfmt
       - run:
-          name: "Run Format check"
+          name: "Run Format checks"
           command: |
             source $HOME/.cargo/env
             make check_format
@@ -30,7 +30,7 @@ jobs:
           name: "Install Clippy"
           command: rustup component add clippy
       - run:
-          name: "Clippy"
+          name: "Run Clippy"
           command: make clippy
   build_test:
     working_directory: ~/workspace
