@@ -28,12 +28,4 @@ format:
 	@$(CARGO) tomlfmt -p Cargo.toml
 
 clippy:
-	@$(CARGO) clippy \
-		--all-targets -- \
-		-D warnings \
-		-W clippy::cast_possible_truncation \
-		-W clippy::cast_sign_loss \
-		-W clippy::fallible_impl_from \
-		-W clippy::cast_precision_loss \
-		-W clippy::cast_possible_wrap \
-		-W clippy::dbg_macro
+	@$(CARGO) clippy --all-targets -- -D warnings
