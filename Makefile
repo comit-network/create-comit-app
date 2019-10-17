@@ -23,11 +23,11 @@ $(FMT_LOC):
 $(TOMLFMT_LOC):
 	test -e $@ || $(CARGO) install cargo-tomlfmt
 
-dev_env: build_env $(CLIPPY_LOC) $(FMT_LOC) $(TOMLFMT_LOC)
+dev_env: $(CLIPPY_LOC) $(FMT_LOC) $(TOMLFMT_LOC)
 
 ## User install
 
-install: build_env
+install:
 	@$(CARGO) install --path .
 
 clean:
@@ -41,16 +41,16 @@ format: $(FMT_LOC) $(TOMLFMT_LOC)
 	@$(CARGO) fmt
 	@$(CARGO) tomlfmt -p Cargo.toml
 
-build_debug: build_env
+build_debug:
 	@$(CARGO) build --all --all-targets
 
 clippy: $(CLIPPY_LOC)
 	@$(CARGO) clippy --all-targets -- -D warnings
 
-test: build_env
+test:
 	@$(CARGO) test --all
 
-doc: build_env
+doc:
 	@$(CARGO) doc
 
 check_format: $(FMT_LOC) $(TOMLFMT_LOC)
