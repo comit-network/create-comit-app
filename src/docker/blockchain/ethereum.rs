@@ -19,12 +19,13 @@ pub const CONTRACT_ABI: &str = include_str!("../../../erc20_token/build/abi.json
 pub const HTTP_URL_KEY: &str = "ETHEREUM_NODE_HTTP_URL";
 
 lazy_static! {
-// expect: Should always be able to parse
     static ref DEV_ACCOUNT: web3::types::Address = "00a329c0648769a73afac7f9381e08fb43dbea72"
         .parse()
-        .expect("Could not parse DEV account address");
-
-    static ref DEV_ACCOUNT_PRIVATE_KEY: emerald_rs::PrivateKey = emerald_rs::PrivateKey::try_from(&hex_literal::hex!("4d5db4107d237df6a3d58ee5f70ae63d73d7658d4026f2eefd2f204c81682cb7")).unwrap();
+        .expect("Should not fail: Could not parse DEV account address");
+    static ref DEV_ACCOUNT_PRIVATE_KEY: emerald_rs::PrivateKey = emerald_rs::PrivateKey::try_from(
+        &hex_literal::hex!("4d5db4107d237df6a3d58ee5f70ae63d73d7658d4026f2eefd2f204c81682cb7")
+    )
+    .expect("Should not fail: parsing static private key ");
 }
 
 pub struct EthereumNode {
