@@ -1,11 +1,10 @@
 use crate::cnd_settings;
-use crate::docker::bitcoin::{self, BitcoinNode};
+use crate::docker::bitcoin::{self, BitcoinNode, GenerateQuery};
 use crate::docker::delete_container;
 use crate::docker::ethereum::{self, EthereumNode};
 use crate::docker::Cnd;
 use crate::docker::{create_network, delete_network, Node};
 use crate::print_progress;
-use bitcoincore_rpc::RpcApi;
 use envfile::EnvFile;
 use futures::{FutureExt, TryFutureExt};
 use rand::{thread_rng, Rng};
@@ -70,9 +69,23 @@ fn bitcoin_generate_blocks(
         .map_err(|_| eprintln!("Issue getting an interval."))
         .for_each({
             let bitcoin_node = bitcoin_node.clone();
+            let generate_req = GenerateQuery::new(1);
             move |_| {
-                let _ = bitcoin_node.node_image.rpc_client.generate(1, None);
-                Ok(())
+                reqwest::r#async::Client::new()
+                    .post(&bitcoin_node.node_image.endpoint)
+                    .basic_auth(
+                        &bitcoin_node.node_image.username,
+                        Some(&bitcoin_node.node_image.password),
+                    )
+                    .json(&generate_req)
+                    .send()
+                    .map(|_| ())
+                    .map_err(|err| {
+                        eprintln!(
+                            "Error encountered when generating bitcoin blocks: {:?}",
+                            err
+                        )
+                    })
             }
         })
 }
@@ -260,7 +273,7 @@ fn new_extended_regtest_priv_key() -> Result<ExtendedPrivKey, rust_bitcoin::util
 
 #[derive(Debug)]
 pub enum Error {
-    BitcoinFunding(bitcoincore_rpc::Error),
+    BitcoinFunding(reqwest::Error),
     EtherFunding(web3::Error),
     Erc20Funding(web3::Error),
     Docker(shiplift::Error),
@@ -282,7 +295,9 @@ fn start_bitcoin_node(
         .and_then(move |node| {
             stream::iter_ok(secret_keys).fold(node, |node, key| {
                 bitcoin::fund(
-                    &node.node_image.rpc_client,
+                    node.node_image.username.clone(),
+                    node.node_image.password.clone(),
+                    node.node_image.endpoint.clone(),
                     bitcoin::derive_address(key),
                     Amount::from_sat(1_000_000_000),
                 )

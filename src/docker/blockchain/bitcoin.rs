@@ -1,14 +1,15 @@
 use crate::docker::{ExposedPorts, Image};
-use bitcoincore_rpc::RpcApi;
+use reqwest::r#async::Client;
 use rust_bitcoin::{self, hashes::sha256d, Address, Amount, Network};
 use tokio::prelude::future::Future;
-use tokio::prelude::IntoFuture;
 
 pub const P2P_URI_KEY: &str = "BITCOIN_P2P_URI";
 pub const HTTP_URL_KEY: &str = "BITCOIN_NODE_RPC_URL";
 
 pub struct BitcoinNode {
-    pub rpc_client: bitcoincore_rpc::Client,
+    pub username: String,
+    pub password: String,
+    pub endpoint: String,
 }
 
 impl BitcoinNode {
@@ -58,28 +59,91 @@ impl Image for BitcoinNode {
             panic!("Internal Error: Url for bitcoin client should have been set.");
         });
 
-        let rpc_client = bitcoincore_rpc::Client::new(
-            endpoint.clone(),
-            bitcoincore_rpc::Auth::UserPass(Self::USERNAME.to_string(), Self::PASSWORD.to_string()),
-        )
-        .expect("Could not create client");
-
-        Self { rpc_client }
+        Self {
+            username: Self::USERNAME.to_string(),
+            password: Self::PASSWORD.to_string(),
+            endpoint,
+        }
     }
 }
 
+#[derive(Debug, serde::Serialize)]
+pub struct GenerateQuery {
+    jsonrpc: String,
+    id: String,
+    method: String,
+    params: Vec<u32>,
+}
+
+impl GenerateQuery {
+    pub fn new(number: u32) -> Self {
+        GenerateQuery {
+            jsonrpc: "1.0".to_string(),
+            id: "generate".to_string(),
+            method: "generate".to_string(),
+            params: vec![number],
+        }
+    }
+}
+
+#[derive(Debug, serde::Serialize)]
+struct FundQuery {
+    jsonrpc: String,
+    id: String,
+    method: String,
+    params: Vec<String>,
+}
+
+impl FundQuery {
+    fn new(address: Address, amount: Amount) -> Self {
+        FundQuery {
+            jsonrpc: "1.0".to_string(),
+            id: "fund".to_string(),
+            method: "sendtoaddress".to_string(),
+            params: vec![address.to_string(), amount.as_btc().to_string()],
+        }
+    }
+}
+
+#[derive(Debug, serde::Deserialize)]
+struct FundResponse {
+    result: sha256d::Hash,
+    error: Option<String>,
+    id: String,
+}
+
 pub fn fund(
-    client: &bitcoincore_rpc::Client,
+    username: String,
+    password: String,
+    endpoint: String,
     address: Address,
     amount: Amount,
-) -> impl Future<Item = sha256d::Hash, Error = bitcoincore_rpc::Error> {
-    let response = client.generate(101, None).and_then(|_| {
-        client
-            .send_to_address(&address, amount, None, None, None, None, None, None)
-            .and_then(|txid| client.generate(1, None).map(|_| txid))
-    });
+) -> impl Future<Item = sha256d::Hash, Error = reqwest::Error> {
+    let generate_req = GenerateQuery::new(101);
+    let fund_req = FundQuery::new(address, amount);
 
-    response.into_future()
+    Box::new(
+        Client::new()
+            .post(&endpoint)
+            .basic_auth(&username, Some(password.clone()))
+            .json(&generate_req)
+            .send()
+            .and_then({
+                let endpoint = endpoint.clone();
+                let username = username.clone();
+                let password = Some(password.clone());
+
+                move |_| {
+                    Client::new()
+                        .post(&endpoint)
+                        .basic_auth(username, password)
+                        .json(&fund_req)
+                        .send()
+                        .and_then(|mut response| response.json::<FundResponse>())
+                        .and_then(|response| Ok(response.result))
+                }
+            }),
+    )
 }
 
 pub fn derive_address(secret_key: secp256k1::SecretKey) -> Address {

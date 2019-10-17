@@ -5,7 +5,6 @@ authors = ["CoBloX developers <team@coblox.tech>"]
 edition = "2018"
 
 [dependencies]
-bitcoincore-rpc = "0.8.0-rc1"
 config = { version = "0.9", features = ["toml"] }
 dirs = "2"
 emerald-vault-core = { git = "http://github.com/thomaseizinger/emerald-vault.git", branch = "create-comit-app-compatible", default-features = false }
@@ -19,6 +18,7 @@ hex-serde = "0.1.0"
 lazy_static = "1.4"
 port_check = "0.1"
 rand = "0.4"
+reqwest = { version = "0.9", default-features = false, features = ["default-tls-vendored"] }
 rust_bitcoin = { version = "0.19.1", package = "bitcoin" }
 secp256k1 = { version = "0.12", features = ["rand"] }
 serde = "1"
@@ -31,5 +31,6 @@ tokio = "0.1"
 tokio-process = "0.2"
 toml = "0.5"
 unzip = "0.1"
+#TODO: Sunset ureq as it is not async and no need to have 2 different http clients
 ureq = { version = "0.11", features = ["rustls"] }
 web3 = "0.8"
