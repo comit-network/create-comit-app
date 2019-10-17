@@ -13,38 +13,38 @@ install_rustfmt:
 	$(RUSTUP) component list --installed --toolchain $(TOOLCHAIN) | grep -q rustfmt || $(RUSTUP) component add rustfmt --toolchain $(TOOLCHAIN)
 
 install_tomlfmt:
-	@$(CARGO) --list |grep -q tomlfmt || $(CARGO) install cargo-tomlfmt
+	$(CARGO) --list |grep -q tomlfmt || $(CARGO) install cargo-tomlfmt
 
 dev_env: $(CLIPPY) $(FMT) $(TOMLFMT)
 
 ## User install
 
 install:
-	@$(CARGO) install --path .
+	$(CARGO) install --path .
 
 clean:
-	@$(CARGO) clean
+	$(CARGO) clean
 
 ## Development tasks
 
 all: dev_env format build_debug clippy test doc
 
 format: install_rustfmt install_tomlfmt
-	@$(CARGO) fmt
-	@$(CARGO) tomlfmt -p Cargo.toml
+	$(CARGO) fmt
+	$(CARGO) tomlfmt -p Cargo.toml
 
 build_debug:
-	@$(CARGO) build --all --all-targets
+	$(CARGO) build --all --all-targets
 
 clippy: install_clippy
-	@$(CARGO) clippy --all-targets -- -D warnings
+	$(CARGO) clippy --all-targets -- -D warnings
 
 test:
-	@$(CARGO) test --all
+	$(CARGO) test --all
 
 doc:
-	@$(CARGO) doc
+	$(CARGO) doc
 
 check_format: install_rustfmt install_tomlfmt
-	@$(CARGO) fmt -- --check
-	@$(CARGO) tomlfmt -d -p Cargo.toml
+	$(CARGO) fmt -- --check
+	$(CARGO) tomlfmt -d -p Cargo.toml
