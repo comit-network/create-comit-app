@@ -2,27 +2,18 @@ RUSTUP = rustup
 TOOLCHAIN = $(shell cat rust-toolchain)
 CARGO = $(RUSTUP) run --install $(TOOLCHAIN) cargo --color always
 
-CLIPPY = $(shell which cargo-clippy)
-FMT = $(shell which cargo-fmt)
-TOMLFMT = $(shell which cargo-tomlfmt)
-
-CARGO_ENV = $(HOME)/.cargo/env
-
 build: build_debug
 
 ## Dev environment
 
-$(CLIPPY):
-	test -e $@ || $(RUSTUP) component add clippy --toolchain $(TOOLCHAIN)
-	CLIPPY = $(shell which cargo-clippy)
+install_clippy:
+	$(RUSTUP) component list --installed --toolchain $(TOOLCHAIN) | grep -q clippy || $(RUSTUP) component add clippy --toolchain $(TOOLCHAIN)
 
-$(FMT):
-	test -e $@ || $(RUSTUP) component add rustfmt --toolchain $(TOOLCHAIN)
-	FMT = $(shell which cargo-fmt)
+install_rustfmt:
+	$(RUSTUP) component list --installed --toolchain $(TOOLCHAIN) | grep -q rustfmt || $(RUSTUP) component add rustfmt --toolchain $(TOOLCHAIN)
 
-$(TOMLFMT):
-	test -e $@ || $(CARGO) install cargo-tomlfmt
-	TOMLFMT = $(shell which cargo-tomlfmt)
+install_tomlfmt:
+	@$(CARGO) --list |grep -q tomlfmt || $(CARGO) install cargo-tomlfmt
 
 dev_env: $(CLIPPY) $(FMT) $(TOMLFMT)
 
@@ -38,14 +29,14 @@ clean:
 
 all: dev_env format build_debug clippy test doc
 
-format: $(FMT) $(TOMLFMT)
+format: install_rustfmt install_tomlfmt
 	@$(CARGO) fmt
 	@$(CARGO) tomlfmt -p Cargo.toml
 
 build_debug:
 	@$(CARGO) build --all --all-targets
 
-clippy: $(CLIPPY)
+clippy: install_clippy
 	@$(CARGO) clippy --all-targets -- -D warnings
 
 test:
@@ -54,6 +45,6 @@ test:
 doc:
 	@$(CARGO) doc
 
-check_format: $(FMT) $(TOMLFMT)
+check_format: install_rustfmt install_tomlfmt
 	@$(CARGO) fmt -- --check
 	@$(CARGO) tomlfmt -d -p Cargo.toml
