@@ -15,8 +15,6 @@ install_rustfmt:
 install_tomlfmt:
 	$(CARGO) --list |grep -q tomlfmt || $(CARGO) install cargo-tomlfmt
 
-dev_env: $(CLIPPY) $(FMT) $(TOMLFMT)
-
 ## User install
 
 install:
@@ -27,11 +25,13 @@ clean:
 
 ## Development tasks
 
-all: dev_env format build_debug clippy test doc
+all: format build_debug clippy test doc
 
 format: install_rustfmt install_tomlfmt
 	$(CARGO) fmt
 	$(CARGO) tomlfmt -p Cargo.toml
+
+build: build_debug
 
 build_debug:
 	$(CARGO) build --all --all-targets
