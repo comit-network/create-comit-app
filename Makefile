@@ -9,7 +9,7 @@ LIBUSB_INSTALL = ""
 UNAME_S := $(shell uname -s)
 UNAME_M := $(shell uname -m)
 ifeq ($(UNAME_S),Linux)
-	LIBUSB_LOC = /usr/lib/x86_64-linux-gnu/libusb.so
+	LIBUSB_LOC = /usr/include/libusb-1.0
 	LIBUSB_INSTALL = sudo apt-get install --assume-yes libusb-1.0-0-dev
 	TOOLCHAIN_LOC = $(RUSTUP_DIR)/toolchains/$(TOOLCHAIN)-$(UNAME_M)-unknown-linux-gnu
 endif
