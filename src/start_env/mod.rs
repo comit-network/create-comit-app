@@ -167,7 +167,7 @@ fn start_all(runtime: &mut Runtime, terminate: &Arc<AtomicBool>) -> Result<Servi
 
     envfile.update(
         "ERC20_CONTRACT_ADDRESS",
-        format!("{}", contract_address).as_str(),
+        format!("0x{:x}", contract_address).as_str(),
     );
 
     envfile.write().map_err(|e| {
