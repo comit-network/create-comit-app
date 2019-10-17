@@ -4,7 +4,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## 0.2.1 - 2019-10-04
+## [Unreleased]
+
+## [0.3.0] - 2019-10-17
+
+### Added
+- Deploy an ERC20 contract on the Ethereum node and give tokens to both parties. The address of the token contract is written to the env file as `ERC20_CONTRACT_ADDRESS`.
+
+### Changed
+- Migrate parts of the code base to async/await :tada:
+
+## [0.2.1] - 2019-10-04
 
 ### Added
 - Publish create-comit-app on npmjs.com.
@@ -12,7 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Fix the odd initial Ether amount.
 
-## 0.2.0 - 2019-10-04
+## [0.2.0] - 2019-10-04
 
 ### Added
 - Ensure that all temporary folders are cleaned up when shutting down start-env.
@@ -26,11 +36,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Move the env file from `./.env` to `~/.create-comit-app/env` to improve usability.
 - Only pull docker images if they are not present locally, this allows offline usage of the `start-env` command.
 
-## 0.1.0 - 2019-09-26
+## [0.1.0] - 2019-09-26
 
 First Release 🎉
 
 [Unreleased]: https://github.com/comit-network/create-comit-app/compare/0.2.1...HEAD
+[0.3.0]: https://github.com/comit-network/create-comit-app/compare/0.2.1...0.3.0
 [0.2.1]: https://github.com/comit-network/create-comit-app/compare/0.2.0...0.2.1
 [0.2.0]: https://github.com/comit-network/create-comit-app/compare/0.1.0...0.2.0
 [0.1.0]: https://github.com/comit-network/create-comit-app/releases/tag/0.1.0
