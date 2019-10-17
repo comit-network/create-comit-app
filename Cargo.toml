@@ -34,4 +34,5 @@ web3 = "0.8"
 [build-dependencies]
 flate2 = "1.0.12"
 ignore = "0.4.10"
+snafu = "0.5.0"
 tar = "0.4.26"
