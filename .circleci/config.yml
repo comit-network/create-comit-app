@@ -17,21 +17,9 @@ jobs:
       - restore_caches
       - install_rust
       - run:
-          name: "Install build dependencies"
-          command: sudo apt install libusb-dev
-      - run:
-          name:  "Install format crates"
-          command: |
-            rustup component add rustfmt
-            cargo install cargo-tomlfmt
-      - run:
           name: "Run Format checks"
           command: |
-            source $HOME/.cargo/env
             make check_format
-      - run:
-          name: "Install Clippy"
-          command: rustup component add clippy
       - run:
           name: "Run Clippy"
           command: make clippy
@@ -48,11 +36,11 @@ jobs:
       - run:
           name: "Build"
           command: |
-            cargo build
+            make build
       - run:
           name: "Test"
           command: |
-            cargo test
+            make test
       - save_caches
 
 commands:
