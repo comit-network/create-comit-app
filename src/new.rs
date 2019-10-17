@@ -1,26 +1,16 @@
-use git2::Repository;
-use std::io::{Read, Write};
+use flate2::read::GzDecoder;
+use std::io;
+use std::path::Path;
+use tar::Archive;
 
-const HELLO_SWAP_ZIP: &str = "https://github.com/comit-network/hello-swap/archive/master.zip";
+pub fn new(name: String, examples_archive: &[u8]) -> io::Result<()> {
+    let tar = GzDecoder::new(examples_archive);
+    let mut archive = Archive::new(tar);
 
-pub fn new(name: String) {
-    let mut tempfile = tempfile::tempfile().expect("Could not create temp file");
-    let mut buffer = Vec::new();
-    ureq::get(HELLO_SWAP_ZIP)
-        .call()
-        .into_reader()
-        .read_to_end(&mut buffer)
-        .expect("Could not download hello swap zip file");
-    tempfile
-        .write_all(&buffer)
-        .expect("Could not write hello swap zip file");
-    unzip::Unzipper::new(tempfile, format!("./{}", name))
-        .strip_components(1)
-        .unzip()
-        .expect("Could not unzip bundle");
+    let path_to_write = Path::new(&name);
+    archive.unpack(path_to_write)?;
 
-    let _ = Repository::init(format!("./{}", name))
-        .map_err(|e| panic!("Failed to create an empty Git repository: {:?}", e));
+    println!("Your project `{}` has been created!\nNow, start your development environment by running `create-comit-app start-env`", name);
 
-    println!("Your project `{}` has been created!\nNow, start your development environment by running `create-comit-app start-env`", name)
+    Ok(())
 }

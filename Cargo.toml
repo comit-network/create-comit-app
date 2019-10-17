@@ -5,14 +5,13 @@ authors = ["CoBloX developers <team@coblox.tech>"]
 edition = "2018"
 
 [dependencies]
-config = { version = "0.9", features = ["toml"] }
 dirs = "2"
 emerald-vault-core = { git = "http://github.com/thomaseizinger/emerald-vault.git", branch = "create-comit-app-compatible", default-features = false }
 envfile = "0.2"
 ethabi = "8.0"
+flate2 = "1.0.12"
 futures-preview = { version = "0.3.0-alpha.19", features = ["compat"] }
-git2 = { version = "0.10", default-features = false, features = ["vendored-openssl"] }
-hex = "0.3"
+hex = "0.4.0"
 hex-literal = "0.2.1"
 hex-serde = "0.1.0"
 lazy_static = "1.4"
@@ -26,11 +25,14 @@ serde_json = "1"
 shiplift = "0.5"
 signal-hook = { version = "0.1", features = ["tokio-support"] }
 structopt = "0.3"
+tar = "0.4.26"
 tempfile = "3.1.0"
 tokio = "0.1"
-tokio-process = "0.2"
 toml = "0.5"
-unzip = "0.1"
-#TODO: Sunset ureq as it is not async and no need to have 2 different http clients
-ureq = { version = "0.11", features = ["rustls"] }
 web3 = "0.8"
+
+[build-dependencies]
+anyhow = "1.0.13"
+flate2 = "1.0.12"
+ignore = "0.4.10"
+tar = "0.4.26"
