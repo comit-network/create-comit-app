@@ -11,7 +11,7 @@ UNAME_M := $(shell uname -m)
 ifeq ($(UNAME_S),Linux)
 	LIBUSB_LOC = /usr/lib/x86_64-linux-gnu/libusb.so
 	LIBUSB_INSTALL = sudo apt-get install libusb-dev
-	TOOLCHAIN_LOC = $(RUSTUP_DIR)/toolchains/$(TOOLCHAIN)-$(UNAME_M)-linux
+	TOOLCHAIN_LOC = $(RUSTUP_DIR)/toolchains/$(TOOLCHAIN)-$(UNAME_M)-unknown-linux-gnu
 endif
 ifeq ($(UNAME_S),Darwin)
 	LIBUSB_LOC = /usr/local/lib/libusb-1.0.dylib
@@ -36,7 +36,7 @@ $(TOOLCHAIN_LOC):
 	test -e $@ || $(RUSTUP) toolchain install $(TOOLCHAIN)
 
 $(LIBUSB_LOC):
-	test -e $@ || LIBUSB_INSTALL
+	test -e $@ || $(LIBUSB_INSTALL)
 
 build_env: $(TOOLCHAIN_LOC) $(LIBUSB_LOC)
 
