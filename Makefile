@@ -1,14 +1,12 @@
 RUSTUP = rustup
 TOOLCHAIN = $(shell cat rust-toolchain)
 CARGO = $(RUSTUP) run --install $(TOOLCHAIN) cargo --color always
-TOOLCHAIN_LOC = ""
 
-CARGO_DIR = $(HOME)/.cargo
-RUSTUP_DIR = $(HOME)/.rustup
+CLIPPY_LOC = $(shell which cargo-clippy)
+FMT_LOC = $(shell which cargo-fmt)
+TOMLFMT_LOC = $(shell which cargo-tomlfmt)
 
-CLIPPY_LOC = $(TOOLCHAIN_LOC)/bin/cargo-clippy
-FMT_LOC = $(TOOLCHAIN_LOC)/bin/cargo-fmt
-TOMLFMT_LOC = $(CARGO_DIR)/bin/cargo-tomlfmt
+CARGO_ENV = $(HOME)/.cargo/env
 
 build: build_debug
 
