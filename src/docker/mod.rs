@@ -35,7 +35,6 @@ pub trait Image {
 }
 
 pub struct Node<I: Image> {
-    container_id: String,
     pub node_image: I,
 }
 
@@ -203,9 +202,8 @@ impl<I: Image> Node<I> {
             })
             .and_then({
                 let http_url = client_endpoint.clone();
-                move |container_id| {
+                move |_| {
                     Ok(Self {
-                        container_id,
                         node_image: I::new(http_url),
                     })
                 }
