@@ -1,13 +1,6 @@
-extern crate flate2;
-extern crate tar;
-
-use flate2::write::GzEncoder;
-use flate2::Compression;
-use std::fs::File;
-
+use flate2::{write::GzEncoder, Compression};
 use ignore::{Walk, WalkBuilder};
-use std::path::Path;
-use std::{env, io};
+use std::{env, fs::File, io, path::Path};
 
 fn main() -> io::Result<()> {
     let out_dir = env::var("OUT_DIR").unwrap();

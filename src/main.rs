@@ -4,7 +4,7 @@ use create_comit_app::start_env::start_env;
 use std::io;
 use structopt::StructOpt;
 
-const NEW_PROJECT_ARCHIVE: &'static [u8; 102689] =
+const NEW_PROJECT_ARCHIVE: &'static [u8] =
     include_bytes!(concat!(env!("OUT_DIR"), "/new_project.tar.gz"));
 
 fn main() -> io::Result<()> {
