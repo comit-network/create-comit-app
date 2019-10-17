@@ -13,6 +13,7 @@ jobs:
     environment:
       - RUST_TEST_THREADS: "8"
     steps:
+      - run: sudo apt-get update
       - checkout
       - restore_caches
       - install_rust
@@ -30,6 +31,7 @@ jobs:
     environment:
       - RUST_TEST_THREADS: "8"
     steps:
+      - run: sudo apt-get update
       - checkout
       - restore_caches
       - install_rust
