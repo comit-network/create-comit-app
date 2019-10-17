@@ -1,7 +1,7 @@
 {
-    "name": "hello_swap",
+    "name": "hello_swap_btc_eth",
     "version": "1.0.0",
-    "description": "A Hello World COMIT app that does a swap",
+    "description": "A Hello World COMIT example app that does a Bitcoin-Ether swap",
     "main": "index.js",
     "scripts": {
         "check": "tsc",
