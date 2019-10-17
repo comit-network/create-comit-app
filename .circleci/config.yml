@@ -13,22 +13,14 @@ jobs:
     environment:
       - RUST_TEST_THREADS: "8"
     steps:
+      - run: sudo apt-get update # This is only needed for libusb-dev
       - checkout
       - restore_caches
       - install_rust
       - run:
-          name:  "Install format crates"
-          command: |
-            rustup component add rustfmt
-            cargo install cargo-tomlfmt
-      - run:
           name: "Run Format checks"
           command: |
-            source $HOME/.cargo/env
             make check_format
-      - run:
-          name: "Install Clippy"
-          command: rustup component add clippy
       - run:
           name: "Run Clippy"
           command: make clippy
@@ -39,17 +31,18 @@ jobs:
     environment:
       - RUST_TEST_THREADS: "8"
     steps:
+      - run: sudo apt-get update # This is only needed for libusb-dev
       - checkout
       - restore_caches
       - install_rust
       - run:
           name: "Build"
           command: |
-            cargo build
+            make build
       - run:
           name: "Test"
           command: |
-            cargo test
+            make test
       - save_caches
 
 commands:
@@ -66,29 +59,34 @@ commands:
   restore_caches:
     steps:
       - restore_cache:
+          name: "Rustup"
           keys:
             - rustup-{{ checksum "rust-toolchain" }}
             # We don't want multiple toolchains to pile up in our cache, so only restore the ones we actually use.
       - restore_cache:
+          name: "Cargo"
           keys:
             - cargo-{{ .Branch }}
             - cargo
       - restore_cache:
+          name: "Target folder"
           keys:
             - target-folder-{{ checksum "Cargo.lock" }}
             # We don't want the target folder to blow up over time, hence we only download the cache if it exactly matches `Cargo.lock`
   save_caches:
     steps:
       - save_cache:
+          name: "Rustup"
           paths:
             - ~/.rustup
           key: rustup-{{ checksum "rust-toolchain" }}
       - save_cache:
+          name: "Cargo"
           paths:
             - ~/.cargo
           key: cargo-{{ .Branch }}
       - save_cache:
+          name: "Target folder"
           key: target-folder-{{ checksum "Cargo.lock" }}
           paths:
             - "./target"
-  

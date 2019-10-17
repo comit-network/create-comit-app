@@ -1,14 +1,14 @@
 use crate::print_progress;
 use envfile::EnvFile;
-use futures::future::Either;
-use futures::stream::Stream;
-use futures::Future;
 use shiplift::builder::ContainerOptionsBuilder;
 use shiplift::{
     ContainerOptions, Docker, LogsOptions, NetworkCreateOptions, PullOptions, RmContainerOptions,
 };
 use std::io::Write;
 use std::path::PathBuf;
+use tokio::prelude::future::Either;
+use tokio::prelude::stream::Stream;
+use tokio::prelude::Future;
 
 pub mod blockchain;
 pub mod cnd;
@@ -35,7 +35,6 @@ pub trait Image {
 }
 
 pub struct Node<I: Image> {
-    container_id: String,
     pub node_image: I,
 }
 
@@ -123,7 +122,7 @@ impl<I: Image> Node<I> {
                             .map(|_| ()),
                     )
                 } else {
-                    Either::B(futures::future::ok(()))
+                    Either::B(tokio::prelude::future::ok(()))
                 }
             })
     }
@@ -203,9 +202,8 @@ impl<I: Image> Node<I> {
             })
             .and_then({
                 let http_url = client_endpoint.clone();
-                move |container_id| {
+                move |_| {
                     Ok(Self {
-                        container_id,
                         node_image: I::new(http_url),
                     })
                 }
@@ -221,23 +219,6 @@ impl<I: Image> Node<I> {
                     Ok(node)
                 }
             })
-    }
-}
-
-impl<I: Image> Drop for Node<I> {
-    fn drop(&mut self) {
-        let rm_fut = Docker::new()
-            .containers()
-            .get(&self.container_id)
-            .remove(
-                RmContainerOptions::builder()
-                    .force(true)
-                    .volumes(true)
-                    .build(),
-            )
-            .map_err(|_| ());
-
-        tokio::run(rm_fut);
     }
 }
 
