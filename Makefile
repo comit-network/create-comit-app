@@ -10,7 +10,7 @@ UNAME_S := $(shell uname -s)
 UNAME_M := $(shell uname -m)
 ifeq ($(UNAME_S),Linux)
 	LIBUSB_LOC = /usr/lib/x86_64-linux-gnu/libusb.so
-	LIBUSB_INSTALL = sudo apt-get install libusb-dev
+	LIBUSB_INSTALL = sudo apt-get install -y libusb-dev
 	TOOLCHAIN_LOC = $(RUSTUP_DIR)/toolchains/$(TOOLCHAIN)-$(UNAME_M)-unknown-linux-gnu
 endif
 ifeq ($(UNAME_S),Darwin)
