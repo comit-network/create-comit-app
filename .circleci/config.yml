@@ -13,7 +13,7 @@ jobs:
     environment:
       - RUST_TEST_THREADS: "8"
     steps:
-      - run: sudo apt-get update
+      - run: sudo apt-get update # This is only needed for libusb-dev
       - checkout
       - restore_caches
       - install_rust
@@ -31,7 +31,7 @@ jobs:
     environment:
       - RUST_TEST_THREADS: "8"
     steps:
-      - run: sudo apt-get update
+      - run: sudo apt-get update # This is only needed for libusb-dev
       - checkout
       - restore_caches
       - install_rust
