@@ -13,12 +13,12 @@ install_rustfmt:
 	$(RUSTUP) component list --installed --toolchain $(TOOLCHAIN) | grep -q rustfmt || $(RUSTUP) component add rustfmt --toolchain $(TOOLCHAIN)
 
 install_tomlfmt:
-	$(CARGO) --list |grep -q tomlfmt || $(CARGO) install cargo-tomlfmt
+	$(CARGO) --list | grep -q tomlfmt || $(CARGO) install cargo-tomlfmt
 
 ## User install
 
 install:
-	$(CARGO) install --path .
+	$(CARGO) install --force --path .
 
 clean:
 	$(CARGO) clean
