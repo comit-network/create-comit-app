@@ -13,7 +13,6 @@ jobs:
     environment:
       - RUST_TEST_THREADS: "8"
     steps:
-      - run: sudo apt-get update # This is only needed for libusb-dev
       - checkout
       - restore_caches
       - install_rust
@@ -31,7 +30,6 @@ jobs:
     environment:
       - RUST_TEST_THREADS: "8"
     steps:
-      - run: sudo apt-get update # This is only needed for libusb-dev
       - checkout
       - restore_caches
       - install_rust
@@ -59,34 +57,34 @@ commands:
   restore_caches:
     steps:
       - restore_cache:
-          name: "Rustup"
+          name: "Restore Rustup cache"
           keys:
             - rustup-{{ checksum "rust-toolchain" }}
             # We don't want multiple toolchains to pile up in our cache, so only restore the ones we actually use.
       - restore_cache:
-          name: "Cargo"
+          name: "Restore Cargo cache"
           keys:
             - cargo-{{ .Branch }}
             - cargo
       - restore_cache:
-          name: "Target folder"
+          name: "Restore Target folder cache"
           keys:
             - target-folder-{{ checksum "Cargo.lock" }}
             # We don't want the target folder to blow up over time, hence we only download the cache if it exactly matches `Cargo.lock`
   save_caches:
     steps:
       - save_cache:
-          name: "Rustup"
+          name: "Cache Rustup"
           paths:
             - ~/.rustup
           key: rustup-{{ checksum "rust-toolchain" }}
       - save_cache:
-          name: "Cargo"
+          name: "Cache Cargo"
           paths:
             - ~/.cargo
           key: cargo-{{ .Branch }}
       - save_cache:
-          name: "Target folder"
+          name: "Cache Target folder"
           key: target-folder-{{ checksum "Cargo.lock" }}
           paths:
             - "./target"
