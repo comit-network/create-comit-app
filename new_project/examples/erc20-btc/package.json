@@ -6,7 +6,6 @@
     "scripts": {
         "check": "tsc",
         "start": "DOTENV_CONFIG_PATH=$HOME/.create-comit-app/env ts-node -r dotenv/config ./src/index.ts",
-        "start-dev": "nodemon --exec ./node_modules/.bin/ts-node -- ./src/index.ts",
         "fix": "tslint -p . --fix && prettier --write '**/*.{ts,js,json,yml}'",
         "lint": "tslint -p .",
         "prettier": "prettier --check '**/*.{ts,js,json,yml}'",
@@ -16,7 +15,6 @@
     "license": "ISC",
     "devDependencies": {
         "@types/readline-sync": "^1.4.3",
-        "nodemon": "^1.19.1",
         "prettier": "^1.18.2",
         "ts-node": "^8.3.0",
         "tslint": "^5.19.0",
