@@ -13,7 +13,7 @@ Set up a local development environment for COMIT apps with one command.
 ## 2 - Create your first project!
 
 1. `yarn create comit-app new <your-app-name>`,
-2. `yarn create comit-app start-env` (start blockchain nodes and COMIT nodes)
+2. `yarn create comit-app start-env` to start blockchain and COMIT nodes,
 3. Run the [btc-eth](https://github.com/comit-network/create-comit-app/tree/master/new_project/examples/btc-eth) example (in separate terminal):
     1. Navigate to the btc-eth example app directory `cd <path-to-your-app>/examples/btc-eth`
     2. `yarn install` (or `npm install`) to install dependencies
