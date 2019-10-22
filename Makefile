@@ -25,7 +25,7 @@ clean:
 
 ## Development tasks
 
-all: format build_debug clippy test doc e2e_no_build
+all: format build_debug clippy test doc e2e_scripts
 
 format: install_rustfmt install_tomlfmt
 	$(CARGO) fmt
