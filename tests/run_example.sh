@@ -92,7 +92,7 @@ if $TEST_PASSED; then
   echo "SUCCESS: It swapped.";
   EXIT_CODE=0;
 else
-  echo "FAIL: It dit not swap.";
+  echo "FAIL: It did not swap.";
   EXIT_CODE=1;
 fi
 
