@@ -101,4 +101,3 @@ kill $CCA_PID;
 wait $RUN_PID || echo -ne ""; # It always return bad code. See #108
 wait $CCA_PID;
 exit $EXIT_CODE;
-
