@@ -19,7 +19,7 @@ Set up a local development environment for COMIT apps with one command.
     2. `yarn install` (or `npm install`) to install dependencies
     3. `yarn start` (or `npm start`) to run the application
 
-You find additional examples in the [examples](https://github.com/comit-network/create-comit-app/tree/master/new_project/examples) directory that is created as part of step 1.
+You can find additional examples in the [examples](https://github.com/comit-network/create-comit-app/tree/master/new_project/examples) directory that is created as part of step 1.
 
 # Appendix
 
