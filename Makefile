@@ -25,7 +25,7 @@ clean:
 
 ## Development tasks
 
-all: format build_debug clippy test doc
+all: format build_debug clippy test doc e2e_no_build
 
 format: install_rustfmt install_tomlfmt
 	$(CARGO) fmt
@@ -48,3 +48,10 @@ doc:
 check_format: install_rustfmt install_tomlfmt
 	$(CARGO) fmt -- --check
 	$(CARGO) tomlfmt -d -p Cargo.toml
+
+e2e_scripts:
+	./tests/new.sh
+	./tests/start_env.sh
+	./tests/btc_eth.sh
+
+e2e: build_debug e2e_scripts
