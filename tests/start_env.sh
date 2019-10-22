@@ -2,11 +2,7 @@
 
 set -e
 
-# Remove the `/tests` at the end of the current path
-# to allow this script to be run from root project
-# and from withing `tests` folder
-PWD=$(pwd)
-CWD=${PWD%%/tests}
+CWD=${0%/tests/*.sh}
 
 CCA="${CWD}/target/debug/create-comit-app"
 
