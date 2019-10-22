@@ -5,19 +5,20 @@ Set up a local development environment for COMIT apps with one command.
 ## 1 - Install
 
 1. Install Docker,
-2. Install [yarn](https://yarnpkg.com/lang/en/docs/install/) or npm,
+2. Install [yarn](https://yarnpkg.com/lang/en/docs/install/),
 3. `create-comit-app` can now be run with either:
   - `yarn create comit-app --help`
-  - `npx create-comit-app --help` (need to install npx first: `npm install --global npx`)
 
 ## 2 - Create your first project!
 
-1. Create [hello-swap](https://github.com/comit-network/hello-swap/) app: `yarn create comit-app new hello-swap`,
-2. Start environment (blockchain nodes and COMIT nodes): `yarn create comit-app start-env`
-3. Run hello-swap (in separate terminal):
-    1. Navigate to the example app directory `cd <path-to-hello-swap>`
-    2. `yarn install` (or `npm install`) to install dependencies
-    3. `yarn start` (or `npm start`) to run the application
+1. `yarn create comit-app new <your-app-name>`,
+2. `yarn create comit-app start-env` to start blockchain and COMIT nodes,
+3. Run the [btc-eth](https://github.com/comit-network/create-comit-app/tree/master/new_project/examples/btc-eth) example (in separate terminal):
+    1. Navigate to the btc-eth example app directory `cd <path-to-your-app>/examples/btc-eth`,
+    2. `yarn install` to install dependencies,
+    3. `yarn start` to run the application.
+
+You can find additional examples in the [examples](https://github.com/comit-network/create-comit-app/tree/master/new_project/examples) directory that is created as part of step 1.
 
 # Appendix
 
