@@ -41,6 +41,11 @@ jobs:
           name: "Test"
           command: |
             make test
+      - install_node
+      - run:
+          name: "End-to-end Test"
+          command: |
+            make e2e
       - save_caches
 
 commands:
@@ -54,6 +59,22 @@ commands:
             echo 'export PATH=$HOME/.cargo/bin:$PATH' >> $BASH_ENV
             rustc --version --verbose
             cargo --version --verbose
+  install_node:
+    steps:
+      - run:
+          name:  "Install node"
+          command: |
+            rm -rf /opt/circleci/.nvm
+            sudo systemctl stop apt-daily.service
+            sudo systemctl kill --kill-who=all apt-daily.service
+            # wait until `apt-get updated` has been killed
+            while ! (sudo systemctl list-units --all apt-daily.service | egrep -q '(dead|failed)') ; do sleep 1; done
+            curl -sL https://dl.yarnpkg.com/debian/pubkey.gpg | sudo apt-key add -
+            curl -sL https://deb.nodesource.com/gpgkey/nodesource.gpg.key | sudo apt-key add -
+            echo "deb https://dl.yarnpkg.com/debian/ stable main" | sudo tee /etc/apt/sources.list.d/yarn.list
+            echo "deb https://deb.nodesource.com/node_10.x/ trusty main" | sudo tee /etc/apt/sources.list.d/node_10.list
+            sudo apt-get update
+            sudo apt-get install -y nodejs=10.* yarn
   restore_caches:
     steps:
       - restore_cache:
@@ -71,6 +92,11 @@ commands:
           keys:
             - target-folder-{{ checksum "Cargo.lock" }}
             # We don't want the target folder to blow up over time, hence we only download the cache if it exactly matches `Cargo.lock`
+      - restore_cache:
+          keys:
+            - yarn-packages-v1-{{ .Branch }}-{{ checksum "new_project/yarn.lock" }}
+            - yarn-packages-v1-{{ .Branch }}-
+            - yarn-packages-v1-
   save_caches:
     steps:
       - save_cache:
@@ -88,3 +114,8 @@ commands:
           key: target-folder-{{ checksum "Cargo.lock" }}
           paths:
             - "./target"
+      - save_cache:
+          paths:
+            - ~/.cache/yarn
+            - api_tests/node_modules
+          key: yarn-packages-v1-{{ .Branch }}-{{ checksum "new_project/yarn.lock" }}
