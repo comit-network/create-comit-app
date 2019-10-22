@@ -117,5 +117,5 @@ commands:
       - save_cache:
           paths:
             - ~/.cache/yarn
-            - api_tests/node_modules
+            - new_project/examples/btc-eth/node_modules
           key: yarn-packages-v1-{{ .Branch }}-{{ checksum "new_project/yarn.lock" }}
