@@ -15,6 +15,7 @@ jobs:
         os: [ubuntu-latest, macOS-latest]
     steps:
       - uses: actions/checkout@master
+      # Workaround until actions/virtual-environments#6 is fixed
       - name: Get Toolchain version
         if: startsWith(matrix.os, 'macOS')
         run: |
