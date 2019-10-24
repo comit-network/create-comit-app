@@ -22,7 +22,7 @@ rust_bitcoin = { version = "0.19.1", package = "bitcoin" }
 secp256k1 = { version = "0.12", features = ["rand"] }
 serde = "1"
 serde_json = "1"
-shiplift = { version = "0.5", default-features = false }
+shiplift = { version = "0.5", default-features = false, features = ["unix-socket"] }
 signal-hook = { version = "0.1", features = ["tokio-support"] }
 structopt = "0.3"
 tar = "0.4.26"
