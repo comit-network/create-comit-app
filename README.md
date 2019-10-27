@@ -1,6 +1,10 @@
+[![Gitter chat](https://badges.gitter.im/gitterHQ/gitter.png)](https://gitter.im/comit-network/community)
+
 # Create Comit App
 
-Set up a local development environment for COMIT apps with one command. 
+Set up a local development environment for COMIT apps with one command.
+
+If you have any question please [reach out to the team in our Gitter chat](https://gitter.im/comit-network/community)!
 
 ## 1 - Install
 
