@@ -4,7 +4,6 @@ use shiplift::builder::ContainerOptionsBuilder;
 use shiplift::{
     ContainerOptions, Docker, LogsOptions, NetworkCreateOptions, PullOptions, RmContainerOptions,
 };
-use std::io::Write;
 use std::path::PathBuf;
 use tokio::prelude::future::Either;
 use tokio::prelude::stream::Stream;

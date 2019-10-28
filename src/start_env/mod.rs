@@ -1,17 +1,13 @@
 use crate::docker::bitcoin::{BitcoinNode, GenerateQuery};
-use crate::docker::delete_container;
-use crate::docker::{delete_network, Node};
+use crate::docker::Node;
 use crate::print_progress;
-use std::io::Write;
-use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
-use std::thread::sleep;
 use std::time::Duration;
-use tokio::prelude::stream;
 use tokio::prelude::{Future, Stream};
 use tokio::runtime::Runtime;
 use tokio::timer::Interval;
 
+mod clean_up;
 mod start;
 mod temp_fs;
 
@@ -23,14 +19,14 @@ pub fn start_env() {
         ::std::process::exit(1);
     }
 
-    let terminate = register_signals().expect("Could not register signals");
+    let terminate = self::clean_up::register_signals().expect("Could not register signals");
 
     match self::start::execute(&mut runtime, &terminate) {
         Ok(self::start::Services { bitcoin_node, .. }) => {
             runtime.spawn(bitcoin_generate_blocks(bitcoin_node.clone()));
 
             runtime
-                .block_on(handle_signal(terminate))
+                .block_on(self::clean_up::handle_signal(terminate))
                 .expect("Handle signal failed");
             println!("✓");
         }
@@ -45,7 +41,9 @@ pub fn start_env() {
             }
 
             print_progress!("🧹 Cleaning up");
-            runtime.block_on(clean_up()).expect("Clean up failed");
+            runtime
+                .block_on(self::clean_up::clean_up())
+                .expect("Clean up failed");
             println!("✓");
         }
     }
@@ -92,39 +90,6 @@ pub enum Error {
     HomeDir,
     SignalReceived,
     Unimplemented,
-}
-
-fn handle_signal(terminate: Arc<AtomicBool>) -> impl Future<Item = (), Error = ()> {
-    while !terminate.load(Ordering::Relaxed) {
-        sleep(Duration::from_millis(50))
-    }
-    println!("Signal received, terminating...");
-    print_progress!("🧹 Cleaning up");
-    clean_up()
-}
-
-fn register_signals() -> Result<Arc<AtomicBool>, std::io::Error> {
-    let terminate = Arc::new(AtomicBool::new(false));
-    signal_hook::flag::register(signal_hook::SIGTERM, Arc::clone(&terminate))?;
-    signal_hook::flag::register(signal_hook::SIGINT, Arc::clone(&terminate))?;
-    signal_hook::flag::register(signal_hook::SIGQUIT, Arc::clone(&terminate))?;
-    Ok(terminate)
-}
-
-fn clean_up() -> impl Future<Item = (), Error = ()> {
-    delete_container("bitcoin")
-        .then(|_| delete_container("ethereum"))
-        .then(|_| {
-            stream::iter_ok(vec![0, 1])
-                .and_then(move |i| delete_container(format!("cnd_{}", i).as_str()))
-                .collect()
-        })
-        .then(|_| delete_network())
-        .then(|_| {
-            let _ = temp_fs::dir_path().map(std::fs::remove_dir_all);
-            Ok(())
-        })
-        .map_err(|_: ()| ())
 }
 
 impl From<()> for Error {

@@ -13,7 +13,6 @@ use rust_bitcoin::util::bip32::ChildNumber;
 use rust_bitcoin::util::bip32::ExtendedPrivKey;
 use rust_bitcoin::Amount;
 use secp256k1::{Secp256k1, SecretKey};
-use std::io::Write;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
