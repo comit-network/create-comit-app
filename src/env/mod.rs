@@ -11,7 +11,7 @@ mod clean_up;
 mod start;
 mod temp_fs;
 
-pub fn start_env() {
+pub fn start() {
     let mut runtime = Runtime::new().expect("Could not get runtime");
 
     if temp_fs::dir_exist() {

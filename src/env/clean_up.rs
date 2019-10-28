@@ -33,7 +33,7 @@ pub fn clean_up() -> impl Future<Item = (), Error = ()> {
         })
         .then(|_| delete_network())
         .then(|_| {
-            let _ = crate::start_env::temp_fs::dir_path().map(std::fs::remove_dir_all);
+            let _ = crate::env::temp_fs::dir_path().map(std::fs::remove_dir_all);
             Ok(())
         })
         .map_err(|_: ()| ())
