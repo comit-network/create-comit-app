@@ -25,7 +25,7 @@ pub fn start_env() {
 
     let terminate = register_signals().expect("Could not register signals");
 
-    match self::start::start_all(&mut runtime, &terminate) {
+    match self::start::execute(&mut runtime, &terminate) {
         Ok(self::start::Services { bitcoin_node, .. }) => {
             runtime.spawn(bitcoin_generate_blocks(bitcoin_node.clone()));
 

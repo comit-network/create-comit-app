@@ -29,7 +29,7 @@ pub struct Services {
     pub cnds: Arc<Vec<Node<Cnd>>>,
 }
 
-fn all_futures() -> Result<
+fn build_futures() -> Result<
     (
         Vec<ExtendedPrivKey>,
         Vec<SecretKey>,
@@ -93,7 +93,7 @@ fn all_futures() -> Result<
     ))
 }
 
-pub fn start_all(runtime: &mut Runtime, terminate: &Arc<AtomicBool>) -> Result<Services, Error> {
+pub fn execute(runtime: &mut Runtime, terminate: &Arc<AtomicBool>) -> Result<Services, Error> {
     let (
         bitcoin_hd_keys,
         ethereum_priv_keys,
@@ -102,7 +102,7 @@ pub fn start_all(runtime: &mut Runtime, terminate: &Arc<AtomicBool>) -> Result<S
         bitcoin_node,
         ethereum_node,
         cnds,
-    ) = all_futures()?;
+    ) = build_futures()?;
 
     let env_file_str = temp_fs::create_env_file()?;
 
