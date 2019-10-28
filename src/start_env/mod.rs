@@ -21,6 +21,14 @@ pub fn start_env() {
 
     let terminate = self::clean_up::register_signals().expect("Could not register signals");
 
+    std::panic::set_hook(Box::new(|panic_info| {
+        print_progress!("Panic received, cleaning up");
+        tokio::runtime::current_thread::block_on_all(self::clean_up::clean_up())
+            .expect("Clean up failed");
+        println!("✓");
+        eprintln!("{}", panic_info);
+    }));
+
     match self::start::execute(&mut runtime, &terminate) {
         Ok(self::start::Services { bitcoin_node, .. }) => {
             runtime.spawn(bitcoin_generate_blocks(bitcoin_node.clone()));
