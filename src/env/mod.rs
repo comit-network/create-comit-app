@@ -11,11 +11,17 @@ mod clean_up;
 mod start;
 mod temp_fs;
 
+pub fn clean_up() {
+    tokio::runtime::current_thread::block_on_all(self::clean_up::clean_up())
+        .expect("Clean up failed");
+    println!("Clean up done!");
+}
+
 pub fn start() {
     let mut runtime = Runtime::new().expect("Could not get runtime");
 
     if temp_fs::dir_exist() {
-        eprintln!("It seems that `create-comit-app start-env` is already running.\nIf it is not the case, delete lock directory ~/{} and try again.", temp_fs::DIR_NAME);
+        eprintln!("It seems that `create-comit-app start-env` is already running.\nIf it is not the case, run `create-comit-app force-clean-env` and try again.");
         ::std::process::exit(1);
     }
 
@@ -23,8 +29,7 @@ pub fn start() {
 
     std::panic::set_hook(Box::new(|panic_info| {
         print_progress!("Panic received, cleaning up");
-        tokio::runtime::current_thread::block_on_all(self::clean_up::clean_up())
-            .expect("Clean up failed");
+        clean_up();
         println!("✓");
         eprintln!("{}", panic_info);
     }));
