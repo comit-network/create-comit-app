@@ -1,6 +1,5 @@
 use create_comit_app::create_comit_app::CreateComitApp;
-use create_comit_app::env::clean_up;
-use create_comit_app::env::start;
+use create_comit_app::env;
 use create_comit_app::new::new;
 use std::io;
 use structopt::StructOpt;
@@ -11,9 +10,9 @@ fn main() -> io::Result<()> {
     let create_comit_app = CreateComitApp::from_args();
 
     match create_comit_app {
-        CreateComitApp::StartEnv => start(),
+        CreateComitApp::StartEnv => env::start(),
         CreateComitApp::New { name } => new(name, NEW_PROJECT_ARCHIVE)?,
-        CreateComitApp::ForceCleanEnv => clean_up(),
+        CreateComitApp::ForceCleanEnv => env::clean_up(),
     }
 
     Ok(())
