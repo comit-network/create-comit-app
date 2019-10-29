@@ -7,6 +7,6 @@ echo "Running $0"
 # Remove the `/tests` at the end of the current path
 # to allow this script to be run from root project
 # and from withing `tests` folder
-CWD=${0%/*.sh}
+PROJECT_DIR=${0%/*.sh}
 
-"${CWD}/run_example.sh" "btc-eth"
+"${PROJECT_DIR}/run_example.sh" "btc-eth"
