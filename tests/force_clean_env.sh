@@ -58,6 +58,7 @@ fi
 
 $CCA force-clean-env > /dev/null
 
+TIMEOUT=60
 CONTAINERS_DOWN=false
 
 # Waiting for blockchain nodes to be down
