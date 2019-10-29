@@ -2,9 +2,9 @@
 
 set -e
 
-CWD=${0%/tests/*.sh}
+PROJECT_DIR=${0%/tests/*.sh}
 
-CCA="${CWD}/target/debug/create-comit-app"
+CCA="${PROJECT_DIR}/target/debug/create-comit-app"
 
 ## Start tests
 echo "Running $0"

@@ -9,15 +9,15 @@ fi
 
 EXAMPLE_NAME=$1;
 
-CWD=${0%/tests/*.sh}
-EXAMPLE_DIR="${CWD}/new_project/examples/${EXAMPLE_NAME}"
+PROJECT_DIR=${0%/tests/*.sh}
+EXAMPLE_DIR="${PROJECT_DIR}/new_project/examples/${EXAMPLE_NAME}"
 
 if ! [ -d "$EXAMPLE_DIR" ]; then
   echo "Example dir does not exit: $EXAMPLE_DIR";
   exit 2;
 fi
 
-CCA="${CWD}/target/debug/create-comit-app"
+CCA="${PROJECT_DIR}/target/debug/create-comit-app"
 
 LOG_FILE=$(mktemp)
 

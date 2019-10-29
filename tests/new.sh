@@ -2,9 +2,9 @@
 
 set -e
 
-CWD=${0%/tests/*.sh}
+PROJECT_DIR=${0%/tests/*.sh}
 
-CCA="${CWD}/target/debug/create-comit-app"
+CCA="${PROJECT_DIR}/target/debug/create-comit-app"
 
 # Random 10 char name
 NAME=$(LC_CTYPE=C tr -dc A-Za-z0-9 < /dev/urandom |  fold -w 10 | head -n 1)
