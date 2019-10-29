@@ -17,15 +17,19 @@ ENV_UP=false
 
 # Count the number of containers. Only care about blockchain containers
 function check_containers() {
-  ERROR=false
+  ONE_ABSENT=false
   for CONTAINER in ethereum bitcoin; do
-    NUM=$(docker ps -qf name=${CONTAINER} |wc -l)
-    if test "$NUM" -ne 1; then
-      ERROR=true;
+    NUM=$(docker ps -qf name=${CONTAINER} | wc -l)
+    if [ "$NUM" -eq 1 ]; then
+      # Container is present, do nothing
+      continue;
+    else
+      # Container is missing!
+      ONE_ABSENT=true
       break;
     fi
   done
-  $ERROR && echo 1 || echo 0
+  $ONE_ABSENT && echo 1 || echo 0
 }
 
 # Waiting for blockchain nodes to be up
@@ -52,7 +56,7 @@ wait $PID || true; # Working around the `set -e` as SIGKILL makes it return bad 
 
 # Check the environment is still up after SIGKILL'ng create-comit-app
 if [ "$(check_containers)" -ne 0 ]; then
-      echo "FAIL: The environement is not up for some reason."
+      echo "FAIL: The environment is not up for some reason."
       exit 1
 fi
 
@@ -72,7 +76,6 @@ while [ $TIMEOUT -gt 0 ]; do
     fi
 done
 
-
 if ! $CONTAINERS_DOWN; then
   echo "FAIL: Containers were not stopped.";
   exit 1;
@@ -83,7 +86,7 @@ if [ -d "$HOME/.create-comit-app" ]; then
   exit 1;
 fi
 
-if test $(docker network ls |grep -n create-comit-app); then
+if test $(docker network ls | grep -n create-comit-app); then
   # IF grep successed then it found the network
   echo "FAIL: docker network is still up.";
   exit 1;
