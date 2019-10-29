@@ -1,4 +1,4 @@
-use crate::start_env::Error;
+use crate::env::Error;
 use std::path::PathBuf;
 
 pub const DIR_NAME: &str = ".create-comit-app";

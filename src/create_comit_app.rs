@@ -8,4 +8,5 @@ pub enum CreateComitApp {
         #[structopt(name = "name")]
         name: String,
     },
+    ForceCleanEnv,
 }
