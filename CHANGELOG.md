@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `force-clean-env` command to stop all services.
+
 ## [0.3.0] - 2019-10-17
 
 ### Added
