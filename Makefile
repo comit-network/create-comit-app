@@ -52,6 +52,7 @@ check_format: install_rustfmt install_tomlfmt
 e2e_scripts:
 	./tests/new.sh
 	./tests/start_env.sh
+	./tests/force_clean_env.sh
 	./tests/btc_eth.sh
 
 e2e: build_debug e2e_scripts
