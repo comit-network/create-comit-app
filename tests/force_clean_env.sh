@@ -88,7 +88,7 @@ if test $(docker network ls |grep -n create-comit-app); then
   exit 1;
 else
   echo "SUCCESS: Environment was cleaned up.";
-  exit 2;
+  exit 0;
 fi
 
 
