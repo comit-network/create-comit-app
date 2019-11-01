@@ -6,6 +6,7 @@ import {
     Cnd,
     ComitClient,
     SwapRequest,
+    BigNumber,
 } from "comit-sdk";
 import fs from "fs";
 import readLineSync from "readline-sync";
@@ -26,6 +27,9 @@ import readLineSync from "readline-sync";
         await taker.ethereumWallet.getAccount()
     );
 
+    await printBalances(maker);
+    await printBalances(taker);
+
     const swapMessage = createSwap(maker, taker);
 
     const takerSwapHandle = await taker.comitClient.sendSwap(swapMessage);
@@ -39,7 +43,7 @@ import readLineSync from "readline-sync";
 
     console.log(
         "Swap started! Swapping %d tokens @ contract address %s for %d %s",
-        swapMessage.alpha_asset.quantity,
+        toNominal(swapMessage.alpha_asset.quantity, 18),
         swapMessage.alpha_asset.token_contract,
         toBitcoin(swapMessage.beta_asset.quantity),
         swapMessage.beta_asset.name
@@ -81,17 +85,12 @@ import readLineSync from "readline-sync";
     );
 
     console.log("Swapped!");
-    console.log(
-        "Maker Bitcoin balance: %d",
-        parseFloat(await maker.bitcoinWallet.getBalance()).toFixed(2)
-    );
-    console.log(
-        "Taker Bitcoin balance: %d",
-        parseFloat(await taker.bitcoinWallet.getBalance()).toFixed(2)
-    );
+    await printBalances(maker);
+    await printBalances(taker);
 })();
 
 interface Actor {
+    name: string;
     comitClient: ComitClient;
     peerId: string;
     addressHint: string;
@@ -99,22 +98,17 @@ interface Actor {
     ethereumWallet: EthereumWallet;
 }
 
-async function startClient(index: number, role: string): Promise<Actor> {
+async function startClient(index: number, name: string): Promise<Actor> {
     const bitcoinWallet = await BitcoinWallet.newInstance(
         "regtest",
         process.env.BITCOIN_P2P_URI!,
         process.env[`BITCOIN_HD_KEY_${index}`]!
     );
     await new Promise(r => setTimeout(r, 1000));
-    console.log(
-        "%s Bitcoin balance: %d",
-        role,
-        parseFloat(await bitcoinWallet.getBalance()).toFixed(2)
-    );
 
     const ethereumWallet = new EthereumWallet(
-        process.env[`ETHEREUM_KEY_${index}`]!,
-        process.env.ETHEREUM_NODE_HTTP_URL!
+        process.env.ETHEREUM_NODE_HTTP_URL!,
+        process.env[`ETHEREUM_KEY_${index}`]!
     );
 
     const cnd = new Cnd(process.env[`HTTP_URL_CND_${index}`]!);
@@ -126,6 +120,7 @@ async function startClient(index: number, role: string): Promise<Actor> {
     const comitClient = new ComitClient(bitcoinWallet, ethereumWallet, cnd);
 
     const actor = {
+        name,
         comitClient,
         peerId,
         addressHint,
@@ -153,7 +148,7 @@ function createSwap(maker: Actor, taker: Actor): SwapRequest {
         alpha_asset: {
             name: "erc20",
             token_contract: process.env.ERC20_CONTRACT_ADDRESS,
-            quantity: "1000",
+            quantity: "10000000000000000000",
         },
         beta_asset: {
             name: "bitcoin",
@@ -177,4 +172,19 @@ function checkEnvFile(path: string) {
         );
         process.exit(1);
     }
+}
+
+async function printBalances(actor: Actor) {
+    console.log(
+        "%s Bitcoin balance: %d. Erc20 Token balance: %d",
+        actor.name,
+        parseFloat(await actor.bitcoinWallet.getBalance()).toFixed(2),
+        await actor.ethereumWallet.getErc20Balance(
+            process.env.ERC20_CONTRACT_ADDRESS!
+        )
+    );
+}
+
+function toNominal(tokenWei: string, decimals: number) {
+    return new BigNumber(tokenWei).div(new BigNumber(10).pow(decimals));
 }
