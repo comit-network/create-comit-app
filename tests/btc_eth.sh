@@ -9,4 +9,4 @@ echo "Running $0"
 # and from withing `tests` folder
 PROJECT_DIR=${0%/*.sh}
 
-"${PROJECT_DIR}/run_example.sh" "btc-eth"
+"${PROJECT_DIR}/run_example.sh" "btc_eth"
