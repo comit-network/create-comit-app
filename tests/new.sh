@@ -22,6 +22,12 @@ test -d "${NAME}" > /dev/null || (echo "FAIL: Project directory ${NAME} was not 
 
 test -f "${NAME}/package.json" > /dev/null  || (echo "FAIL: ${NAME} project was not initialized with a package.json file."; clean; exit 1;)
 
+PACKAGE_JSON_PROJECT_NAME=$(cat "${NAME}/package.json" | jq .name)
+if [ "$PACKAGE_JSON_PROJECT_NAME" != "\"$NAME\"" ]
+then
+  (echo "FAIL: Project was not properly initialized with ${NAME} in package.json."; clean; exit 1;)
+fi
+
 clean;
 
 echo "SUCCESS: New project was initialized.";
