@@ -25,7 +25,9 @@ test -f "${NAME}/package.json" > /dev/null  || (echo "FAIL: ${NAME} project was 
 PACKAGE_JSON_PROJECT_NAME=$(cat "${NAME}/package.json" | jq .name)
 if [ "$PACKAGE_JSON_PROJECT_NAME" != "\"$NAME\"" ]
 then
-  (echo "FAIL: Project was not properly initialized with ${NAME} in package.json."; clean; exit 1;)
+  echo "FAIL: Project was not properly initialized with ${NAME} in package.json."
+  clean
+  exit 1
 fi
 
 clean;

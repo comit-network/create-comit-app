@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Setting the project name in the `package.json` when running the `new` command.
+
+### Added
 - Clean up the environment if a panic occurs.
 - `force-clean-env` command to stop all services.
 

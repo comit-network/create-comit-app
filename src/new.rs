@@ -30,7 +30,7 @@ fn replace_project_name_in_file(path: &Path, name: &str) -> Result<(), io::Error
     let new_data = data.replace(to_replace, name);
 
     let mut destination = File::create(&path)?;
-    destination.write(new_data.as_bytes())?;
+    destination.write_all(new_data.as_bytes())?;
 
     Ok(())
 }
