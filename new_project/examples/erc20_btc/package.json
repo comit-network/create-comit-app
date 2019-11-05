@@ -4,11 +4,9 @@
     "description": "A Hello World COMIT example app that does a ERC20-Bitcoin swap",
     "main": "index.js",
     "scripts": {
-        "check": "tsc",
+        "check": "tsc && tslint -p . && prettier --check '**/*.{ts,json,yml}'",
         "start": "DOTENV_CONFIG_PATH=$HOME/.create-comit-app/env ts-node -r dotenv/config ./src/index.ts",
-        "fix": "tslint -p . --fix && prettier --write '**/*.{ts,js,json,yml}'",
-        "lint": "tslint -p .",
-        "prettier": "prettier --check '**/*.{ts,js,json,yml}'"
+        "fix": "tslint -p . --fix && prettier --write '**/*.{ts,js,json,yml}'"
     },
     "keywords": [],
     "author": "",
