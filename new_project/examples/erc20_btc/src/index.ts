@@ -87,6 +87,7 @@ import readLineSync from "readline-sync";
     console.log("Swapped!");
     await printBalances(maker);
     await printBalances(taker);
+    process.exit();
 })();
 
 interface Actor {
