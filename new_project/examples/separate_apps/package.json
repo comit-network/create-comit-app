@@ -1,0 +1,34 @@
+{
+    "name": "separate_apps",
+    "version": "1.0.0",
+    "description": "A COMIT example app that does an Ether-Bitcoin swap with actors started in separate terminals",
+    "main": "index.js",
+    "scripts": {
+        "check": "tsc && tslint -p . && prettier --check '**/*.{ts,json,yml}'",
+        "maker": "DOTENV_CONFIG_PATH=$HOME/.create-comit-app/env ts-node -r dotenv/config ./src/maker.ts",
+        "taker": "DOTENV_CONFIG_PATH=$HOME/.create-comit-app/env ts-node -r dotenv/config ./src/taker.ts",
+        "fix": "tslint -p . --fix && prettier --write '**/*.{ts,js,json,yml}'"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "devDependencies": {
+        "@types/readline-sync": "^1.4.3",
+        "prettier": "^1.18.2",
+        "ts-node": "^8.3.0",
+        "tslint": "^5.19.0",
+        "tslint-config-prettier": "^1.18.0",
+        "typescript": "^3.6.2"
+    },
+    "dependencies": {
+        "comit-sdk": "^0.5.6",
+        "dotenv": "^8.1.0",
+        "moment": "^2.24.0",
+        "readline-sync": "^1.4.10",
+        "satoshi-bitcoin-ts": "^0.2.4"
+    },
+    "prettier": {
+        "trailingComma": "es5",
+        "tabWidth": 4
+    }
+}

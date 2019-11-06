@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Clean up the environment if a panic occurs.
 - `force-clean-env` command to stop all services.
+- `separate_apps` example where the taker and maker must be started from different terminal to give a better peer-to-peer feeling.
 
 ## [0.3.0] - 2019-10-17
 
