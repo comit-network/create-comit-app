@@ -1,15 +1,15 @@
-import { toSatoshi, toBitcoin } from "satoshi-bitcoin-ts";
-import moment from "moment";
 import {
+    BigNumber,
     BitcoinWallet,
-    EthereumWallet,
     Cnd,
     ComitClient,
+    EthereumWallet,
     SwapRequest,
-    BigNumber,
 } from "comit-sdk";
 import fs from "fs";
+import moment from "moment";
 import readLineSync from "readline-sync";
+import { toBitcoin, toSatoshi } from "satoshi-bitcoin-ts";
 
 (async function main() {
     checkEnvFile(process.env.DOTENV_CONFIG_PATH!);
@@ -87,6 +87,7 @@ import readLineSync from "readline-sync";
     console.log("Swapped!");
     await printBalances(maker);
     await printBalances(taker);
+    process.exit();
 })();
 
 interface Actor {
@@ -119,7 +120,7 @@ async function startClient(index: number, name: string): Promise<Actor> {
 
     const comitClient = new ComitClient(bitcoinWallet, ethereumWallet, cnd);
 
-    const actor = {
+    return {
         name,
         comitClient,
         peerId,
@@ -127,13 +128,10 @@ async function startClient(index: number, name: string): Promise<Actor> {
         bitcoinWallet,
         ethereumWallet,
     };
-
-    return actor;
 }
 
 function createSwap(maker: Actor, taker: Actor): SwapRequest {
     const to = maker.peerId;
-    const address_hint = maker.addressHint;
     const refundAddress = taker.ethereumWallet.getAccount();
 
     return {
@@ -159,7 +157,7 @@ function createSwap(maker: Actor, taker: Actor): SwapRequest {
         beta_expiry: moment().unix() + 3600,
         peer: {
             peer_id: to,
-            address_hint,
+            address_hint: maker.addressHint,
         },
     };
 }
