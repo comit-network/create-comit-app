@@ -3,7 +3,11 @@ import { formatEther } from "ethers/utils";
 import readLineSync from "readline-sync";
 import { toBitcoin } from "satoshi-bitcoin-ts";
 import { Actor, checkEnvFile, startClient } from "./lib";
-import { NegotiationProtocolClient, Order } from "./negotiation";
+import {
+    ExecutionParams,
+    NegotiationProtocolClient,
+    Order,
+} from "./negotiation";
 
 (async function main() {
     checkEnvFile(process.env.DOTENV_CONFIG_PATH!);
@@ -21,10 +25,13 @@ import { NegotiationProtocolClient, Order } from "./negotiation";
     readLineSync.question("0. Ready?");
 
     // take an order from a maker
-
     const negotiationProtocolClient = new NegotiationProtocolClient();
-    const order: Order = await negotiationProtocolClient.getOrder(
-        "http://localhost:2318/ETH-BTC"
+    const {
+        order,
+        execution_params,
+    } = await negotiationProtocolClient.startNegotiation(
+        "http://localhost:2318/orders",
+        "ETH-BTC"
     );
 
     const ether = formatEther(order.ask.amount);
@@ -37,7 +44,7 @@ import { NegotiationProtocolClient, Order } from "./negotiation";
         bitcoin
     );
 
-    const swapMessage = createSwap(taker, order);
+    const swapMessage = createSwap(taker, order, execution_params);
 
     const swapHandle = await taker.comitClient.sendSwap(swapMessage);
 
@@ -76,7 +83,11 @@ import { NegotiationProtocolClient, Order } from "./negotiation";
     process.exit();
 })();
 
-function createSwap(actor: Actor, order: Order): SwapRequest {
+function createSwap(
+    actor: Actor,
+    order: Order,
+    executionParams: ExecutionParams
+): SwapRequest {
     const refundAddress = actor.ethereumWallet.getAccount();
 
     return {
@@ -97,11 +108,11 @@ function createSwap(actor: Actor, order: Order): SwapRequest {
             quantity: order.bid.amount,
         },
         alpha_ledger_refund_identity: refundAddress,
-        alpha_expiry: order.execution_params.expiries.ask_expiry,
-        beta_expiry: order.execution_params.expiries.bid_expiry,
+        alpha_expiry: executionParams.expiries.ask_expiry,
+        beta_expiry: executionParams.expiries.bid_expiry,
         peer: {
-            peer_id: order.execution_params.connection_info.peer_id,
-            address_hint: order.execution_params.connection_info.address_hint,
+            peer_id: executionParams.connection_info.peer_id,
+            address_hint: executionParams.connection_info.address_hint,
         },
     };
 }

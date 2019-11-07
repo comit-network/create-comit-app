@@ -5,35 +5,25 @@ import { toBitcoin } from "satoshi-bitcoin-ts";
 import { checkEnvFile, startClient } from "./lib";
 import { NegotiationProtocolHandler, Order } from "./negotiation";
 
-const defaultOrder: Order = {
-    id: "123",
-    key: "ETH-BTC",
-    valid_until: moment().unix() + 300,
-    ask: {
-        amount: "9000000000000000000",
-        asset: "ether",
-        ledger: "ethereum",
-        network: "regtest",
-    },
-    bid: {
-        amount: "100000000",
-        asset: "bitcoin",
-        ledger: "bitcoin",
-        network: "regtest",
-    },
-    execution_params: {
-        connection_info: {
-            peer_id: "UNDEFINED",
-            address_hint: "UNDEFINED",
+function createOrder(): Order {
+    return {
+        id: "123",
+        key: "ETH-BTC",
+        valid_until: moment().unix() + 300,
+        ask: {
+            amount: "9000000000000000000",
+            asset: "ether",
+            ledger: "ethereum",
+            network: "regtest",
         },
-        expiries: {
-            ask_expiry: 0,
-            bid_expiry: 0,
+        bid: {
+            amount: "100000000",
+            asset: "bitcoin",
+            ledger: "bitcoin",
+            network: "regtest",
         },
-        role: "",
-        swap_id: "",
-    },
-};
+    };
+}
 
 (async function main() {
     checkEnvFile(process.env.DOTENV_CONFIG_PATH!);
@@ -58,11 +48,8 @@ const defaultOrder: Order = {
 
     // start negotiation protocol handler so that a taker can take the order and receives the latest rate
 
-    const negotiationProtocolHandler = new NegotiationProtocolHandler();
-    negotiationProtocolHandler.start(2318); // CoBloX Founding Date 🚀
-    const order: Order = {
-        ...defaultOrder,
-        execution_params: {
+    const negotiationProtocolHandler = new NegotiationProtocolHandler(
+        {
             connection_info: {
                 peer_id: peerId,
                 address_hint: addressHint,
@@ -74,10 +61,14 @@ const defaultOrder: Order = {
             role: "alice",
             swap_id: "SOME_RANDOM_ID",
         },
-    };
+        2318
+    ); // CoBloX Founding Date 🚀
 
+    negotiationProtocolHandler.start();
+    const order = createOrder();
     negotiationProtocolHandler.addOrder(order);
-    const invitationDetails = `http://localhost:2318/ETH-BTC`;
+
+    const invitationDetails = `http://localhost:2318/orders/ETH-BTC`;
     console.log(`Waiting for someone taking my order at: ${invitationDetails}`);
 
     let swapHandle;
