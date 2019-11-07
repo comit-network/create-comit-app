@@ -52,35 +52,35 @@ import { toBitcoin, toSatoshi } from "satoshi-bitcoin-ts";
     readLineSync.question("Continue?");
 
     console.log(
-        "ERC20 contract deployed! TXID: ",
+        "Ethereum HTLC deployed! TXID: ",
         await takerSwapHandle.deploy(actionConfig)
     );
 
     readLineSync.question("Continue?");
 
     console.log(
-        "ERC20 contract funded! TXID: ",
+        "Ethereum HTLC funded! TXID: ",
         await takerSwapHandle.fund(actionConfig)
     );
 
     readLineSync.question("Continue?");
 
     console.log(
-        "Bitcoin contract funded! TXID: ",
+        "Bitcoin HTLC funded! TXID: ",
         await makerSwapHandle.fund(actionConfig)
     );
 
     readLineSync.question("Continue?");
 
     console.log(
-        "Bitcoin redeemed! TXID: ",
+        "Bitcoin HTLC redeemed! TXID: ",
         await takerSwapHandle.redeem(actionConfig)
     );
 
     readLineSync.question("Continue?");
 
     console.log(
-        "ERC20 redeemed! TXID: ",
+        "Ethereum HTLC redeemed! TXID: ",
         await makerSwapHandle.redeem(actionConfig)
     );
 
