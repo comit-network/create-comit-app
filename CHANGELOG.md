@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+###
+- Added a simple negotiation protocol prototype to the example in `seperate_apps`.
+
 ### Added
 - Setting the project name in the `package.json` when running the `new` command.
 
