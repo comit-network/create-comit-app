@@ -18,6 +18,8 @@ import { NegotiationProtocolClient, Order } from "./negotiation";
         ).toFixed(2)
     );
 
+    readLineSync.question("0. Ready?");
+
     // take an order from a maker
 
     const negotiationProtocolClient = new NegotiationProtocolClient();

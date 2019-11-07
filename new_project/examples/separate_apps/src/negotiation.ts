@@ -4,7 +4,7 @@ import express from "express";
 export interface Order {
     key: string;
     id: string;
-    valid_until: string;
+    valid_until: number;
     bid: {
         ledger: string;
         asset: string;

@@ -8,7 +8,7 @@ import { NegotiationProtocolHandler, Order } from "./negotiation";
 const defaultOrder: Order = {
     id: "123",
     key: "ETH-BTC",
-    valid_until: "UNDEFINED",
+    valid_until: moment().unix() + 300,
     ask: {
         amount: "9000000000000000000",
         asset: "ether",
@@ -93,10 +93,19 @@ const defaultOrder: Order = {
     }
 
     const actionConfig = { timeout: 100000, tryInterval: 1000 };
-    await swapHandle.accept(actionConfig);
 
     const swap = await swapHandle.getEntity();
     const swapParams = swap.properties!.parameters;
+
+    // only accept a request if it fits to the created order above
+    if (isValid(swapParams, order)) {
+        console.log("Requested order is invalid");
+        await swapHandle.decline(actionConfig);
+        process.exit();
+    }
+    console.log("Requested order is still valid");
+    await swapHandle.accept(actionConfig);
+
     console.log(
         "Swap started! Swapping %d Ether for %d %s",
         formatEther(swapParams.alpha_asset.quantity),
@@ -128,3 +137,11 @@ const defaultOrder: Order = {
     );
     process.exit();
 })();
+
+function isValid(swapParams: any, order: Order) {
+    return (
+        swapParams.alpha_asset.name !== order.ask.asset ||
+        swapParams.beta_asset.name !== order.bid.asset ||
+        order.valid_until < moment().unix()
+    );
+}
