@@ -1,0 +1,6 @@
+status = [
+    "ci/circleci: build_test",
+    "ci/circleci: static_analysis",
+    "license/cla"
+]
+pr_status = ["license/cla"]
