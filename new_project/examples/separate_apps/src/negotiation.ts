@@ -57,7 +57,7 @@ export class NegotiationProtocolHandler {
 }
 
 export class NegotiationProtocolClient {
-    public async getOffer(inviteDetails: string) {
+    public async getOrder(inviteDetails: string) {
         const response = await axios.get(inviteDetails);
         return response.data;
     }

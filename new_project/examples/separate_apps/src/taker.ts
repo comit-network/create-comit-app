@@ -23,7 +23,7 @@ import { NegotiationProtocolClient, Order } from "./negotiation";
     // take an order from a maker
 
     const negotiationProtocolClient = new NegotiationProtocolClient();
-    const order: Order = await negotiationProtocolClient.getOffer(
+    const order: Order = await negotiationProtocolClient.getOrder(
         "http://localhost:2318/ETH-BTC"
     );
 
