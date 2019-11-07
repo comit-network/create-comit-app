@@ -1,7 +1,39 @@
 import { formatEther } from "ethers/utils";
+import moment from "moment";
 import readLineSync from "readline-sync";
 import { toBitcoin } from "satoshi-bitcoin-ts";
 import { checkEnvFile, startClient } from "./lib";
+import { NegotiationProtocolHandler, Order } from "./negotiation";
+
+const defaultOrder: Order = {
+    id: "123",
+    key: "ETH-BTC",
+    valid_until: "UNDEFINED",
+    ask: {
+        amount: "9000000000000000000",
+        asset: "ether",
+        ledger: "ethereum",
+        network: "regtest",
+    },
+    bid: {
+        amount: "100000000",
+        asset: "bitcoin",
+        ledger: "bitcoin",
+        network: "regtest",
+    },
+    execution_params: {
+        connection_info: {
+            peer_id: "UNDEFINED",
+            address_hint: "UNDEFINED",
+        },
+        expiries: {
+            ask_expiry: 0,
+            bid_expiry: 0,
+        },
+        role: "",
+        swap_id: "",
+    },
+};
 
 (async function main() {
     checkEnvFile(process.env.DOTENV_CONFIG_PATH!);
@@ -24,13 +56,29 @@ import { checkEnvFile, startClient } from "./lib";
     console.log("[Maker] peer id:", peerId);
     console.log("[Maker] address hint:", addressHint);
 
-    // Note that we assume the maker published an offer
-    // somehow somewhere and that someone (a taker)
-    // will take such offer by send a SWAP request to the
-    // maker's COMIT node. Publishing and Finding offers
-    // is not part of this example.
+    // start negotiation protocol handler so that a taker can take the order and receives the latest rate
 
-    console.log("Waiting for someone to take my offer...");
+    const negotiationProtocolHandler = new NegotiationProtocolHandler();
+    negotiationProtocolHandler.start(2318); // CoBloX Founding Date 🚀
+    const order: Order = {
+        ...defaultOrder,
+        execution_params: {
+            connection_info: {
+                peer_id: peerId,
+                address_hint: addressHint,
+            },
+            expiries: {
+                ask_expiry: moment().unix() + 7200,
+                bid_expiry: moment().unix() + 3600,
+            },
+            role: "alice",
+            swap_id: "SOME_RANDOM_ID",
+        },
+    };
+
+    negotiationProtocolHandler.addOrder(order);
+    const invitationDetails = `http://localhost:2318/ETH-BTC`;
+    console.log(`Waiting for someone taking my order at: ${invitationDetails}`);
 
     let swapHandle;
     while (!swapHandle) {
