@@ -1,6 +1,5 @@
 status = [
     "ci/circleci: build_test",
-    "ci/circleci: static_analysis",
-    "license/cla"
+    "ci/circleci: static_analysis"
 ]
 pr_status = ["license/cla"]
