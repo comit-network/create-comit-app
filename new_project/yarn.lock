@@ -368,16 +368,16 @@ combined-stream@^1.0.6, combined-stream@~1.0.6:
   dependencies:
     delayed-stream "~1.0.0"
 
-comit-sdk@^0.3.2:
-  version "0.3.2"
-  resolved "https://registry.yarnpkg.com/comit-sdk/-/comit-sdk-0.3.2.tgz#5afa62dc2a21cd2f11252519105809dd0036d751"
-  integrity sha512-MWxxefEgqAFvi+FtfbNbSd8B513cPWdyUG2R3puUXm0PNVd3zvVNYIEVuK3cE0RyH/swrQCO5hEu1iPzaPE2mQ==
+comit-sdk@^0.5.6:
+  version "0.5.6"
+  resolved "https://registry.yarnpkg.com/comit-sdk/-/comit-sdk-0.5.6.tgz#ec80e935e5694fdb71674db3fccccd9690adba5e"
+  integrity sha512-+xVXls61cBipzhc3mGa/SFIJZtEENBBhcPlTVvUfBB9XnfLXZJNHfUDyKkCLkCIhKfc82tutMFIV3bIogl1y1Q==
   dependencies:
     axios "^0.19.0"
     bcoin "https://github.com/bcoin-org/bcoin#2496acc7a98a43f00a7b5728eb256877c1bbf001"
     bitcoin-core "^2.2.0"
     content-type "^1.0.4"
-    ethers "^4.0.37"
+    ethers "^4.0.38"
     urijs "^1.19.1"
 
 concat-map@0.0.1:
@@ -454,10 +454,10 @@ elliptic@6.3.3:
     hash.js "^1.0.0"
     inherits "^2.0.1"
 
-ethers@^4.0.37:
-  version "4.0.37"
-  resolved "https://registry.yarnpkg.com/ethers/-/ethers-4.0.37.tgz#dfa70d59498663878c5e4a977d14356660ca5b90"
-  integrity sha512-B7bDdyQ45A5lPr6k2HOkEKMtYOuqlfy+nNf8glnRvWidkDQnToKw1bv7UyrwlbsIgY2mE03UxTVtouXcT6Vvcw==
+ethers@^4.0.38:
+  version "4.0.39"
+  resolved "https://registry.yarnpkg.com/ethers/-/ethers-4.0.39.tgz#5ce9dfffedb03936415743f63b37d96280886a47"
+  integrity sha512-QVtC8TTUgTrnlQjQvdFJ7fkSWKwp8HVTbKRmrdbVryrPzJHMTf3WSeRNvLF2enGyAFtyHJyFNnjN0fSshcEr9w==
   dependencies:
     "@types/node" "^10.3.2"
     aes-js "3.0.0"
