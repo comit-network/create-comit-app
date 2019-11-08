@@ -32,7 +32,7 @@ toml = "0.5"
 web3 = "0.8"
 
 [build-dependencies]
-anyhow = "1.0.13"
+anyhow = "1.0.19"
 flate2 = "1.0.12"
 ignore = "0.4.10"
 tar = "0.4.26"
