@@ -1,0 +1,47 @@
+version: 1
+update_configs:
+  - package_manager: "rust:cargo"
+    directory: "/"
+    update_schedule: "daily"
+    default_labels:
+      - "dependencies"
+    allowed_updates:
+      - match:
+          update_type: "all"
+          dependency_type: "direct"
+  - package_manager: "javascript"
+    directory: "/new_project"
+    update_schedule: "daily"
+    default_labels:
+      - "dependencies"
+    allowed_updates:
+      - match:
+          update_type: "all"
+          dependency_type: "direct"
+  - package_manager: "javascript"
+    directory: "/new_project/examples/btc_eth"
+    update_schedule: "daily"
+    default_labels:
+      - "dependencies"
+    allowed_updates:
+      - match:
+          update_type: "all"
+          dependency_type: "direct"
+  - package_manager: "javascript"
+    directory: "/new_project/examples/erc20_btc"
+    update_schedule: "daily"
+    default_labels:
+      - "dependencies"
+    allowed_updates:
+      - match:
+          update_type: "all"
+          dependency_type: "direct"
+  - package_manager: "javascript"
+    directory: "/new_project/examples/separate_apps"
+    update_schedule: "daily"
+    default_labels:
+      - "dependencies"
+    allowed_updates:
+      - match:
+          update_type: "all"
+          dependency_type: "direct"
