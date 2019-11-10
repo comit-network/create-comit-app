@@ -6,13 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-###
+### Fixed
+- Correct log messages in ERC20-BTC example.
+
+### Added
 - Added a simple negotiation protocol prototype to the example in `seperate_apps`.
-
-### Added
 - Setting the project name in the `package.json` when running the `new` command.
-
-### Added
 - Clean up the environment if a panic occurs.
 - `force-clean-env` command to stop all services.
 - `separate_apps` example where the taker and maker must be started from different terminal to give a better peer-to-peer feeling.

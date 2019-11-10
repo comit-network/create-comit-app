@@ -3,8 +3,14 @@ workflows:
   version: 2
   main:
     jobs:
-      - static_analysis
-      - build_test
+      - static_analysis:
+          filters: # ignore .tmp branches from bors
+            branches:
+              ignore: /^(staging.tmp|trying.tmp)$/
+      - build_test:
+          filters: # ignore .tmp branches from bors
+            branches:
+              ignore: /^(staging.tmp|trying.tmp)$/
 
 jobs:
   static_analysis:
