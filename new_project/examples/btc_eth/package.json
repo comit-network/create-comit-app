@@ -29,7 +29,7 @@
         "comit-sdk": "^0.3.2",
         "delay": "^4.3.0",
         "dotenv": "^8.2.0",
-        "ethers": "^4.0.37",
+        "ethers": "^4.0.39",
         "minimist": "^1.2.0",
         "moment": "^2.24.0",
         "satoshi-bitcoin-ts": "^0.2.4",
