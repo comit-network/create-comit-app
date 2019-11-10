@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Correct log messages in ERC20-BTC example.
 
 ### Added
+- Added a simple negotiation protocol prototype to the example in `seperate_apps`.
 - Setting the project name in the `package.json` when running the `new` command.
 - Clean up the environment if a panic occurs.
 - `force-clean-env` command to stop all services.
