@@ -29,6 +29,7 @@ pull_request_rules:
       delete_head_branch:
   - name: nag if changelog is not updated
     conditions:
+      - "author!=dependabot-preview[bot]"
       - "files~=(?!.*CHANGELOG.md.*)"
       - review-requested!=''
     actions:
