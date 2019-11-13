@@ -8,7 +8,7 @@ edition = "2018"
 dirs = "2"
 emerald-vault-core = { git = "http://github.com/thomaseizinger/emerald-vault.git", branch = "create-comit-app-compatible", default-features = false }
 envfile = "0.2"
-ethabi = "8.0"
+ethabi = "9.0"
 flate2 = "1.0.13"
 futures-preview = { version = "0.3.0-alpha.19", features = ["compat"] }
 hex = "0.4.0"
