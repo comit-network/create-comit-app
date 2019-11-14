@@ -31,7 +31,17 @@ address = "0.0.0.0"
 port = 8000
 ```
 
-* Point cnd against the testnet nodes at TODO
+Example seed file for the taker:
+```
+-----BEGIN SEED-----
+ZaBZdOwqLWHTLe9HXEc//wVGdt4VzVkDB/jB7tzkf/c=
+-----END SEED-----
+```
+
+Startup command:
+```
+cnd --config taker_config.toml --seed-file taker_seed.pem
+```
 
 ### Run cnd maker
 
@@ -41,17 +51,27 @@ listen = ["/ip4/0.0.0.0/tcp/19939"]
 
 [bitcoin]
 network = "testnet"
-node_url = "https://bobtimus.coblox.tech:18332"
+node_url = "http://bobtimus.coblox.tech:18332"
 
 [ethereum]
-node_url = "https://bobtimus.coblox.tech:8545"
+node_url = "http://bobtimus.coblox.tech:8545"
 
 [http_api]
 address = "0.0.0.0"
 port = 18000
 ```
 
-* Point cnd against the testnet nodes at TODO
+Example seed file for the maker:
+```
+-----BEGIN SEED-----
+AaBZdOwqLWHTLe9HXEc//wVGdt4VzVkDB/jB7tzkf/c=
+-----END SEED-----
+```
+
+Startup command:
+```
+cnd --config maker_config.toml --seed-file maker_seed.pem
+```
 
 ### Key/account generation and funding for both wallets
 
