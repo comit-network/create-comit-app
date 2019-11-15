@@ -106,6 +106,14 @@ function createOrder(): Order {
 
     readLineSync.question("2. Continue?");
 
+    let btcBalance = await maker.bitcoinWallet.getBalance();
+    while (btcBalance <= 0) {
+        console.log("0 bitcoin balance, wallet most likely not properly initialized!");
+        readLineSync.question("2. Try Again?");
+        btcBalance = await maker.bitcoinWallet.getBalance();
+    }
+
+    console.log("Bitcoin balance: " + btcBalance);
     console.log(
         "Bitcoin HTLC funded! TXID: ",
         await swapHandle.fund(actionConfig)
