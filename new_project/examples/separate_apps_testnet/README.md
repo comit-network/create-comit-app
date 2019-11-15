@@ -184,6 +184,8 @@ Output:
 
 Fund the `Address` through a coin faucet.
 
+Note: The address format can be formatted to e.g. `bech32` using `--format bech32`.
+
 #### Ethereum
 
 `wagyu ethereum hd` results in:
