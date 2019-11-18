@@ -12,6 +12,7 @@ use rand::{thread_rng, Rng};
 use rust_bitcoin::util::bip32::ChildNumber;
 use rust_bitcoin::util::bip32::ExtendedPrivKey;
 use rust_bitcoin::Amount;
+use rust_bitcoin::PrivateKey;
 use secp256k1::{Secp256k1, SecretKey};
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -28,10 +29,22 @@ pub struct Services {
     pub cnds: Arc<Vec<Node<Cnd>>>,
 }
 
+#[derive(Clone)]
+pub struct BitcoinAccount {
+    master_extended_private_key: ExtendedPrivKey,
+    derived_private_key: PrivateKey,
+    derived_address: rust_bitcoin::Address,
+}
+
+#[derive(Clone)]
+pub struct EthereumAccount {
+    private_key: SecretKey,
+}
+
 fn build_futures() -> Result<
     (
-        Vec<ExtendedPrivKey>,
-        Vec<SecretKey>,
+        Vec<BitcoinAccount>,
+        Vec<EthereumAccount>,
         PathBuf,
         impl Future<Item = String, Error = ()>,
         impl Future<Item = Node<BitcoinNode>, Error = ()>,
@@ -40,39 +53,19 @@ fn build_futures() -> Result<
     ),
     Error,
 > {
-    let bitcoin_hd_keys = vec![
-        new_extended_regtest_priv_key()?,
-        new_extended_regtest_priv_key()?,
-    ];
-    let derivation_path = vec![
-        ChildNumber::from_hardened_idx(44)?,
-        ChildNumber::from_hardened_idx(1)?,
-        ChildNumber::from_hardened_idx(0)?,
-        ChildNumber::from_normal_idx(0)?,
-        ChildNumber::from_normal_idx(0)?,
-    ];
-    let bitcoin_priv_keys = bitcoin_hd_keys
-        .iter()
-        .map(|hd_key| {
-            hd_key
-                .derive_priv(&Secp256k1::new(), &derivation_path)
-                .map(|secret_key| secret_key.private_key.key)
-        })
-        .collect::<Result<Vec<_>, _>>()?;
-    let ethereum_priv_keys = vec![
-        SecretKey::new(&mut thread_rng()),
-        SecretKey::new(&mut thread_rng()),
-    ];
+    let bitcoin_accounts = vec![new_bitcoin_account()?, new_bitcoin_account()?];
+
+    let ethereum_accounts = vec![new_ethereum_account(), new_ethereum_account()];
 
     let env_file_path = temp_fs::env_file_path()?;
     let docker_network_create = create_network().map_err(|e| {
         eprintln!("Issue creating Docker network: {:?}", e);
     });
-    let bitcoin_node = start_bitcoin_node(&env_file_path, bitcoin_priv_keys).map_err(|e| {
+    let bitcoin_node = start_bitcoin_node(&env_file_path, bitcoin_accounts.clone()).map_err(|e| {
         eprintln!("Issue starting Bitcoin node: {:?}", e);
     });
     let ethereum_node =
-        start_ethereum_node(&env_file_path, ethereum_priv_keys.clone()).map_err(|e| {
+        start_ethereum_node(&env_file_path, ethereum_accounts.clone()).map_err(|e| {
             eprintln!("Issue starting Ethereum node: {:?}", e);
         });
     let cnds = {
@@ -82,8 +75,8 @@ fn build_futures() -> Result<
         })
     };
     Ok((
-        bitcoin_hd_keys,
-        ethereum_priv_keys,
+        bitcoin_accounts,
+        ethereum_accounts,
         env_file_path,
         docker_network_create,
         bitcoin_node,
@@ -94,8 +87,8 @@ fn build_futures() -> Result<
 
 pub fn execute(runtime: &mut Runtime, terminate: &Arc<AtomicBool>) -> Result<Services, Error> {
     let (
-        bitcoin_hd_keys,
-        ethereum_priv_keys,
+        bitcoin_accounts,
+        ethereum_accounts,
         env_file_path,
         docker_network_create,
         bitcoin_node,
@@ -137,17 +130,17 @@ pub fn execute(runtime: &mut Runtime, terminate: &Arc<AtomicBool>) -> Result<Ser
         eprintln!("Could not read {} file, aborting...\n{:?}", env_file_str, e);
     })?;
 
-    for (i, hd_key) in bitcoin_hd_keys.iter().enumerate() {
+    for (i, account) in bitcoin_accounts.iter().enumerate() {
         envfile.update(
             format!("BITCOIN_HD_KEY_{}", i).as_str(),
-            format!("{}", hd_key).as_str(),
+            format!("{}", account.master_extended_private_key).as_str(),
         );
     }
 
-    for (i, priv_key) in ethereum_priv_keys.iter().enumerate() {
+    for (i, account) in ethereum_accounts.iter().enumerate() {
         envfile.update(
             format!("ETHEREUM_KEY_{}", i).as_str(),
-            format!("{}", priv_key).as_str(),
+            format!("{}", account.private_key).as_str(),
         );
     }
 
@@ -186,17 +179,17 @@ pub fn execute(runtime: &mut Runtime, terminate: &Arc<AtomicBool>) -> Result<Ser
 
 fn start_bitcoin_node(
     envfile_path: &PathBuf,
-    secret_keys: Vec<SecretKey>,
+    bitcoin_accounts: Vec<BitcoinAccount>,
 ) -> impl Future<Item = Node<BitcoinNode>, Error = Error> {
     Node::<BitcoinNode>::start(envfile_path.clone(), "bitcoin")
         .map_err(Error::Docker)
         .and_then(move |node| {
-            stream::iter_ok(secret_keys).fold(node, |node, key| {
+            stream::iter_ok(bitcoin_accounts).fold(node, |node, account| {
                 bitcoin::fund(
                     node.node_image.username.clone(),
                     node.node_image.password.clone(),
                     node.node_image.endpoint.clone(),
-                    bitcoin::derive_address(key),
+                    bitcoin::derive_address(account.derived_private_key.key),
                     Amount::from_sat(1_000_000_000),
                 )
                 .map_err(Error::BitcoinFunding)
@@ -207,12 +200,16 @@ fn start_bitcoin_node(
 
 fn start_ethereum_node(
     envfile_path: &PathBuf,
-    secret_keys: Vec<SecretKey>,
+    ethereum_accounts: Vec<EthereumAccount>,
 ) -> impl Future<Item = (Address, Node<EthereumNode>), Error = Error> {
     Node::<EthereumNode>::start(envfile_path.clone(), "ethereum")
         .map_err(Error::Docker)
         .and_then({
-            let secret_keys = secret_keys.clone();
+            let secret_keys = ethereum_accounts
+                .clone()
+                .into_iter()
+                .map(|account| account.private_key)
+                .collect();
             |node| {
                 let web3 = node.node_image.http_client.clone();
                 ethereum::fund_ether(web3, secret_keys, U256::from(100u128 * 10u128.pow(18)))
@@ -223,7 +220,10 @@ fn start_ethereum_node(
             }
         })
         .and_then({
-            let secret_keys = secret_keys.clone();
+            let secret_keys = ethereum_accounts
+                .into_iter()
+                .map(|account| account.private_key)
+                .collect();
             |node| {
                 let web3 = node.node_image.http_client.clone();
                 ethereum::fund_erc20(web3, secret_keys, U256::from(100u128 * 10u128.pow(18)))
@@ -289,13 +289,43 @@ fn start_cnds(
         .collect()
 }
 
-fn new_extended_regtest_priv_key() -> Result<ExtendedPrivKey, rust_bitcoin::util::bip32::Error> {
-    ExtendedPrivKey::new_master(rust_bitcoin::Network::Regtest, &{
+fn new_bitcoin_account() -> Result<BitcoinAccount, Error> {
+    // generate master key (hd key)
+    let hd_key = ExtendedPrivKey::new_master(rust_bitcoin::Network::Regtest, &{
         let mut seed = [0u8; 32];
         thread_rng().fill_bytes(&mut seed);
 
         seed
+    })?;
+
+    // define derivation path to derive private keys from the master key
+    let derivation_path = vec![
+        ChildNumber::from_hardened_idx(44)?,
+        ChildNumber::from_hardened_idx(1)?,
+        ChildNumber::from_hardened_idx(0)?,
+        ChildNumber::from_normal_idx(0)?,
+        ChildNumber::from_normal_idx(0)?,
+    ];
+
+    // derive a private key from the master key
+    let priv_key = hd_key
+        .derive_priv(&Secp256k1::new(), &derivation_path)
+        .map(|secret_key| secret_key.private_key)?;
+
+    // derive an address from the private key
+    let address = bitcoin::derive_address(priv_key.key);
+
+    Ok(BitcoinAccount {
+        master_extended_private_key: hd_key,
+        derived_private_key: priv_key,
+        derived_address: address,
     })
+}
+
+fn new_ethereum_account() -> EthereumAccount {
+    EthereumAccount {
+        private_key: SecretKey::new(&mut thread_rng()),
+    }
 }
 
 fn check_signal(terminate: &Arc<AtomicBool>) -> Result<(), Error> {
