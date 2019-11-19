@@ -31,14 +31,58 @@ pub struct Services {
 
 #[derive(Clone)]
 pub struct BitcoinAccount {
-    master_extended_private_key: ExtendedPrivKey,
-    derived_private_key: PrivateKey,
-    derived_address: rust_bitcoin::Address,
+    master: ExtendedPrivKey,
+    first_account: PrivateKey,
+}
+
+impl BitcoinAccount {
+    fn new_random() -> anyhow::Result<Self> {
+        let mut seed = [0u8; 32];
+        thread_rng().fill_bytes(&mut seed);
+
+        let master = ExtendedPrivKey::new_master(rust_bitcoin::Network::Regtest, &seed)
+            .context("failed to generate new random extended private key from seed")?;
+
+        // define derivation path to derive private keys from the master key
+        let derivation_path = vec![
+            ChildNumber::from_hardened_idx(44)?,
+            ChildNumber::from_hardened_idx(1)?,
+            ChildNumber::from_hardened_idx(0)?,
+            ChildNumber::from_normal_idx(0)?,
+            ChildNumber::from_normal_idx(0)?,
+        ];
+
+        // derive a private key from the master key
+        let priv_key = master
+            .derive_priv(&Secp256k1::new(), &derivation_path)
+            .map(|secret_key| secret_key.private_key)?;
+
+        // it is not great to store derived data in here but since the derivation can fail, it is better to fail early instead of later
+        Ok(Self {
+            master,
+            first_account: priv_key,
+        })
+    }
+
+    fn first_account(&self) -> (PrivateKey, rust_bitcoin::Address) {
+        // derive an address from the private key
+        let address = bitcoin::derive_address(self.first_account.key);
+
+        (self.first_account, address)
+    }
 }
 
 #[derive(Clone)]
 pub struct EthereumAccount {
     private_key: SecretKey,
+}
+
+impl EthereumAccount {
+    fn new_random() -> Self {
+        Self {
+            private_key: SecretKey::new(&mut thread_rng()),
+        }
+    }
 }
 
 fn build_futures() -> anyhow::Result<(
@@ -50,9 +94,9 @@ fn build_futures() -> anyhow::Result<(
     impl Future<Item = (Address, Node<EthereumNode>), Error = anyhow::Error>,
     impl Future<Item = Vec<Node<Cnd>>, Error = anyhow::Error>,
 )> {
-    let bitcoin_accounts = vec![new_bitcoin_account()?, new_bitcoin_account()?];
+    let bitcoin_accounts = vec![BitcoinAccount::new_random()?, BitcoinAccount::new_random()?];
 
-    let ethereum_accounts = vec![new_ethereum_account(), new_ethereum_account()];
+    let ethereum_accounts = vec![EthereumAccount::new_random(), EthereumAccount::new_random()];
 
     let env_file_path = temp_fs::env_file_path()?;
     let docker_network_create =
@@ -119,7 +163,7 @@ pub fn execute(runtime: &mut Runtime, terminate: &Arc<AtomicBool>) -> anyhow::Re
     for (i, account) in bitcoin_accounts.iter().enumerate() {
         envfile.update(
             format!("BITCOIN_HD_KEY_{}", i).as_str(),
-            format!("{}", account.master_extended_private_key).as_str(),
+            format!("{}", account.master).as_str(),
         );
     }
 
@@ -166,11 +210,12 @@ fn start_bitcoin_node(
         .from_err()
         .and_then(move |node| {
             stream::iter_ok(bitcoin_accounts).fold(node, |node, account| {
+                let (_, address) = account.first_account();
                 bitcoin::fund(
                     node.node_image.username.clone(),
                     node.node_image.password.clone(),
                     node.node_image.endpoint.clone(),
-                    bitcoin::derive_address(account.derived_private_key.key),
+                    address,
                     Amount::from_sat(1_000_000_000),
                 )
                 .map(|_| node)
@@ -267,45 +312,6 @@ fn start_cnds(
             }
         })
         .collect()
-}
-
-fn new_bitcoin_account() -> anyhow::Result<BitcoinAccount> {
-    // generate master key (hd key)
-    let hd_key = ExtendedPrivKey::new_master(rust_bitcoin::Network::Regtest, &{
-        let mut seed = [0u8; 32];
-        thread_rng().fill_bytes(&mut seed);
-
-        seed
-    })?;
-
-    // define derivation path to derive private keys from the master key
-    let derivation_path = vec![
-        ChildNumber::from_hardened_idx(44)?,
-        ChildNumber::from_hardened_idx(1)?,
-        ChildNumber::from_hardened_idx(0)?,
-        ChildNumber::from_normal_idx(0)?,
-        ChildNumber::from_normal_idx(0)?,
-    ];
-
-    // derive a private key from the master key
-    let priv_key = hd_key
-        .derive_priv(&Secp256k1::new(), &derivation_path)
-        .map(|secret_key| secret_key.private_key)?;
-
-    // derive an address from the private key
-    let address = bitcoin::derive_address(priv_key.key);
-
-    Ok(BitcoinAccount {
-        master_extended_private_key: hd_key,
-        derived_private_key: priv_key,
-        derived_address: address,
-    })
-}
-
-fn new_ethereum_account() -> EthereumAccount {
-    EthereumAccount {
-        private_key: SecretKey::new(&mut thread_rng()),
-    }
 }
 
 #[derive(Debug, thiserror::Error)]
