@@ -1,55 +1,98 @@
-import { BitcoinWallet, EthereumWallet } from "comit-sdk";
-import { formatEther } from "ethers/utils";
+import {
+    BigNumber,
+    BitcoinWallet,
+    Cnd,
+    ComitClient,
+    EthereumWallet,
+    SwapRequest,
+} from "comit-sdk";
 import fs from "fs";
-import { CoinType, HelloSwap, WhoAmI } from "./helloSwap";
-import { createLogger } from "./logger";
-import { OrderBook } from "./orderBook";
+import moment from "moment";
+import readLineSync from "readline-sync";
+import { toBitcoin, toSatoshi } from "satoshi-bitcoin-ts";
 
 (async function main() {
     checkEnvFile(process.env.DOTENV_CONFIG_PATH!);
 
-    const orderBook = new OrderBook();
+    const maker = await startClient(0, "Maker");
+    const taker = await startClient(1, "Taker");
 
-    const maker = await startApp("maker", 0);
-    const taker = await startApp("taker", 1);
-
-    // Maker creates and publishes offer
-    const makerOffer = await maker.createOffer(
-        {
-            coin: CoinType.Ether,
-            amount: 10,
-        },
-        {
-            coin: CoinType.Bitcoin,
-            amount: 1,
-        }
+    console.log(
+        "Maker Ethereum address: ",
+        await maker.ethereumWallet.getAccount()
     );
-    orderBook.addOffer(makerOffer);
 
-    // Taker finds and takes offer
-    const foundOffers = orderBook.findOffers({
-        buyCoin: CoinType.Ether,
-        sellCoin: CoinType.Bitcoin,
-        buyAmount: 5,
-    });
-    await taker.takeOffer(foundOffers[0]);
+    console.log(
+        "Taker Ethereum address: ",
+        await taker.ethereumWallet.getAccount()
+    );
 
-    process.stdin.resume(); // so the program will not close instantly
+    await printBalances(maker);
+    await printBalances(taker);
 
-    async function exitHandler() {
-        maker.stop();
-        taker.stop();
+    const swapMessage = createSwap(maker, taker);
 
-        await logBalances(maker).then(() => logBalances(taker));
-        process.exit();
-    }
+    const takerSwapHandle = await taker.comitClient.sendSwap(swapMessage);
+    await new Promise(r => setTimeout(r, 1000));
+    const makerSwapHandle = await maker.comitClient
+        .getNewSwaps()
+        .then(swaps => swaps[0]);
 
-    process.on("SIGINT", exitHandler);
-    process.on("SIGUSR1", exitHandler);
-    process.on("SIGUSR2", exitHandler);
+    const actionConfig = { timeout: 10000, tryInterval: 1000 };
+    await makerSwapHandle.accept(actionConfig);
+
+    console.log(
+        "Swap started! Swapping %d %s for %d %s",
+        toNominal(swapMessage.alpha_asset.quantity, 18),
+        swapMessage.alpha_asset.name,
+        toBitcoin(swapMessage.beta_asset.quantity),
+        swapMessage.beta_asset.name
+    );
+
+    readLineSync.question("Continue?");
+
+    console.log(
+        "Ethereum HTLC funded! TXID: ",
+        await takerSwapHandle.fund(actionConfig)
+    );
+
+    readLineSync.question("Continue?");
+
+    console.log(
+        "Bitcoin HTLC funded! TXID: ",
+        await makerSwapHandle.fund(actionConfig)
+    );
+
+    readLineSync.question("Continue?");
+
+    console.log(
+        "Bitcoin HTLC redeemed! TXID: ",
+        await takerSwapHandle.redeem(actionConfig)
+    );
+
+    readLineSync.question("Continue?");
+
+    console.log(
+        "Ethereum HTLC redeemed! TXID: ",
+        await makerSwapHandle.redeem(actionConfig)
+    );
+
+    console.log("Swapped!");
+    await printBalances(maker);
+    await printBalances(taker);
+    process.exit();
 })();
 
-async function startApp(whoAmI: WhoAmI, index: number) {
+interface Actor {
+    name: string;
+    comitClient: ComitClient;
+    peerId: string;
+    addressHint: string;
+    bitcoinWallet: BitcoinWallet;
+    ethereumWallet: EthereumWallet;
+}
+
+async function startClient(index: number, name: string): Promise<Actor> {
     const bitcoinWallet = await BitcoinWallet.newInstance(
         "regtest",
         process.env.BITCOIN_P2P_URI!,
@@ -58,38 +101,80 @@ async function startApp(whoAmI: WhoAmI, index: number) {
     await new Promise(r => setTimeout(r, 1000));
 
     const ethereumWallet = new EthereumWallet(
-        process.env[`ETHEREUM_KEY_${index}`]!,
-        process.env.ETHEREUM_NODE_HTTP_URL!
+        process.env.ETHEREUM_NODE_HTTP_URL!,
+        process.env[`ETHEREUM_KEY_${index}`]!
     );
 
-    const app = new HelloSwap(
-        process.env[`HTTP_URL_CND_${index}`]!,
-        whoAmI,
+    const cnd = new Cnd(process.env[`HTTP_URL_CND_${index}`]!);
+    const peerId = await cnd.getPeerId();
+    const addressHint = await cnd
+        .getPeerListenAddresses()
+        .then(addresses => addresses[0]);
+
+    const comitClient = new ComitClient(bitcoinWallet, ethereumWallet, cnd);
+
+    return {
+        name,
+        comitClient,
+        peerId,
+        addressHint,
         bitcoinWallet,
-        ethereumWallet
-    );
-
-    await logBalances(app);
-
-    return app;
+        ethereumWallet,
+    };
 }
 
-async function logBalances(app: HelloSwap) {
-    const logger = createLogger();
-    logger[app.whoAmI](
-        "Bitcoin balance: %f. Ether balance: %f",
-        parseFloat(await app.getBitcoinBalance()).toFixed(2),
-        parseFloat(formatEther(await app.getEtherBalance())).toFixed(2)
-    );
+function createSwap(maker: Actor, taker: Actor): SwapRequest {
+    const to = maker.peerId;
+    const refundAddress = taker.ethereumWallet.getAccount();
+
+    return {
+        alpha_ledger: {
+            name: "ethereum",
+            network: "regtest",
+        },
+        beta_ledger: {
+            name: "bitcoin",
+            network: "regtest",
+        },
+        alpha_asset: {
+            name: "ether",
+            quantity: "1000000000000000000",
+        },
+        beta_asset: {
+            name: "bitcoin",
+            quantity: toSatoshi(1).toString(),
+        },
+        alpha_ledger_refund_identity: refundAddress,
+        alpha_expiry: moment().unix() + 7200,
+        beta_expiry: moment().unix() + 3600,
+        peer: {
+            peer_id: to,
+            address_hint: maker.addressHint,
+        },
+    };
 }
 
 function checkEnvFile(path: string) {
     if (!fs.existsSync(path)) {
-        const logger = createLogger();
-        logger.error(
+        console.log(
             "Could not find %s file. Did you run \\`create-comit-app start-env\\`?",
             path
         );
         process.exit(1);
     }
+}
+
+async function printBalances(actor: Actor) {
+    let tokenWei = await actor.ethereumWallet.getBalance();
+    console.log(
+        "%s Bitcoin balance: %d. Ether balance: %d",
+        actor.name,
+        parseFloat(await actor.bitcoinWallet.getBalance()).toFixed(2),
+        toNominal(tokenWei.toString(), 18)
+    );
+
+}
+
+function toNominal(tokenWei: string, decimals: number) {
+    return new BigNumber(tokenWei).div(new BigNumber(10).pow(decimals));
 }
