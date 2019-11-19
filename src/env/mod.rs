@@ -45,7 +45,7 @@ pub fn start() {
             println!("✓");
         }
         Err(err) => {
-            if let Some(_) = err.downcast_ref::<SignalReceived>() {
+            if err.downcast_ref::<SignalReceived>().is_some() {
                 println!("Signal received, terminating...");
             } else {
                 eprintln!("❗️Error encountered: {:?}]", err);
