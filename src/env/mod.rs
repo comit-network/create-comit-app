@@ -1,12 +1,17 @@
-use crate::docker::bitcoin::{BitcoinNode, GenerateQuery};
-use crate::docker::Node;
-use crate::env::start::SignalReceived;
-use crate::print_progress;
-use std::sync::Arc;
-use std::time::Duration;
-use tokio::prelude::{Future, Stream};
-use tokio::runtime::Runtime;
-use tokio::timer::Interval;
+use crate::{
+    docker::{
+        bitcoin::{BitcoinNode, GenerateQuery},
+        Node,
+    },
+    env::start::SignalReceived,
+    print_progress,
+};
+use std::{sync::Arc, time::Duration};
+use tokio::{
+    prelude::{Future, Stream},
+    runtime::Runtime,
+    timer::Interval,
+};
 
 mod clean_up;
 mod start;

@@ -1,25 +1,34 @@
-use crate::cnd_settings;
-use crate::docker::bitcoin::{self, BitcoinNode};
-use crate::docker::ethereum::{self, EthereumNode};
-use crate::docker::Cnd;
-use crate::docker::{create_network, Node};
-use crate::env::temp_fs;
-use crate::print_progress;
+use crate::{
+    cnd_settings,
+    docker::{
+        bitcoin::{self, BitcoinNode},
+        create_network,
+        ethereum::{self, EthereumNode},
+        Cnd, Node,
+    },
+    env::temp_fs,
+    print_progress,
+};
 use anyhow::Context;
 use envfile::EnvFile;
 use futures::{FutureExt, TryFutureExt};
 use rand::{thread_rng, Rng};
-use rust_bitcoin::util::bip32::ChildNumber;
-use rust_bitcoin::util::bip32::ExtendedPrivKey;
-use rust_bitcoin::Amount;
-use rust_bitcoin::PrivateKey;
+use rust_bitcoin::{
+    util::bip32::{ChildNumber, ExtendedPrivKey},
+    Amount, PrivateKey,
+};
 use secp256k1::{Secp256k1, SecretKey};
-use std::path::PathBuf;
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Arc;
-use tokio::prelude::stream;
-use tokio::prelude::{Future, Stream};
-use tokio::runtime::Runtime;
+use std::{
+    path::PathBuf,
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc,
+    },
+};
+use tokio::{
+    prelude::{stream, Future, Stream},
+    runtime::Runtime,
+};
 use web3::types::{Address, U256};
 
 pub struct Services {

@@ -1,10 +1,15 @@
-use crate::docker::{delete_container, delete_network};
-use crate::print_progress;
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Arc;
-use std::time::Duration;
-use tokio::prelude::stream;
-use tokio::prelude::{Future, Stream};
+use crate::{
+    docker::{delete_container, delete_network},
+    print_progress,
+};
+use std::{
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc,
+    },
+    time::Duration,
+};
+use tokio::prelude::{stream, Future, Stream};
 
 pub fn handle_signal(terminate: Arc<AtomicBool>) -> impl Future<Item = (), Error = ()> {
     while !terminate.load(Ordering::Relaxed) {

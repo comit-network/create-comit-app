@@ -1,19 +1,19 @@
 use crate::print_progress;
 use envfile::EnvFile;
-use shiplift::builder::ContainerOptionsBuilder;
 use shiplift::{
-    ContainerOptions, Docker, LogsOptions, NetworkCreateOptions, PullOptions, RmContainerOptions,
+    builder::ContainerOptionsBuilder, ContainerOptions, Docker, LogsOptions, NetworkCreateOptions,
+    PullOptions, RmContainerOptions,
 };
 use std::path::PathBuf;
-use tokio::prelude::future::Either;
-use tokio::prelude::stream::Stream;
-use tokio::prelude::Future;
+use tokio::prelude::{future::Either, stream::Stream, Future};
 
 pub mod blockchain;
 pub mod cnd;
 
-pub use self::blockchain::{bitcoin, ethereum};
-pub use self::cnd::Cnd;
+pub use self::{
+    blockchain::{bitcoin, ethereum},
+    cnd::Cnd,
+};
 
 pub const DOCKER_NETWORK: &str = "create-comit-app";
 

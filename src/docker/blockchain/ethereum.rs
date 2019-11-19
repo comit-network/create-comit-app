@@ -4,14 +4,11 @@ use ethabi::Token;
 use futures::compat::Future01CompatExt;
 use lazy_static::lazy_static;
 use secp256k1::SecretKey;
-use std::io::Cursor;
-use std::time::Duration;
-use web3::transports::EventLoopHandle;
-use web3::types::{Bytes, TransactionReceipt, H160};
+use std::{io::Cursor, time::Duration};
 use web3::{
     api::Web3,
-    transports::Http,
-    types::{Address, U256},
+    transports::{EventLoopHandle, Http},
+    types::{Address, Bytes, TransactionReceipt, H160, U256},
 };
 
 pub const TOKEN_CONTRACT: &str = include_str!("../../../erc20_token/build/contract.hex");
