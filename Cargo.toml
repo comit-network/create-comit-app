@@ -9,7 +9,7 @@ dirs = "2"
 emerald-vault-core = { git = "http://github.com/thomaseizinger/emerald-vault.git", branch = "create-comit-app-compatible", default-features = false }
 envfile = "0.2"
 ethabi = "8.0"
-flate2 = "1.0.12"
+flate2 = "1.0.13"
 futures-preview = { version = "0.3.0-alpha.19", features = ["compat"] }
 hex = "0.4.0"
 hex-literal = "0.2.1"
@@ -32,7 +32,7 @@ toml = "0.5"
 web3 = "0.8"
 
 [build-dependencies]
-anyhow = "1.0.19"
-flate2 = "1.0.12"
+anyhow = "1.0.21"
+flate2 = "1.0.13"
 ignore = "0.4.10"
 tar = "0.4.26"
