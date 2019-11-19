@@ -1,6 +1,10 @@
 RUSTUP = rustup
+
 TOOLCHAIN = $(shell cat rust-toolchain)
 CARGO = $(RUSTUP) run --install $(TOOLCHAIN) cargo --color always
+
+NIGHTLY_TOOLCHAIN = "nightly-2019-07-31"
+CARGO_NIGHTLY = $(RUSTUP) run --install $(NIGHTLY_TOOLCHAIN) cargo --color always
 
 build: build_debug
 
@@ -9,8 +13,9 @@ build: build_debug
 install_clippy:
 	$(RUSTUP) component list --installed --toolchain $(TOOLCHAIN) | grep -q clippy || $(RUSTUP) component add clippy --toolchain $(TOOLCHAIN)
 
+# need nightly toolchain to get access to `merge_imports`
 install_rustfmt:
-	$(RUSTUP) component list --installed --toolchain $(TOOLCHAIN) | grep -q rustfmt || $(RUSTUP) component add rustfmt --toolchain $(TOOLCHAIN)
+	$(RUSTUP) component list --installed --toolchain $(NIGHTLY_TOOLCHAIN) | grep -q rustfmt || $(RUSTUP) component add rustfmt --toolchain $(NIGHTLY_TOOLCHAIN)
 
 install_tomlfmt:
 	$(CARGO) --list | grep -q tomlfmt || $(CARGO) install cargo-tomlfmt
@@ -28,7 +33,7 @@ clean:
 all: format build_debug clippy test doc e2e_scripts
 
 format: install_rustfmt install_tomlfmt
-	$(CARGO) fmt
+	$(CARGO_NIGHTLY) fmt
 	$(CARGO) tomlfmt -p Cargo.toml
 
 build: build_debug
@@ -46,7 +51,7 @@ doc:
 	$(CARGO) doc
 
 check_format: install_rustfmt install_tomlfmt
-	$(CARGO) fmt -- --check
+	$(CARGO_NIGHTLY) fmt -- --check
 	$(CARGO) tomlfmt -d -p Cargo.toml
 
 e2e_scripts:

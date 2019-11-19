@@ -1,5 +1,4 @@
-use rand;
-use rand::Rng;
+use rand::{self, Rng};
 use serde::Serialize;
 use std::net::{IpAddr, Ipv4Addr};
 
