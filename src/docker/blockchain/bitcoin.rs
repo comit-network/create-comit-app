@@ -118,7 +118,7 @@ pub fn fund(
     endpoint: String,
     address: Address,
     amount: Amount,
-) -> impl Future<Item = sha256d::Hash, Error = reqwest::Error> {
+) -> impl Future<Item = sha256d::Hash, Error = anyhow::Error> {
     let generate_req = GenerateQuery::new(101);
     let fund_req = FundQuery::new(address, amount);
 
@@ -142,7 +142,8 @@ pub fn fund(
                         .and_then(|mut response| response.json::<FundResponse>())
                         .and_then(|response| Ok(response.result))
                 }
-            }),
+            })
+            .from_err(),
     )
 }
 
