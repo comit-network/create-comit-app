@@ -43,9 +43,9 @@ import { toBitcoin, toSatoshi } from "satoshi-bitcoin-ts";
 
     console.log(
         "Swap started! Swapping %d %s for %d %s",
-        toNominal(swapMessage.alpha_asset.quantity, 18),
+        toBitcoin(swapMessage.alpha_asset.quantity),
         swapMessage.alpha_asset.name,
-        toBitcoin(swapMessage.beta_asset.quantity),
+        toNominal(swapMessage.beta_asset.quantity, 18),
         swapMessage.beta_asset.name
     );
 
@@ -125,26 +125,26 @@ async function startClient(index: number, name: string): Promise<Actor> {
 
 function createSwap(maker: Actor, taker: Actor): SwapRequest {
     const to = maker.peerId;
-    const refundAddress = taker.ethereumWallet.getAccount();
+    const redeemAddress = taker.ethereumWallet.getAccount();
 
     return {
         alpha_ledger: {
-            name: "ethereum",
+            name: "bitcoin",
             network: "regtest",
         },
         beta_ledger: {
-            name: "bitcoin",
+            name: "ethereum",
             network: "regtest",
         },
         alpha_asset: {
-            name: "ether",
-            quantity: "1000000000000000000",
-        },
-        beta_asset: {
             name: "bitcoin",
             quantity: toSatoshi(1).toString(),
         },
-        alpha_ledger_refund_identity: refundAddress,
+        beta_asset: {
+            name: "ether",
+            quantity: "1000000000000000000",
+        },
+        beta_ledger_redeem_identity: redeemAddress,
         alpha_expiry: moment().unix() + 7200,
         beta_expiry: moment().unix() + 3600,
         peer: {
