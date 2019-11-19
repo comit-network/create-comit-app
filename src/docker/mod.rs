@@ -221,7 +221,7 @@ impl<I: Image> Node<I> {
     }
 }
 
-pub fn create_network() -> impl Future<Item = String, Error = shiplift::Error> {
+pub fn create_network() -> impl Future<Item = String, Error = anyhow::Error> {
     Docker::new()
         .networks()
         .get(DOCKER_NETWORK)
@@ -243,6 +243,7 @@ pub fn create_network() -> impl Future<Item = String, Error = shiplift::Error> {
                 )
                 .and_then(|info| Ok(info.id))
         })
+        .from_err()
 }
 
 pub fn delete_network() -> impl Future<Item = (), Error = shiplift::Error> {

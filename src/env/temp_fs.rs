@@ -1,27 +1,30 @@
-use crate::env::Error;
+use anyhow::Context;
 use std::path::PathBuf;
 
 pub const DIR_NAME: &str = ".create-comit-app";
 const ENV_FILE_NAME: &str = "env";
 
-fn home() -> Result<PathBuf, Error> {
-    dirs::home_dir().ok_or(Error::HomeDir)
+fn home() -> anyhow::Result<PathBuf> {
+    dirs::home_dir().ok_or_else(|| anyhow::anyhow!("unable to determine home directory"))
 }
 
-pub fn dir_path() -> Result<PathBuf, Error> {
+pub fn dir_path() -> anyhow::Result<PathBuf> {
     Ok(home()?.join(DIR_NAME))
 }
 
-pub fn env_file_path() -> Result<PathBuf, Error> {
+pub fn env_file_path() -> anyhow::Result<PathBuf> {
     Ok(dir_path()?.join(ENV_FILE_NAME))
 }
 
-pub fn create_env_file() -> Result<String, Error> {
-    std::fs::create_dir_all(dir_path()?).map_err(Error::CreateTmpFiles)?;
-    std::fs::File::create(env_file_path()?).map_err(Error::CreateTmpFiles)?;
+pub fn create_env_file() -> anyhow::Result<String> {
+    let _ = ensure_cca_directory()?;
+
+    let env_file_path = env_file_path()?;
+    std::fs::File::create(&env_file_path)
+        .with_context(|| format!("failed to create file {}", env_file_path.display()))?;
     Ok(format!(
         "{}/{}/{}",
-        home()?.to_str().ok_or(Error::PathToStr)?,
+        home()?.display(),
         DIR_NAME,
         ENV_FILE_NAME
     ))
@@ -35,13 +38,25 @@ pub fn dir_exist() -> bool {
     }
 }
 
-pub fn temp_folder() -> Result<(PathBuf, String), Error> {
-    let path = dir_path()?;
+pub fn temp_folder() -> anyhow::Result<(PathBuf, String)> {
+    let path = ensure_cca_directory()?;
 
-    std::fs::create_dir_all(&path).map_err(Error::CreateTmpFiles)?;
     let path = tempfile::tempdir_in(&path)
-        .map_err(Error::CreateTmpFiles)?
+        .with_context(|| format!("failed to create temporary directory in {}", path.display()))?
         .into_path();
-    let string = path.clone().to_str().ok_or(Error::PathToStr)?.to_string();
+
+    let string = path
+        .clone()
+        .to_str()
+        .ok_or_else(|| anyhow::anyhow!("unable to convert path to string"))?
+        .to_string();
     Ok((path, string))
+}
+
+fn ensure_cca_directory() -> anyhow::Result<PathBuf> {
+    let cca_path = dir_path()?;
+    std::fs::create_dir_all(&cca_path)
+        .with_context(|| format!("failed to create directory: {}", cca_path.display()))?;
+
+    Ok(cca_path)
 }

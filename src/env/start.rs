@@ -4,8 +4,8 @@ use crate::docker::ethereum::{self, EthereumNode};
 use crate::docker::Cnd;
 use crate::docker::{create_network, Node};
 use crate::env::temp_fs;
-use crate::env::Error;
 use crate::print_progress;
+use anyhow::Context;
 use envfile::EnvFile;
 use futures::{FutureExt, TryFutureExt};
 use rand::{thread_rng, Rng};
@@ -41,38 +41,29 @@ pub struct EthereumAccount {
     private_key: SecretKey,
 }
 
-fn build_futures() -> Result<
-    (
-        Vec<BitcoinAccount>,
-        Vec<EthereumAccount>,
-        PathBuf,
-        impl Future<Item = String, Error = ()>,
-        impl Future<Item = Node<BitcoinNode>, Error = ()>,
-        impl Future<Item = (Address, Node<EthereumNode>), Error = ()>,
-        impl Future<Item = Vec<Node<Cnd>>, Error = ()>,
-    ),
-    Error,
-> {
+fn build_futures() -> anyhow::Result<(
+    Vec<BitcoinAccount>,
+    Vec<EthereumAccount>,
+    PathBuf,
+    impl Future<Item = String, Error = anyhow::Error>,
+    impl Future<Item = Node<BitcoinNode>, Error = anyhow::Error>,
+    impl Future<Item = (Address, Node<EthereumNode>), Error = anyhow::Error>,
+    impl Future<Item = Vec<Node<Cnd>>, Error = anyhow::Error>,
+)> {
     let bitcoin_accounts = vec![new_bitcoin_account()?, new_bitcoin_account()?];
 
     let ethereum_accounts = vec![new_ethereum_account(), new_ethereum_account()];
 
     let env_file_path = temp_fs::env_file_path()?;
-    let docker_network_create = create_network().map_err(|e| {
-        eprintln!("Issue creating Docker network: {:?}", e);
-    });
-    let bitcoin_node = start_bitcoin_node(&env_file_path, bitcoin_accounts.clone()).map_err(|e| {
-        eprintln!("Issue starting Bitcoin node: {:?}", e);
-    });
-    let ethereum_node =
-        start_ethereum_node(&env_file_path, ethereum_accounts.clone()).map_err(|e| {
-            eprintln!("Issue starting Ethereum node: {:?}", e);
-        });
+    let docker_network_create =
+        create_network().map_err(|e| e.context("failed to create docker network"));
+    let bitcoin_node = start_bitcoin_node(&env_file_path, bitcoin_accounts.clone())
+        .map_err(|e| e.context("failed to start bitcoin node"));
+    let ethereum_node = start_ethereum_node(&env_file_path, ethereum_accounts.clone())
+        .map_err(|e| e.context("failed to start ethereum node"));
     let cnds = {
         let (path, string) = temp_fs::temp_folder()?;
-        start_cnds(&env_file_path, path, string).map_err(|e| {
-            eprintln!("Issue starting cnds: {:?}", e);
-        })
+        start_cnds(&env_file_path, path, string).map_err(|e| e.context("failed to start cnds"))
     };
     Ok((
         bitcoin_accounts,
@@ -85,7 +76,7 @@ fn build_futures() -> Result<
     ))
 }
 
-pub fn execute(runtime: &mut Runtime, terminate: &Arc<AtomicBool>) -> Result<Services, Error> {
+pub fn execute(runtime: &mut Runtime, terminate: &Arc<AtomicBool>) -> anyhow::Result<Services> {
     let (
         bitcoin_accounts,
         ethereum_accounts,
@@ -99,18 +90,16 @@ pub fn execute(runtime: &mut Runtime, terminate: &Arc<AtomicBool>) -> Result<Ser
     let env_file_str = temp_fs::create_env_file()?;
 
     print_progress!("Creating Docker network (create-comit-app)");
-    let docker_network_id = runtime.block_on(docker_network_create).map_err(|e| {
-        eprintln!("Could not create docker network, aborting...\n{:?}", e);
-    })?;
+    let docker_network_id = runtime
+        .block_on(docker_network_create)
+        .context("Could not create docker network, aborting...")?;
     println!("✓");
     check_signal(terminate)?;
 
     print_progress!("Starting Ethereum node");
     let (contract_address, ethereum_node) = runtime
         .block_on(ethereum_node)
-        .map_err(|e| {
-            eprintln!("Could not start Ethereum node, aborting...\n{:?}", e);
-        })
+        .context("Could not start Ethereum node, aborting...")
         .map(|(contract_address, node)| (contract_address, Arc::new(node)))?;
     println!("✓");
     check_signal(terminate)?;
@@ -118,17 +107,14 @@ pub fn execute(runtime: &mut Runtime, terminate: &Arc<AtomicBool>) -> Result<Ser
     print_progress!("Starting Bitcoin node");
     let bitcoin_node = runtime
         .block_on(bitcoin_node)
-        .map_err(|e| {
-            eprintln!("Could not start bitcoin node, aborting...\n{:?}", e);
-        })
+        .context("Could not start bitcoin node, aborting...")
         .map(Arc::new)?;
     println!("✓");
     check_signal(terminate)?;
 
     print_progress!("Writing configuration in env file");
-    let mut envfile = EnvFile::new(env_file_path.clone()).map_err(|e| {
-        eprintln!("Could not read {} file, aborting...\n{:?}", env_file_str, e);
-    })?;
+    let mut envfile = EnvFile::new(env_file_path.clone())
+        .with_context(|| format!("Could not read {} file, aborting...", env_file_str))?;
 
     for (i, account) in bitcoin_accounts.iter().enumerate() {
         envfile.update(
@@ -149,21 +135,16 @@ pub fn execute(runtime: &mut Runtime, terminate: &Arc<AtomicBool>) -> Result<Ser
         format!("0x{:x}", contract_address).as_str(),
     );
 
-    envfile.write().map_err(|e| {
-        eprintln!(
-            "Could not write {} file, aborting...\n{:?}",
-            env_file_str, e
-        );
-    })?;
+    envfile
+        .write()
+        .with_context(|| format!("Could not write {} file, aborting...", env_file_str))?;
     println!("✓");
     check_signal(terminate)?;
 
     print_progress!("Starting two cnds");
     let cnds = runtime
         .block_on(cnds)
-        .map_err(|e| {
-            eprintln!("Could not start cnds, cleaning up...\n{:?}", e);
-        })
+        .context("Could not start cnds, cleaning up...")
         .map(Arc::new)?;
     println!("✓");
     check_signal(terminate)?;
@@ -180,9 +161,9 @@ pub fn execute(runtime: &mut Runtime, terminate: &Arc<AtomicBool>) -> Result<Ser
 fn start_bitcoin_node(
     envfile_path: &PathBuf,
     bitcoin_accounts: Vec<BitcoinAccount>,
-) -> impl Future<Item = Node<BitcoinNode>, Error = Error> {
+) -> impl Future<Item = Node<BitcoinNode>, Error = anyhow::Error> {
     Node::<BitcoinNode>::start(envfile_path.clone(), "bitcoin")
-        .map_err(Error::Docker)
+        .from_err()
         .and_then(move |node| {
             stream::iter_ok(bitcoin_accounts).fold(node, |node, account| {
                 bitcoin::fund(
@@ -192,7 +173,6 @@ fn start_bitcoin_node(
                     bitcoin::derive_address(account.derived_private_key.key),
                     Amount::from_sat(1_000_000_000),
                 )
-                .map_err(Error::BitcoinFunding)
                 .map(|_| node)
             })
         })
@@ -201,9 +181,9 @@ fn start_bitcoin_node(
 fn start_ethereum_node(
     envfile_path: &PathBuf,
     ethereum_accounts: Vec<EthereumAccount>,
-) -> impl Future<Item = (Address, Node<EthereumNode>), Error = Error> {
+) -> impl Future<Item = (Address, Node<EthereumNode>), Error = anyhow::Error> {
     Node::<EthereumNode>::start(envfile_path.clone(), "ethereum")
-        .map_err(Error::Docker)
+        .from_err()
         .and_then({
             let secret_keys = ethereum_accounts
                 .clone()
@@ -215,7 +195,7 @@ fn start_ethereum_node(
                 ethereum::fund_ether(web3, secret_keys, U256::from(100u128 * 10u128.pow(18)))
                     .boxed()
                     .compat()
-                    .map_err(Error::EtherFunding)
+                    .from_err()
                     .map(|_| node)
             }
         })
@@ -229,7 +209,7 @@ fn start_ethereum_node(
                 ethereum::fund_erc20(web3, secret_keys, U256::from(100u128 * 10u128.pow(18)))
                     .boxed()
                     .compat()
-                    .map_err(Error::EtherFunding)
+                    .from_err()
                     .map(|contract_address| (contract_address, node))
             }
         })
@@ -239,14 +219,14 @@ fn start_cnds(
     envfile_path: &PathBuf,
     config_folder: PathBuf,
     config_folder_str: String,
-) -> impl Future<Item = Vec<Node<Cnd>>, Error = Error> {
+) -> impl Future<Item = Vec<Node<Cnd>>, Error = anyhow::Error> {
     stream::iter_ok(vec![0, 1])
         .and_then({
             let envfile_path = envfile_path.clone();
 
             move |i| {
                 tokio::fs::create_dir_all(config_folder.clone())
-                    .map_err(Error::CreateTmpFiles)
+                    .from_err()
                     .and_then({
                         let config_folder = config_folder.clone();
 
@@ -267,7 +247,7 @@ fn start_cnds(
                             let settings = toml::to_string(&settings)
                                 .expect("could not serialize hardcoded settings");
 
-                            tokio::fs::write(config_file, settings).map_err(Error::WriteConfig)
+                            tokio::fs::write(config_file, settings).from_err()
                         }
                     })
                     .and_then({
@@ -281,7 +261,7 @@ fn start_cnds(
                                 format!("cnd_{}", i).as_str(),
                                 &volume,
                             )
-                            .map_err(Error::Docker)
+                            .from_err()
                         }
                     })
             }
@@ -289,7 +269,7 @@ fn start_cnds(
         .collect()
 }
 
-fn new_bitcoin_account() -> Result<BitcoinAccount, Error> {
+fn new_bitcoin_account() -> anyhow::Result<BitcoinAccount> {
     // generate master key (hd key)
     let hd_key = ExtendedPrivKey::new_master(rust_bitcoin::Network::Regtest, &{
         let mut seed = [0u8; 32];
@@ -328,9 +308,13 @@ fn new_ethereum_account() -> EthereumAccount {
     }
 }
 
-fn check_signal(terminate: &Arc<AtomicBool>) -> Result<(), Error> {
+#[derive(Debug, thiserror::Error)]
+#[error("received termination signal")]
+pub struct SignalReceived;
+
+fn check_signal(terminate: &Arc<AtomicBool>) -> Result<(), SignalReceived> {
     if terminate.load(Ordering::Relaxed) {
-        Err(Error::SignalReceived)
+        Err(SignalReceived)
     } else {
         Ok(())
     }

@@ -1,5 +1,6 @@
 use crate::docker::bitcoin::{BitcoinNode, GenerateQuery};
 use crate::docker::Node;
+use crate::env::start::SignalReceived;
 use crate::print_progress;
 use std::sync::Arc;
 use std::time::Duration;
@@ -44,13 +45,10 @@ pub fn start() {
             println!("✓");
         }
         Err(err) => {
-            match &err {
-                Error::SignalReceived => {
-                    println!("Signal received, terminating...");
-                }
-                _ => {
-                    eprintln!("❗️Error encountered: {:?}]", err);
-                }
+            if let Some(_) = err.downcast_ref::<SignalReceived>() {
+                println!("Signal received, terminating...");
+            } else {
+                eprintln!("❗️Error encountered: {:?}]", err);
             }
 
             print_progress!("🧹 Cleaning up");
@@ -88,31 +86,4 @@ fn bitcoin_generate_blocks(
                     })
             }
         })
-}
-
-#[derive(Debug)]
-pub enum Error {
-    BitcoinFunding(reqwest::Error),
-    EtherFunding(web3::Error),
-    Erc20Funding(web3::Error),
-    Docker(shiplift::Error),
-    CreateTmpFiles(std::io::Error),
-    PathToStr,
-    WriteConfig(std::io::Error),
-    DeriveKeys(rust_bitcoin::util::bip32::Error),
-    HomeDir,
-    SignalReceived,
-    Unimplemented,
-}
-
-impl From<()> for Error {
-    fn from(_: ()) -> Self {
-        Error::Unimplemented
-    }
-}
-
-impl From<rust_bitcoin::util::bip32::Error> for Error {
-    fn from(err: rust_bitcoin::util::bip32::Error) -> Self {
-        Error::DeriveKeys(err)
-    }
 }
