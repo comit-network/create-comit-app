@@ -38,19 +38,14 @@ pub fn dir_exist() -> bool {
     }
 }
 
-pub fn temp_folder() -> anyhow::Result<(PathBuf, String)> {
+pub fn temp_folder() -> anyhow::Result<PathBuf> {
     let path = ensure_cca_directory()?;
 
     let path = tempfile::tempdir_in(&path)
         .with_context(|| format!("failed to create temporary directory in {}", path.display()))?
         .into_path();
 
-    let string = path
-        .clone()
-        .to_str()
-        .ok_or_else(|| anyhow::anyhow!("unable to convert path to string"))?
-        .to_string();
-    Ok((path, string))
+    Ok(path)
 }
 
 fn ensure_cca_directory() -> anyhow::Result<PathBuf> {

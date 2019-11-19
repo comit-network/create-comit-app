@@ -62,8 +62,8 @@ fn build_futures() -> anyhow::Result<(
     let ethereum_node = start_ethereum_node(&env_file_path, ethereum_accounts.clone())
         .map_err(|e| e.context("failed to start ethereum node"));
     let cnds = {
-        let (path, string) = temp_fs::temp_folder()?;
-        start_cnds(&env_file_path, path, string).map_err(|e| e.context("failed to start cnds"))
+        let path = temp_fs::temp_folder()?;
+        start_cnds(&env_file_path, path).map_err(|e| e.context("failed to start cnds"))
     };
     Ok((
         bitcoin_accounts,
@@ -218,7 +218,6 @@ fn start_ethereum_node(
 fn start_cnds(
     envfile_path: &PathBuf,
     config_folder: PathBuf,
-    config_folder_str: String,
 ) -> impl Future<Item = Vec<Node<Cnd>>, Error = anyhow::Error> {
     stream::iter_ok(vec![0, 1])
         .and_then({
@@ -252,9 +251,10 @@ fn start_cnds(
                     })
                     .and_then({
                         let envfile_path = envfile_path.clone();
-                        let config_folder_str = config_folder_str.clone();
+                        let config_folder = config_folder.clone();
+
                         move |_| {
-                            let volume = format!("{}:/config", config_folder_str);
+                            let volume = format!("{}:/config", config_folder.display());
 
                             Node::<Cnd>::start_with_volume(
                                 envfile_path.to_path_buf(),
