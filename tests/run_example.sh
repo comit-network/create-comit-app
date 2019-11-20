@@ -72,7 +72,7 @@ RUN_PID=$!
 
 function check_swap() {
   local LOG_FILE=$1;
-  grep -q "maker.*SWAPPED" "$LOG_FILE" && grep -q "taker.*SWAPPED" "$LOG_FILE";
+  grep -q "Bitcoin HTLC redeemed! TXID" "$LOG_FILE" && grep -q "Ethereum HTLC redeemed! TXID" "$LOG_FILE";
   echo $?;
 }
 
