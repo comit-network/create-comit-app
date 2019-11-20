@@ -1,6 +1,6 @@
-# Examples projects for building on top of COMIT
+# Example projects for building on top of COMIT
 
-This folder contains examples on how to use the `comit-js-sdk` to implement application on top of COMIT.
+This folder contains examples on how to use the `comit-js-sdk` to implement applications on top of COMIT.
 
 ## Prerequisites
 
