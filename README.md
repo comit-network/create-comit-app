@@ -10,8 +10,7 @@ If you have any question please [reach out to the team in our Gitter chat](https
 
 1. Install Docker,
 2. Install [yarn](https://yarnpkg.com/lang/en/docs/install/),
-3. `create-comit-app` can now be run with either:
-  - `yarn create comit-app --help`
+3. Run `yarn create comit-app --help`.
 
 ## 2 - Create your first project!
 
