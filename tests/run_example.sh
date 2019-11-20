@@ -96,8 +96,16 @@ else
   EXIT_CODE=1;
 fi
 
-kill $RUN_PID;
-kill $CCA_PID;
+
+function kill_process() {
+  if ! kill $1 > /dev/null 2>&1; then
+    echo "Could not send SIGTERM to process $1. Not running anymore?" >&2
+fi
+}
+
+kill_process $RUN_PID;
+kill_process $CCA_PID;
+
 wait $RUN_PID || echo -ne ""; # It always return bad code. See #108
 wait $CCA_PID;
 exit $EXIT_CODE;
