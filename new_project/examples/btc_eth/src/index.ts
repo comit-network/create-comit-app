@@ -8,7 +8,6 @@ import {
 } from "comit-sdk";
 import fs from "fs";
 import moment from "moment";
-import readLineSync from "readline-sync";
 import { toBitcoin, toSatoshi } from "satoshi-bitcoin-ts";
 
 (async function main() {
@@ -49,28 +48,20 @@ import { toBitcoin, toSatoshi } from "satoshi-bitcoin-ts";
         swapMessage.beta_asset.name
     );
 
-    readLineSync.question("Continue?");
-
     console.log(
         "Ethereum HTLC funded! TXID: ",
         await takerSwapHandle.fund(actionConfig)
     );
-
-    readLineSync.question("Continue?");
 
     console.log(
         "Bitcoin HTLC funded! TXID: ",
         await makerSwapHandle.fund(actionConfig)
     );
 
-    readLineSync.question("Continue?");
-
     console.log(
         "Bitcoin HTLC redeemed! TXID: ",
         await takerSwapHandle.redeem(actionConfig)
     );
-
-    readLineSync.question("Continue?");
 
     console.log(
         "Ethereum HTLC redeemed! TXID: ",
