@@ -110,7 +110,6 @@ ETHEREUM_NODE_HTTP_URL=https://bobtimus.coblox.tech:8545
 2. Copy the `Private Key` (NOT the extended private key) to the env file.
 3. Fund the account through an [Ethereum ropsten coin faucet](https://faucet.metamask.io/)
 
-Note: Since Ethereum is account based there is no need to use the extended private key to derive multiple accounts.
 
 ## Run the example
 
