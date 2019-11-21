@@ -9,6 +9,11 @@ update_configs:
       - match:
           update_type: "all"
           dependency_type: "direct"
+    ignored_updates:
+      # version of secp256k1 depends on bitcoin version, we should remove this once https://github.com/rust-bitcoin/rust-bitcoin/pull/344 gets merged and released
+      - match:
+          dependency_name: "secp256k1"
+
   - package_manager: "javascript"
     directory: "/new_project"
     update_schedule: "daily"
