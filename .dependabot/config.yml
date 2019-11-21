@@ -13,7 +13,9 @@ update_configs:
       # version of secp256k1 depends on bitcoin version, we should remove this once https://github.com/rust-bitcoin/rust-bitcoin/pull/344 gets merged and released
       - match:
           dependency_name: "secp256k1"
-
+      # version of ethabi depends on web3 version and have to be updated in lockstep
+      - match:
+          dependency_name: "ethabi"
   - package_manager: "javascript"
     directory: "/new_project"
     update_schedule: "daily"
