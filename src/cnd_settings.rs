@@ -1,4 +1,4 @@
-use rand::{self, Rng};
+use rust_bitcoin::secp256k1::rand::Rng;
 use serde::Serialize;
 use std::net::{IpAddr, Ipv4Addr};
 
@@ -49,7 +49,7 @@ pub struct Ethereum {
 impl Default for Comit {
     fn default() -> Comit {
         let mut secret_seed = [0u8; 32];
-        rand::thread_rng().fill_bytes(&mut secret_seed);
+        rust_bitcoin::secp256k1::rand::thread_rng().fill_bytes(&mut secret_seed);
 
         Comit { secret_seed }
     }

@@ -12,8 +12,8 @@ use crate::{
 use anyhow::Context;
 use envfile::EnvFile;
 use futures::{FutureExt, TryFutureExt};
-use rand::{thread_rng, Rng};
 use rust_bitcoin::{
+    secp256k1::rand::{thread_rng, Rng},
     util::bip32::{ChildNumber, ExtendedPrivKey},
     Amount, PrivateKey,
 };
