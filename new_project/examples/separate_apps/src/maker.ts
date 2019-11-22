@@ -1,26 +1,28 @@
+import {
+    MakerHttpApi,
+    MakerNegotiator,
+} from "comit-sdk/dist/src/negotiation/maker_negotiator";
+import { Order } from "comit-sdk/dist/src/negotiation/order";
 import { formatEther } from "ethers/utils";
 import moment from "moment";
 import readLineSync from "readline-sync";
 import { toBitcoin } from "satoshi-bitcoin-ts";
 import { checkEnvFile, startClient } from "./lib";
-import { NegotiationProtocolHandler, Order } from "./negotiation";
 
 function createOrder(): Order {
     return {
         id: "123",
-        key: "ETH-BTC",
+        tradingPair: "ETH-BTC",
         valid_until: moment().unix() + 300,
         ask: {
             amount: "9000000000000000000",
             asset: "ether",
             ledger: "ethereum",
-            network: "regtest",
         },
         bid: {
             amount: "100000000",
             asset: "bitcoin",
             ledger: "bitcoin",
-            network: "regtest",
         },
     };
 }
@@ -48,25 +50,29 @@ function createOrder(): Order {
 
     // start negotiation protocol handler so that a taker can take the order and receives the latest rate
 
-    const negotiationProtocolHandler = new NegotiationProtocolHandler(
+    const makerNegotiator = new MakerNegotiator(
+        maker.comitClient,
         {
-            connection_info: {
+            peer: {
                 peer_id: peerId,
                 address_hint: addressHint,
             },
-            expiries: {
-                ask_expiry: moment().unix() + 7200,
-                bid_expiry: moment().unix() + 3600,
+            alpha_expiry: moment().unix() + 7200,
+            beta_expiry: moment().unix() + 3600,
+            ledgers: {
+                bitcoin: { network: "regtest" },
+                // TODO: It should be possible to use the chain_id
+                ethereum: { network: "regtest" },
             },
-            role: "alice",
-            swap_id: "SOME_RANDOM_ID",
         },
-        2318
-    ); // CoBloX Founding Date 🚀
+        { timeout: 100000, tryInterval: 1000 }
+    );
 
-    negotiationProtocolHandler.start();
+    const makerHttpApi = new MakerHttpApi(makerNegotiator);
+
+    makerHttpApi.listen(2318);
     const order = createOrder();
-    negotiationProtocolHandler.addOrder(order);
+    makerNegotiator.addOrder(order);
 
     const invitationDetails = `http://localhost:2318/orders/ETH-BTC`;
     console.log(`Waiting for someone taking my order at: ${invitationDetails}`);
