@@ -1,6 +1,5 @@
 use crate::docker::{ExposedPorts, Image};
 use emerald_rs::PrivateKey;
-use ethabi::Token;
 use futures::compat::Future01CompatExt;
 use lazy_static::lazy_static;
 use secp256k1::SecretKey;
@@ -114,7 +113,7 @@ async fn deploy_erc20_contract(client: Web3<Http>) -> Result<Address, web3::Erro
 fn transfer_fn(address: Address, amount: U256) -> Result<Vec<u8>, ethabi::Error> {
     ethabi::Contract::load(Cursor::new(CONTRACT_ABI))?
         .function("transfer")?
-        .encode_input(&[Token::Address(address), Token::Uint(amount)])
+        .encode_input(&[ethabi::Token::Address(address), ethabi::Token::Uint(amount)])
 }
 
 async fn send_transaction(
