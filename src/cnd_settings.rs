@@ -4,9 +4,8 @@ use std::net::{IpAddr, Ipv4Addr};
 
 #[derive(Clone, Debug, Serialize, Default)]
 pub struct Settings {
-    pub comit: Comit,
     pub network: Network,
-    pub http_api: HttpSocket,
+    pub http_api: HttpApi,
     pub logging: Logging,
     pub bitcoin: Bitcoin,
     pub ethereum: Ethereum,
@@ -23,7 +22,12 @@ pub struct Network {
     pub listen: Vec<String>,
 }
 #[derive(Clone, Debug, Serialize)]
-pub struct HttpSocket {
+pub struct HttpApi {
+    pub socket: Socket,
+}
+
+#[derive(Clone, Debug, Serialize)]
+pub struct Socket {
     pub address: IpAddr,
     pub port: u16,
 }
@@ -63,11 +67,13 @@ impl Default for Network {
     }
 }
 
-impl Default for HttpSocket {
-    fn default() -> HttpSocket {
-        HttpSocket {
-            address: IpAddr::V4(Ipv4Addr::UNSPECIFIED),
-            port: 8080,
+impl Default for HttpApi {
+    fn default() -> HttpApi {
+        HttpApi {
+            socket: Socket {
+                address: IpAddr::V4(Ipv4Addr::UNSPECIFIED),
+                port: 8080,
+            },
         }
     }
 }
