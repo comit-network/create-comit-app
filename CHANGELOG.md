@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Changed
 - `separate_apps` example now uses the negotiation protocol provided by comit-sdk.
+- Upgrade to `comit-rs:0.4.0`
 
 ## [0.4.0] - 2019-11-20
 
