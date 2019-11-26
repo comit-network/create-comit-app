@@ -3,6 +3,7 @@ import {
     MakerNegotiator,
 } from "comit-sdk/dist/src/negotiation/maker_negotiator";
 import { Order } from "comit-sdk/dist/src/negotiation/order";
+import { TryParams } from "comit-sdk/dist/src/timeout_promise";
 import { formatEther } from "ethers/utils";
 import moment from "moment";
 import readLineSync from "readline-sync";
@@ -13,14 +14,14 @@ function createOrder(): Order {
     return {
         id: "123",
         tradingPair: "ETH-BTC",
-        valid_until: moment().unix() + 300,
+        validUntil: moment().unix() + 300,
         ask: {
-            amount: "9000000000000000000",
+            nominalAmount: "9",
             asset: "ether",
             ledger: "ethereum",
         },
         bid: {
-            amount: "100000000",
+            nominalAmount: "1",
             asset: "bitcoin",
             ledger: "bitcoin",
         },
@@ -65,7 +66,7 @@ function createOrder(): Order {
                 ethereum: { network: "regtest" },
             },
         },
-        { timeout: 100000, tryInterval: 1000 }
+        { maxTimeoutSecs: 100, tryIntervalSecs: 1 }
     );
 
     const makerHttpApi = new MakerHttpApi(makerNegotiator);
@@ -89,9 +90,9 @@ function createOrder(): Order {
         });
     }
 
-    const actionConfig = { timeout: 100000, tryInterval: 1000 };
+    const actionConfig: TryParams = { maxTimeoutSecs: 100, tryIntervalSecs: 1 };
 
-    const swap = await swapHandle.getEntity();
+    const swap = await swapHandle.fetchDetails();
     const swapParams = swap.properties!.parameters;
 
     // only accept a request if it fits to the created order above
@@ -139,6 +140,6 @@ function isValid(swapParams: any, order: Order) {
     return (
         swapParams.alpha_asset.name !== order.ask.asset ||
         swapParams.beta_asset.name !== order.bid.asset ||
-        order.valid_until < moment().unix()
+        order.validUntil < moment().unix()
     );
 }
