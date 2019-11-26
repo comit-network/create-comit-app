@@ -1,13 +1,11 @@
-import { SwapRequest } from "comit-sdk";
+import {
+    MakerClient,
+    TakerNegotiator,
+} from "comit-sdk/dist/src/negotiation/taker_negotiator";
 import { formatEther } from "ethers/utils";
 import readLineSync from "readline-sync";
 import { toBitcoin } from "satoshi-bitcoin-ts";
-import { Actor, checkEnvFile, startClient } from "./lib";
-import {
-    ExecutionParams,
-    NegotiationProtocolClient,
-    Order,
-} from "./negotiation";
+import { checkEnvFile, startClient } from "./lib";
 
 (async function main() {
     checkEnvFile(process.env.DOTENV_CONFIG_PATH!);
@@ -24,16 +22,25 @@ import {
 
     readLineSync.question("0. Ready?");
 
+    const takerNegotiator = new TakerNegotiator();
+    const makerClient = new MakerClient("http://localhost:2318/");
+
     // take an order from a maker
-    const negotiationProtocolClient = new NegotiationProtocolClient();
-    const {
-        order,
-        execution_params,
-    } = await negotiationProtocolClient.startNegotiation(
-        "http://localhost:2318/orders",
-        "ETH-BTC"
+    // Accept any order
+    const isOrderAcceptable = () => true;
+    const { order, swap } = await takerNegotiator.negotiateAndSendRequest(
+        taker.comitClient,
+        makerClient,
+        "ETH-BTC",
+        isOrderAcceptable
     );
 
+    if (!swap) {
+        throw new Error("Could not find an order or something else went wrong");
+    }
+
+    const swapMessage = await swap.getEntity();
+    const swapParameters = swapMessage.properties!.parameters;
     const ether = formatEther(order.ask.amount);
     const bitcoin = toBitcoin(order.bid.amount);
     console.log(
@@ -44,33 +51,23 @@ import {
         bitcoin
     );
 
-    const swapMessage = createSwap(taker, order, execution_params);
-
-    const swapHandle = await taker.comitClient.sendSwap(swapMessage);
-
     const actionConfig = { timeout: 100000, tryInterval: 1000 };
 
     console.log(
         "Swap started! Swapping %d %s for %d %s",
-        formatEther(swapMessage.alpha_asset.quantity),
-        swapMessage.alpha_asset.name,
-        toBitcoin(swapMessage.beta_asset.quantity),
-        swapMessage.beta_asset.name
+        formatEther(swapParameters.alpha_asset.quantity),
+        swapParameters.alpha_asset.name,
+        toBitcoin(swapParameters.beta_asset.quantity),
+        swapParameters.beta_asset.name
     );
 
     readLineSync.question("1. Continue?");
 
-    console.log(
-        "Ethereum HTLC funded! TXID: ",
-        await swapHandle.fund(actionConfig)
-    );
+    console.log("Ethereum HTLC funded! TXID: ", await swap.fund(actionConfig));
 
     readLineSync.question("3. Continue?");
 
-    console.log(
-        "Bitcoin redeemed! TXID: ",
-        await swapHandle.redeem(actionConfig)
-    );
+    console.log("Bitcoin redeemed! TXID: ", await swap.redeem(actionConfig));
 
     console.log("Swapped!");
     console.log(
@@ -82,37 +79,3 @@ import {
     );
     process.exit();
 })();
-
-function createSwap(
-    actor: Actor,
-    order: Order,
-    executionParams: ExecutionParams
-): SwapRequest {
-    const refundAddress = actor.ethereumWallet.getAccount();
-
-    return {
-        alpha_ledger: {
-            name: order.ask.ledger,
-            network: order.ask.network,
-        },
-        beta_ledger: {
-            name: order.bid.ledger,
-            network: order.bid.network,
-        },
-        alpha_asset: {
-            name: order.ask.asset,
-            quantity: order.ask.amount,
-        },
-        beta_asset: {
-            name: order.bid.asset,
-            quantity: order.bid.amount,
-        },
-        alpha_ledger_refund_identity: refundAddress,
-        alpha_expiry: executionParams.expiries.ask_expiry,
-        beta_expiry: executionParams.expiries.bid_expiry,
-        peer: {
-            peer_id: executionParams.connection_info.peer_id,
-            address_hint: executionParams.connection_info.address_hint,
-        },
-    };
-}
