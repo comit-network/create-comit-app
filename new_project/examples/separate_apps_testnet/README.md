@@ -199,5 +199,5 @@ Note: The address format can be formatted to e.g. `bech32` using `--format bech3
       Address              0x2b2616535A92Ef11813c679CE12893682b40b003
 ```
 
-The `Private Kez` (`5dd4...`) is to be copied to the `env` file. 
+The `Private Key` (`5dd4...`) is to be copied to the `env` file. 
 Fund the `Address` (`0x2b26...`) through the coin faucet.
