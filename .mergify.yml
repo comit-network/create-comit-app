@@ -1,8 +1,10 @@
 pull_request_rules:
   - name: instruct bors to merge dependabot PRs with passing tests
     conditions:
-      - "status-success=ci/circleci: build_test"
-      - "status-success=ci/circleci: static_analysis"
+      - "status-success=CI / static_analysis (push)"
+      - "status-success=CI / build (macos) (push)"
+      - "status-success=CI / build (windows) (push)"
+      - "status-success=CI / build (ubuntu) (push)"
       - "author:dependabot-preview[bot]"
     actions:
       comment:
@@ -11,8 +13,10 @@ pull_request_rules:
     conditions:
       - "#approved-reviews-by>=2"
       - "#changes-requested-reviews-by=0"
-      - "status-success=ci/circleci: build_test"
-      - "status-success=ci/circleci: static_analysis"
+      - "status-success=CI / static_analysis (push)"
+      - "status-success=CI / build (macos) (push)"
+      - "status-success=CI / build (windows) (push)"
+      - "status-success=CI / build (ubuntu) (push)"
       - "status-success=license/cla"
       - -conflict
       - label!=work-in-progress

@@ -6,6 +6,10 @@ CARGO = $(RUSTUP) run --install $(TOOLCHAIN) cargo --color always
 NIGHTLY_TOOLCHAIN = "nightly-2019-07-31"
 CARGO_NIGHTLY = $(RUSTUP) run --install $(NIGHTLY_TOOLCHAIN) cargo --color always
 
+ifneq ($(OS),Windows_NT)
+    BUILD_ARGS := --features shiplift/unix-socket
+endif
+
 build: build_debug
 
 install_rust:
@@ -45,7 +49,7 @@ format: install_rustfmt install_tomlfmt
 build: build_debug
 
 build_debug:
-	$(CARGO) build --all --all-targets
+	$(CARGO) build --all --all-targets $(BUILD_ARGS)
 
 clippy: install_clippy
 	$(CARGO) clippy --all-targets -- -D warnings

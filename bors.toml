@@ -1,5 +1,7 @@
 status = [
-    "ci/circleci: build_test",
-    "ci/circleci: static_analysis"
+    "CI / static_analysis (push)",
+    "CI / build (macos) (push)",
+    "CI / build (ubuntu) (push)",
+    "CI / build (windows) (push)"
 ]
 pr_status = ["license/cla"]
