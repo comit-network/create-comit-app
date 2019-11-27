@@ -6,8 +6,11 @@ CARGO = $(RUSTUP) run --install $(TOOLCHAIN) cargo --color always
 NIGHTLY_TOOLCHAIN = "nightly-2019-07-31"
 CARGO_NIGHTLY = $(RUSTUP) run --install $(NIGHTLY_TOOLCHAIN) cargo --color always
 
-ifneq ($(OS),Windows_NT)
-    BUILD_ARGS := --features shiplift/unix-socket
+# cannot use the unix-socket to talk to the docker daemon on windows
+ifeq ($(OS),Windows_NT)
+    BUILD_ARGS := --no-default-features
+    TEST_ARGS := --no-default-features
+    INSTALL_ARGS := --no-default-features
 endif
 
 build: build_debug
@@ -33,7 +36,7 @@ install_tomlfmt: install_rust
 ## User install
 
 install:
-	$(CARGO) install --force --path .
+	$(CARGO) install --force --path . $(INSTALL_ARGS)
 
 clean:
 	$(CARGO) clean
@@ -55,7 +58,7 @@ clippy: install_clippy
 	$(CARGO) clippy --all-targets -- -D warnings
 
 test:
-	$(CARGO) test --all
+	$(CARGO) test --all $(TEST_ARGS)
 
 doc:
 	$(CARGO) doc
