@@ -24,12 +24,38 @@ pub struct Network {
 #[derive(Clone, Debug, Serialize)]
 pub struct HttpApi {
     pub socket: Socket,
+    pub cors: Cors,
 }
 
 #[derive(Clone, Debug, Serialize)]
 pub struct Socket {
     pub address: IpAddr,
     pub port: u16,
+}
+
+#[derive(Clone, Debug, Serialize)]
+pub struct Cors {
+    pub allowed_origins: AllowedOrigins,
+}
+
+#[derive(Clone, Debug, Serialize)]
+#[serde(untagged)]
+pub enum AllowedOrigins {
+    All(All),
+    None(None),
+    Some(Vec<String>),
+}
+
+#[derive(Clone, Debug, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum All {
+    All,
+}
+
+#[derive(Clone, Debug, Serialize)]
+#[serde(rename_all = "lowercase")]
+pub enum None {
+    None,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -70,10 +96,25 @@ impl Default for Network {
 impl Default for HttpApi {
     fn default() -> HttpApi {
         HttpApi {
-            socket: Socket {
-                address: IpAddr::V4(Ipv4Addr::UNSPECIFIED),
-                port: 8080,
-            },
+            socket: Socket::default(),
+            cors: Cors::default(),
+        }
+    }
+}
+
+impl Default for Socket {
+    fn default() -> Socket {
+        Socket {
+            address: IpAddr::V4(Ipv4Addr::UNSPECIFIED),
+            port: 8080,
+        }
+    }
+}
+
+impl Default for Cors {
+    fn default() -> Cors {
+        Cors {
+            allowed_origins: AllowedOrigins::All(All::All),
         }
     }
 }
