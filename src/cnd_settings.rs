@@ -35,27 +35,7 @@ pub struct Socket {
 
 #[derive(Clone, Debug, Serialize)]
 pub struct Cors {
-    pub allowed_origins: AllowedOrigins,
-}
-
-#[derive(Clone, Debug, Serialize)]
-#[serde(untagged)]
-pub enum AllowedOrigins {
-    All(All),
-    None(None),
-    Some(Vec<String>),
-}
-
-#[derive(Clone, Debug, Serialize)]
-#[serde(rename_all = "lowercase")]
-pub enum All {
-    All,
-}
-
-#[derive(Clone, Debug, Serialize)]
-#[serde(rename_all = "lowercase")]
-pub enum None {
-    None,
+    pub allowed_origins: String,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -114,7 +94,7 @@ impl Default for Socket {
 impl Default for Cors {
     fn default() -> Cors {
         Cors {
-            allowed_origins: AllowedOrigins::All(All::All),
+            allowed_origins: String::from("all"),
         }
     }
 }
