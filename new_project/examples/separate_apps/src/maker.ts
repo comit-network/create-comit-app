@@ -81,6 +81,8 @@ function createOrder(): Order {
                 ethereum: { network: "regtest" },
             },
         },
+        // TODO: Difficult to explain... can we hide this in the SDK?
+        // timeout and retry for auto-accept
         { timeout: 100000, tryInterval: 1000 }
     );
 
@@ -119,19 +121,6 @@ function createOrder(): Order {
 
     // Define how often and how long the comit-js-sdk should try to execute the accept/decline, fund and redeem action.
     const actionConfig = { timeout: 100000, tryInterval: 1000 };
-
-    // Verify that the swap's properties match the order that was accepted by the taker.
-    if (isValid(swapParams, order)) {
-        console.log("Requested order is invalid");
-
-        // If the swap properties does not match the order, the execution of the swap is declined and the program exits.
-        await swapHandle.decline(actionConfig);
-        process.exit();
-    }
-    console.log("Requested order is still valid, swap execution will start...");
-
-    // If the swap properties matched the order the swap will be automatically accepted and the execution will start.
-    await swapHandle.accept(actionConfig);
 
     console.log(
         "Swap started! Swapping %d Ether for %d %s",
@@ -199,17 +188,3 @@ function createOrder(): Order {
 
     process.exit();
 })();
-
-/**
- * Verifies that a swap's properties match with an order's properties.
- *
- * @param swapParams A swap as represented by the execution phase of a trade.
- * @param order {Order} An order as represented by the negotiation phase of a trade.
- */
-function isValid(swapParams: any, order: Order) {
-    return (
-        swapParams.alpha_asset.name !== order.ask.asset ||
-        swapParams.beta_asset.name !== order.bid.asset ||
-        order.valid_until < moment().unix()
-    );
-}
