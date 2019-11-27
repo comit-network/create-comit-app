@@ -10,6 +10,7 @@ CARGO_NIGHTLY = $(RUSTUP) run --install $(NIGHTLY_TOOLCHAIN) cargo --color alway
 ifeq ($(OS),Windows_NT)
     BUILD_ARGS := --no-default-features
     TEST_ARGS := --no-default-features
+    INSTALL_ARGS := --no-default-features
 endif
 
 build: build_debug
@@ -35,7 +36,7 @@ install_tomlfmt: install_rust
 ## User install
 
 install:
-	$(CARGO) install --force --path .
+	$(CARGO) install --force --path . $(INSTALL_ARGS)
 
 clean:
 	$(CARGO) clean
