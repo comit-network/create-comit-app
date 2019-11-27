@@ -12,7 +12,7 @@ echo "Running $0"
 $CCA start-env > /dev/null &
 PID=$!
 
-TIMEOUT=60
+TIMEOUT=300
 TEST_PASSED=false
 
 # Count the number of containers
