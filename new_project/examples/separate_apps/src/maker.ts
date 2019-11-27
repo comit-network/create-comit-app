@@ -3,6 +3,7 @@ import {
     MakerNegotiator,
 } from "comit-sdk/dist/src/negotiation/maker_negotiator";
 import { Order } from "comit-sdk/dist/src/negotiation/order";
+import { TryParams } from "comit-sdk/dist/src/timeout_promise";
 import { formatEther } from "ethers/utils";
 import moment from "moment";
 import readLineSync from "readline-sync";
@@ -13,14 +14,14 @@ function createOrder(): Order {
     return {
         id: "123",
         tradingPair: "ETH-BTC",
-        valid_until: moment().unix() + 300,
+        validUntil: moment().unix() + 300,
         ask: {
-            amount: "9000000000000000000",
+            nominalAmount: "9",
             asset: "ether",
             ledger: "ethereum",
         },
         bid: {
-            amount: "100000000",
+            nominalAmount: "1",
             asset: "bitcoin",
             ledger: "bitcoin",
         },
@@ -48,6 +49,8 @@ function createOrder(): Order {
     console.log("[Maker] peer id:", peerId);
     console.log("[Maker] address hint:", addressHint);
 
+    const tryParams: TryParams = { maxTimeoutSecs: 100, tryIntervalSecs: 1 };
+
     // start negotiation protocol handler so that a taker can take the order and receives the latest rate
 
     const makerNegotiator = new MakerNegotiator(
@@ -65,7 +68,7 @@ function createOrder(): Order {
                 ethereum: { network: "regtest" },
             },
         },
-        { timeout: 100000, tryInterval: 1000 }
+        tryParams
     );
 
     const makerHttpApi = new MakerHttpApi(makerNegotiator);
@@ -89,19 +92,17 @@ function createOrder(): Order {
         });
     }
 
-    const actionConfig = { timeout: 100000, tryInterval: 1000 };
-
-    const swap = await swapHandle.getEntity();
+    const swap = await swapHandle.fetchDetails();
     const swapParams = swap.properties!.parameters;
 
     // only accept a request if it fits to the created order above
     if (isValid(swapParams, order)) {
         console.log("Requested order is invalid");
-        await swapHandle.decline(actionConfig);
+        await swapHandle.decline(tryParams);
         process.exit();
     }
     console.log("Requested order is still valid");
-    await swapHandle.accept(actionConfig);
+    await swapHandle.accept(tryParams);
 
     console.log(
         "Swap started! Swapping %d Ether for %d %s",
@@ -114,15 +115,12 @@ function createOrder(): Order {
 
     console.log(
         "Bitcoin HTLC funded! TXID: ",
-        await swapHandle.fund(actionConfig)
+        await swapHandle.fund(tryParams)
     );
 
     readLineSync.question("4. Continue?");
 
-    console.log(
-        "Ether redeemed! TXID: ",
-        await swapHandle.redeem(actionConfig)
-    );
+    console.log("Ether redeemed! TXID: ", await swapHandle.redeem(tryParams));
 
     console.log("Swapped!");
     console.log(
@@ -139,6 +137,6 @@ function isValid(swapParams: any, order: Order) {
     return (
         swapParams.alpha_asset.name !== order.ask.asset ||
         swapParams.beta_asset.name !== order.bid.asset ||
-        order.valid_until < moment().unix()
+        order.validUntil < moment().unix()
     );
 }
