@@ -49,6 +49,8 @@ function createOrder(): Order {
     console.log("[Maker] peer id:", peerId);
     console.log("[Maker] address hint:", addressHint);
 
+    const tryParams: TryParams = { maxTimeoutSecs: 100, tryIntervalSecs: 1 };
+
     // start negotiation protocol handler so that a taker can take the order and receives the latest rate
 
     const makerNegotiator = new MakerNegotiator(
@@ -66,7 +68,7 @@ function createOrder(): Order {
                 ethereum: { network: "regtest" },
             },
         },
-        { maxTimeoutSecs: 100, tryIntervalSecs: 1 }
+        tryParams
     );
 
     const makerHttpApi = new MakerHttpApi(makerNegotiator);
@@ -90,19 +92,17 @@ function createOrder(): Order {
         });
     }
 
-    const actionConfig: TryParams = { maxTimeoutSecs: 100, tryIntervalSecs: 1 };
-
     const swap = await swapHandle.fetchDetails();
     const swapParams = swap.properties!.parameters;
 
     // only accept a request if it fits to the created order above
     if (isValid(swapParams, order)) {
         console.log("Requested order is invalid");
-        await swapHandle.decline(actionConfig);
+        await swapHandle.decline(tryParams);
         process.exit();
     }
     console.log("Requested order is still valid");
-    await swapHandle.accept(actionConfig);
+    await swapHandle.accept(tryParams);
 
     console.log(
         "Swap started! Swapping %d Ether for %d %s",
@@ -115,15 +115,12 @@ function createOrder(): Order {
 
     console.log(
         "Bitcoin HTLC funded! TXID: ",
-        await swapHandle.fund(actionConfig)
+        await swapHandle.fund(tryParams)
     );
 
     readLineSync.question("4. Continue?");
 
-    console.log(
-        "Ether redeemed! TXID: ",
-        await swapHandle.redeem(actionConfig)
-    );
+    console.log("Ether redeemed! TXID: ", await swapHandle.redeem(tryParams));
 
     console.log("Swapped!");
     console.log(
