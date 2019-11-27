@@ -32,6 +32,9 @@ tokio = "0.1"
 toml = "0.5"
 web3 = { version = "0.8", default-features = false, features = ["http"] }
 
+[features]
+default = ["shiplift/unix-socket"]
+
 [build-dependencies]
 anyhow = "1.0.23"
 flate2 = "1.0.13"
