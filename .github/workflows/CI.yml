@@ -68,19 +68,16 @@ jobs:
           path: target/debug/${{ matrix.binary }}
 
   e2e_test:
-    strategy:
-      matrix:
-        os: [ ubuntu ]
-    runs-on: ${{ matrix.os }}-latest
+    runs-on: ubuntu-latest
     needs: build
     steps:
       - name: Checkout sources
         uses: actions/checkout@v1
 
-      - name: Download ${{ matrix.os }} binary
+      - name: Download binary
         uses: actions/download-artifact@v1
         with:
-          name: create-comit-app-${{ matrix.os }}-debug
+          name: create-comit-app-ubuntu-debug
           path: target/debug
 
       - name: Fix missing executable permission
