@@ -1,8 +1,8 @@
 status = [
-    "CI / static_analysis (push)",
-    "CI / build (macos) (push)",
-    "CI / build (ubuntu) (push)",
-    "CI / build (windows) (push)",
-    "CI / e2e_test (ubuntu) (push)",
+    "static_analysis",
+    "build (macos)",
+    "build (ubuntu)",
+    "build (windows)",
+    "e2e_test",
 ]
 pr_status = ["license/cla"]
