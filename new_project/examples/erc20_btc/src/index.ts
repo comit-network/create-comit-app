@@ -38,8 +38,8 @@ import { toBitcoin, toSatoshi } from "satoshi-bitcoin-ts";
         .getNewSwaps()
         .then(swaps => swaps[0]);
 
-    const actionConfig = { timeout: 10000, tryInterval: 1000 };
-    await makerSwapHandle.accept(actionConfig);
+    const tryParams = { maxTimeoutSecs: 10, tryIntervalSecs: 1 };
+    await makerSwapHandle.accept(tryParams);
 
     console.log(
         "Swap started! Swapping %d tokens @ contract address %s for %d %s",
@@ -53,35 +53,35 @@ import { toBitcoin, toSatoshi } from "satoshi-bitcoin-ts";
 
     console.log(
         "Ethereum HTLC deployed! TXID: ",
-        await takerSwapHandle.deploy(actionConfig)
+        await takerSwapHandle.deploy(tryParams)
     );
 
     readLineSync.question("Continue?");
 
     console.log(
         "Ethereum HTLC funded! TXID: ",
-        await takerSwapHandle.fund(actionConfig)
+        await takerSwapHandle.fund(tryParams)
     );
 
     readLineSync.question("Continue?");
 
     console.log(
         "Bitcoin HTLC funded! TXID: ",
-        await makerSwapHandle.fund(actionConfig)
+        await makerSwapHandle.fund(tryParams)
     );
 
     readLineSync.question("Continue?");
 
     console.log(
         "Bitcoin HTLC redeemed! TXID: ",
-        await takerSwapHandle.redeem(actionConfig)
+        await takerSwapHandle.redeem(tryParams)
     );
 
     readLineSync.question("Continue?");
 
     console.log(
         "Ethereum HTLC redeemed! TXID: ",
-        await makerSwapHandle.redeem(actionConfig)
+        await makerSwapHandle.redeem(tryParams)
     );
 
     console.log("Swapped!");
