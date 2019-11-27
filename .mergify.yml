@@ -5,6 +5,7 @@ pull_request_rules:
       - "status-success=CI / build (macos) (push)"
       - "status-success=CI / build (windows) (push)"
       - "status-success=CI / build (ubuntu) (push)"
+      - "status-success=CI / e2e_test (ubuntu) (push)"
       - "author:dependabot-preview[bot]"
     actions:
       comment:
@@ -17,6 +18,7 @@ pull_request_rules:
       - "status-success=CI / build (macos) (push)"
       - "status-success=CI / build (windows) (push)"
       - "status-success=CI / build (ubuntu) (push)"
+      - "status-success=CI / e2e_test (ubuntu) (push)"
       - "status-success=license/cla"
       - -conflict
       - label!=work-in-progress
