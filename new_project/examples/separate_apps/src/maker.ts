@@ -36,10 +36,10 @@ function createOrder(): Order {
  * A trade consists of two phases: negotiation and execution.
  *
  * During the negotiation phase the maker publishes and order that the taker can take.
- * Once the negotiation is is over (i.e. the taker has accepted the order) the execution of the swap commences.
+ * Once the negotiation is over (i.e. the taker has accepted the order) the execution of the swap commences.
  *
  * -- Execution details: --
- * Most of the logic of the swap execution is done by the comit-js-sdk. The example tells the ComitClient that
+ * Most of the logic of the swap execution is done by COMIT SDK. The example tells the ComitClient that
  * it wants to execute fund and redeem for a specific swap. The ComitClient checks for the availability of the
  * fund and redeem action in the comit node daemon.
  */
@@ -58,7 +58,8 @@ function createOrder(): Order {
     );
 
     // Initialize the maker negotiator that defines the negotiation phase of the trade.
-    // The maker negotiator manages the maker's orders and defines when an order was taken by a taker.
+    // The maker negotiator manages the maker's orders, makes them available to potential takers
+    // and defines when an order was taken by a taker.
     // Once an order was taken by a taker the negotiator hands over the order and execution parameters to the
     // execution phase.
     const makerNegotiator = new MakerNegotiator(
@@ -86,7 +87,7 @@ function createOrder(): Order {
         { timeout: 100000, tryInterval: 1000 }
     );
 
-    // Start the HTTP service used for publishing orders.
+    // Start the HTTP service used to publish orders.
     const makerHttpApi = new MakerHttpApi(makerNegotiator);
     // The maker's HTTP service will be served at port 2318.
     makerHttpApi.listen(2318);
@@ -95,7 +96,8 @@ function createOrder(): Order {
     // Publish the order so the taker can take it.
     makerNegotiator.addOrder(order);
 
-    // Let the world know that there is an order available
+    // Let the world know that there is an order available.
+    // In a real-world application this information could be shared on e.g. social media.
     const invitationDetails = `http://localhost:2318/orders/ETH-BTC`;
     console.log(`Waiting for someone taking my order at: ${invitationDetails}`);
 
@@ -105,7 +107,7 @@ function createOrder(): Order {
     // and a swap is waiting to be processed on the maker's side.
     while (!swapHandle) {
         await new Promise(r => setTimeout(r, 1000));
-        // Listen for incoming swaps in the comit node daemon (cnd) of the maker.
+        // Check for incoming swaps in the comit node daemon (cnd) of the maker.
         swapHandle = await maker.comitClient.getNewSwaps().then(swaps => {
             if (swaps) {
                 return swaps[0];
@@ -119,7 +121,7 @@ function createOrder(): Order {
     const swap = await swapHandle.getEntity();
     const swapParams = swap.properties!.parameters;
 
-    // Define how often and how long the comit-js-sdk should try to execute the accept/decline, fund and redeem action.
+    // Define how often and how long the COMIT SDK should try to fetch the accept/decline, fund and redeem action details to then execute them using a wallet.
     const actionConfig = { timeout: 100000, tryInterval: 1000 };
 
     console.log(
@@ -142,7 +144,7 @@ function createOrder(): Order {
         // The maker's fund transaction will only be executed after the maker's comit network daemon (cnd)
         // has detected the funding transaction of the taker. (The taker funds first.)
         //
-        // This future will thus resolve once:
+        // This promise will thus resolve once:
         // - The taker has sent the fund transaction,
         // - The maker's comit network daemon has retrieved the taker's fund transaction from an incoming block,
         // - The maker has sent the fund transaction.
@@ -164,7 +166,7 @@ function createOrder(): Order {
         // The maker's redeem transaction will only be executed after the maker's comit network daemon (cnd)
         // has detected the redeem transaction of the taker. (The taker redeems first.)
         //
-        // This future will thus resolve once:
+        // This promise will thus resolve once:
         // - The taker has sent the fund transaction,
         // - The maker's comit network daemon has retrieved the taker's fund transaction from an incoming block,
         // - The maker has sent the fund transaction,

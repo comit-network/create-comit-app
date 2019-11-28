@@ -13,10 +13,10 @@ import { startClient } from "./lib";
  *
  * During the negotiation phase the taker retrieves orders that the maker publishes.
  * The taker then has to decide if he wants to do a swap according to the order (i.e. take the order).
- * Once the negotiation is is over (i.e. the taker has accepted the order) the execution of the swap commences.
+ * Once the negotiation is over (i.e. the taker has accepted the order) the execution of the swap commences.
  *
  * -- Execution details: --
- * Most of the logic of the swap execution is done by the comit-js-sdk. The example tells the ComitClient that
+ * Most of the logic of the swap execution is done by the COMIT SDK. The example tells the ComitClient that
  * it wants to execute fund and redeem for a specific swap. The ComitClient checks for the availability of the
  * fund and redeem action in the comit node daemon.
  */
@@ -95,7 +95,7 @@ import { startClient } from "./lib";
         // -- Execution Details: --
         // The taker is the first one to fund, thus this is the first transaction sent.
         //
-        // This future will thus resolve once:
+        // This promise will thus resolve once:
         // - The taker has sent the fund transaction.
         //
         // The transaction ID will be returned by the wallet after sending the transaction.
@@ -115,7 +115,7 @@ import { startClient } from "./lib";
         // The takers's redeem transaction will only be executed after the taker's comit network daemon (cnd)
         // has detected the fund transaction of the maker.
         //
-        // This future will thus resolve once:
+        // This promise will thus resolve once:
         // - The taker has sent the fund transaction,
         // - The maker's comit network daemon has retrieved the taker's fund transaction from an incoming block,
         // - The maker has sent the fund transaction,
