@@ -82,8 +82,8 @@ import { startClient } from "./lib";
         `Received latest order details: %s:%s for a rate of %d:%d`,
         order.ask.asset,
         order.bid.asset,
-        formatEther(order.ask.nominalAmount),
-        toBitcoin(order.bid.nominalAmount)
+        order.ask.nominalAmount,
+        order.bid.nominalAmount
     );
 
     // Retrieve the details (properties) of the swap
