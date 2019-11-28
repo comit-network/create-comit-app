@@ -1,7 +1,9 @@
+import { Order } from "comit-sdk/dist/src/negotiation/order";
 import {
     MakerClient,
     TakerNegotiator,
 } from "comit-sdk/dist/src/negotiation/taker_negotiator";
+import { TryParams } from "comit-sdk/dist/src/timeout_promise";
 import { formatEther } from "ethers/utils";
 import readLineSync from "readline-sync";
 import { toBitcoin } from "satoshi-bitcoin-ts";
@@ -21,7 +23,6 @@ import { startClient } from "./lib";
  * fund and redeem action in the comit node daemon.
  */
 (async function main() {
-
     // Initialize the taker Actor
     const taker = await startClient(1);
 
@@ -41,15 +42,32 @@ import { startClient } from "./lib";
     // The taker negotiator manages retrieving orders from the maker and deciding if they are acceptable for the taker.
     // Once an order was taken by a taker the negotiator hands over the order and execution parameters to the
     // execution phase.
-    const takerNegotiator = new TakerNegotiator();
+    const takerNegotiator = new TakerNegotiator(taker.comitClient);
     const makerClient = new MakerClient("http://localhost:2318/");
 
     // TODO: Add comments once Franck's PR is merged
     // take an order from a maker
     // Accept any order
-    const isOrderAcceptable = () => true;
-    const { order, swap } = await takerNegotiator.negotiateAndSendRequest(
-        taker.comitClient,
+    const isOrderAcceptable = (order: Order) => {
+        if (order.ask.asset !== "ether" || order.bid.asset !== "bitcoin") {
+            // These are'nt the droids you're looking for
+            return false;
+        }
+
+        const ether = parseFloat(order.ask.nominalAmount);
+        const bitcoin = parseFloat(order.bid.nominalAmount);
+
+        if (ether === 0 || bitcoin === 0) {
+            // Let's do safe maths
+            return false;
+        }
+        // I want at least 1 bitcoin for 10 Ether
+        const minRate = 0.1;
+        const orderRate = bitcoin / ether;
+        console.log("Rate offered: ", orderRate);
+        return orderRate > minRate;
+    };
+    const { order, swap } = await takerNegotiator.negotiateAndInitiateSwap(
         makerClient,
         // Define the trading pair to request and order for.
         "ETH-BTC",
@@ -64,12 +82,12 @@ import { startClient } from "./lib";
         `Received latest order details: %s:%s for a rate of %d:%d`,
         order.ask.asset,
         order.bid.asset,
-        formatEther(order.ask.amount),
-        toBitcoin(order.bid.amount)
+        formatEther(order.ask.nominalAmount),
+        toBitcoin(order.bid.nominalAmount)
     );
 
     // Retrieve the details (properties) of the swap
-    const swapMessage = await swap.getEntity();
+    const swapMessage = await swap.fetchDetails();
     const swapParameters = swapMessage.properties!.parameters;
 
     console.log(
@@ -84,7 +102,7 @@ import { startClient } from "./lib";
     readLineSync.question("1. Continue?");
 
     // Define how often and how long the comit-js-sdk should try to execute the fund and redeem action.
-    const actionConfig = { timeout: 100000, tryInterval: 1000 };
+    const tryParams: TryParams = {  maxTimeoutSecs: 100, tryIntervalSecs: 1 };
 
     console.log(
         "Ethereum HTLC funded! TXID: ",
@@ -99,7 +117,7 @@ import { startClient } from "./lib";
         // - The taker has sent the fund transaction.
         //
         // The transaction ID will be returned by the wallet after sending the transaction.
-        await swap.fund(actionConfig)
+        await swap.fund(tryParams)
     );
 
     // Wait for commandline input for demo purposes
@@ -122,7 +140,7 @@ import { startClient } from "./lib";
         // - The taker's comit network daemon has retrieved the maker's fund transaction from an incoming block,
         //
         // The transaction ID will be returned by the wallet after sending the transaction.
-        await swap.redeem(actionConfig)
+        await swap.redeem(tryParams)
     );
 
     console.log("Swapped!");

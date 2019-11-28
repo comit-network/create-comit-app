@@ -24,7 +24,12 @@ pub fn register_signals() -> anyhow::Result<Arc<AtomicBool>> {
     let terminate = Arc::new(AtomicBool::new(false));
     signal_hook::flag::register(signal_hook::SIGTERM, Arc::clone(&terminate))?;
     signal_hook::flag::register(signal_hook::SIGINT, Arc::clone(&terminate))?;
-    signal_hook::flag::register(signal_hook::SIGQUIT, Arc::clone(&terminate))?;
+
+    #[cfg(not(windows))]
+    {
+        signal_hook::flag::register(signal_hook::SIGQUIT, Arc::clone(&terminate))?;
+    }
+
     Ok(terminate)
 }
 

@@ -3,6 +3,7 @@ import {
     MakerNegotiator,
 } from "comit-sdk/dist/src/negotiation/maker_negotiator";
 import { Order } from "comit-sdk/dist/src/negotiation/order";
+import { TryParams } from "comit-sdk/dist/src/timeout_promise";
 import { formatEther } from "ethers/utils";
 import moment from "moment";
 import readLineSync from "readline-sync";
@@ -22,7 +23,6 @@ import { startClient } from "./lib";
  * fund and redeem action in the comit node daemon.
  */
 (async function main() {
-
     // Initialize the maker Actor
     const maker = await startClient(0);
 
@@ -38,6 +38,8 @@ import { startClient } from "./lib";
     // Initialize the maker negotiator that defines the negotiation phase of the trade.
     // The maker negotiator manages the maker's orders, makes them available to potential takers
     // and defines when an order was taken by a taker.
+    const tryParams: TryParams = { maxTimeoutSecs: 100, tryIntervalSecs: 1 };
+
     // Once an order was taken by a taker the negotiator hands over the order and execution parameters to the
     // execution phase.
     const makerNegotiator = new MakerNegotiator(
@@ -60,9 +62,7 @@ import { startClient } from "./lib";
                 ethereum: { network: "regtest" },
             },
         },
-        // TODO: Difficult to explain... can we hide this in the SDK?
-        // timeout and retry for auto-accept
-        { timeout: 100000, tryInterval: 1000 }
+        tryParams
     );
 
     // Start the HTTP service used to publish orders.
@@ -73,14 +73,14 @@ import { startClient } from "./lib";
     const order: Order = {
         id: "123",
         tradingPair: "ETH-BTC",
-        valid_until: moment().unix() + 300,
+        validUntil: moment().unix() + 300,
         ask: {
-            amount: "9000000000000000000",
+            nominalAmount: "9",
             asset: "ether",
             ledger: "ethereum",
         },
         bid: {
-            amount: "100000000",
+            nominalAmount: "1",
             asset: "bitcoin",
             ledger: "bitcoin",
         },
@@ -111,11 +111,8 @@ import { startClient } from "./lib";
     }
 
     // Retrieve the details (properties) of the swap
-    const swap = await swapHandle.getEntity();
+    const swap = await swapHandle.fetchDetails();
     const swapParams = swap.properties!.parameters;
-
-    // Define how often and how long the COMIT SDK should try to fetch the accept/decline, fund and redeem action details to then execute them using a wallet.
-    const actionConfig = { timeout: 100000, tryInterval: 1000 };
 
     console.log(
         "Swap started! Swapping %d Ether for %d %s",
@@ -143,7 +140,7 @@ import { startClient } from "./lib";
         // - The maker has sent the fund transaction.
         //
         // The transaction ID will be returned by the wallet after sending the transaction.
-        await swapHandle.fund(actionConfig)
+        await swapHandle.fund(tryParams)
     );
 
     // Wait for commandline input for demo purposes
@@ -167,7 +164,7 @@ import { startClient } from "./lib";
         // - The taker has sent the redeem transaction.
         //
         // The transaction ID will be returned by the wallet after sending the transaction.
-        await swapHandle.redeem(actionConfig)
+        await swapHandle.redeem(tryParams)
     );
 
     console.log("Swapped!");

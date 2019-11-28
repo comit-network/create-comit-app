@@ -1,0 +1,92 @@
+on:
+  push:
+    branches-ignore:
+      - 'staging.tmp'
+      - 'trying.tmp'
+
+name: CI
+
+jobs:
+  static_analysis:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v1
+
+      - name: Extract toolchain version from rust-toolchain
+        run: echo "::set-env name=RUST_TOOLCHAIN::$(cat rust-toolchain)"
+
+      - name: Install ${{ env.RUST_TOOLCHAIN }} toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: ${{ env.RUST_TOOLCHAIN }}
+          override: true
+
+      - name: Check formatting
+        run: make check_format
+
+      - name: Run linter
+        run: make clippy
+
+  build:
+    strategy:
+      matrix:
+        os: [macos, windows, ubuntu]
+        include:
+          - os: windows
+            binary: create-comit-app.exe
+          - os: ubuntu
+            binary: create-comit-app
+          - os: macos
+            binary: create-comit-app
+    runs-on: ${{ matrix.os }}-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v1
+
+      - name: Extract toolchain version from rust-toolchain
+        run: echo "::set-env name=RUST_TOOLCHAIN::$(cat rust-toolchain)"
+
+      - name: Install ${{ env.RUST_TOOLCHAIN }} toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: ${{ env.RUST_TOOLCHAIN }}
+          override: true
+
+      - name: Build ${{ matrix.os }} binary
+        run: make build
+
+      - name: Run unit tests
+        run: make test
+
+      - name: Upload ${{ matrix.os }} binary
+        uses: actions/upload-artifact@v1
+        with:
+          name: create-comit-app-${{ matrix.os }}-debug
+          path: target/debug/${{ matrix.binary }}
+
+  e2e_test:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v1
+
+      - name: Download binary
+        uses: actions/download-artifact@v1
+        with:
+          name: create-comit-app-ubuntu-debug
+          path: target/debug
+
+      - name: Fix missing executable permission
+        run: chmod +x target/debug/create-comit-app
+
+      - name: Install NodeJS 10.x
+        uses: actions/setup-node@v1
+        with:
+          node-version: '10.x'
+
+      - name: Run e2e tests
+        run: make e2e_scripts

@@ -37,8 +37,8 @@ import { toBitcoin, toSatoshi } from "satoshi-bitcoin-ts";
         .getNewSwaps()
         .then(swaps => swaps[0]);
 
-    const actionConfig = { timeout: 10000, tryInterval: 1000 };
-    await makerSwapHandle.accept(actionConfig);
+    const tryParams = { maxTimeoutSecs: 10, tryIntervalSecs: 1 };
+    await makerSwapHandle.accept(tryParams);
 
     console.log(
         "Swap started! Swapping %d %s for %d %s",
@@ -50,22 +50,22 @@ import { toBitcoin, toSatoshi } from "satoshi-bitcoin-ts";
 
     console.log(
         "Ethereum HTLC funded! TXID: ",
-        await takerSwapHandle.fund(actionConfig)
+        await takerSwapHandle.fund(tryParams)
     );
 
     console.log(
         "Bitcoin HTLC funded! TXID: ",
-        await makerSwapHandle.fund(actionConfig)
+        await makerSwapHandle.fund(tryParams)
     );
 
     console.log(
         "Bitcoin HTLC redeemed! TXID: ",
-        await takerSwapHandle.redeem(actionConfig)
+        await takerSwapHandle.redeem(tryParams)
     );
 
     console.log(
         "Ethereum HTLC redeemed! TXID: ",
-        await makerSwapHandle.redeem(actionConfig)
+        await makerSwapHandle.redeem(tryParams)
     );
 
     console.log("Swapped!");
@@ -156,14 +156,13 @@ function checkEnvFile(path: string) {
 }
 
 async function printBalances(actor: Actor) {
-    let tokenWei = await actor.ethereumWallet.getBalance();
+    const tokenWei = await actor.ethereumWallet.getBalance();
     console.log(
         "%s Bitcoin balance: %d. Ether balance: %d",
         actor.name,
         parseFloat(await actor.bitcoinWallet.getBalance()).toFixed(2),
         toNominal(tokenWei.toString(), 18)
     );
-
 }
 
 function toNominal(tokenWei: string, decimals: number) {
