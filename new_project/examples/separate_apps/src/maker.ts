@@ -122,7 +122,7 @@ import { startClient } from "./lib";
     );
 
     // Wait for commandline input for demo purposes
-    readLineSync.question("2. Continue?");
+    readLineSync.question("3. Continue funding the Bitcoin HTLC?");
 
     console.log(
         "Bitcoin HTLC funded! TXID: ",
@@ -144,7 +144,7 @@ import { startClient } from "./lib";
     );
 
     // Wait for commandline input for demo purposes
-    readLineSync.question("4. Continue?");
+    readLineSync.question("5. Continue redeeming the Ethereum HTLC?");
 
     console.log(
         "Ether redeemed! TXID: ",

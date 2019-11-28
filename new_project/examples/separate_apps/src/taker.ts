@@ -36,7 +36,7 @@ import { startClient } from "./lib";
     );
 
     // Wait for commandline input for demo purposes
-    readLineSync.question("0. Ready?");
+    readLineSync.question("1. Ready to accept and order from the maker?");
 
     // Initialize the taker negotiator that defines the negotiation phase of the trade.
     // The taker negotiator manages retrieving orders from the maker and deciding if they are acceptable for the taker.
@@ -99,7 +99,7 @@ import { startClient } from "./lib";
     );
 
     // Wait for commandline input for demo purposes
-    readLineSync.question("1. Continue?");
+    readLineSync.question("2. Continue funding the Ethereum HTLC?");
 
     // Define how often and how long the comit-js-sdk should try to execute the fund and redeem action.
     const tryParams: TryParams = {  maxTimeoutSecs: 100, tryIntervalSecs: 1 };
@@ -121,7 +121,7 @@ import { startClient } from "./lib";
     );
 
     // Wait for commandline input for demo purposes
-    readLineSync.question("3. Continue?");
+    readLineSync.question("4. Continue redeeming the Bitcoin HTLC?");
 
     console.log(
         "Bitcoin redeemed! TXID: ",
