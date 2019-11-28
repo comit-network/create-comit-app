@@ -10,28 +10,6 @@ import { toBitcoin } from "satoshi-bitcoin-ts";
 import { startClient } from "./lib";
 
 /**
- * Creates and Order to be published by a maker to enable a trade with a taker.
- * @returns {Order} Order defining trading pair, validity and trading amounts.
- */
-function createOrder(): Order {
-    return {
-        id: "123",
-        tradingPair: "ETH-BTC",
-        valid_until: moment().unix() + 300,
-        ask: {
-            amount: "9000000000000000000",
-            asset: "ether",
-            ledger: "ethereum",
-        },
-        bid: {
-            amount: "100000000",
-            asset: "bitcoin",
-            ledger: "bitcoin",
-        },
-    };
-}
-
-/**
  * This executable function represents the maker side during a trade.
  * A trade consists of two phases: negotiation and execution.
  *
@@ -92,7 +70,22 @@ function createOrder(): Order {
     // The maker's HTTP service will be served at port 2318.
     makerHttpApi.listen(2318);
     // Create an order to be published.
-    const order = createOrder();
+    const order: Order = {
+        id: "123",
+        tradingPair: "ETH-BTC",
+        valid_until: moment().unix() + 300,
+        ask: {
+            amount: "9000000000000000000",
+            asset: "ether",
+            ledger: "ethereum",
+        },
+        bid: {
+            amount: "100000000",
+            asset: "bitcoin",
+            ledger: "bitcoin",
+        },
+    };
+
     // Publish the order so the taker can take it.
     makerNegotiator.addOrder(order);
 
