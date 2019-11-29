@@ -95,15 +95,6 @@ function createOrder(): Order {
     const swap = await swapHandle.fetchDetails();
     const swapParams = swap.properties!.parameters;
 
-    // only accept a request if it fits to the created order above
-    if (isValid(swapParams, order)) {
-        console.log("Requested order is invalid");
-        await swapHandle.decline(tryParams);
-        process.exit();
-    }
-    console.log("Requested order is still valid");
-    await swapHandle.accept(tryParams);
-
     console.log(
         "Swap started! Swapping %d Ether for %d %s",
         formatEther(swapParams.alpha_asset.quantity),
@@ -132,11 +123,3 @@ function createOrder(): Order {
     );
     process.exit();
 })();
-
-function isValid(swapParams: any, order: Order) {
-    return (
-        swapParams.alpha_asset.name !== order.ask.asset ||
-        swapParams.beta_asset.name !== order.bid.asset ||
-        order.validUntil < moment().unix()
-    );
-}
