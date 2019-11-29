@@ -45,10 +45,9 @@ import { startClient } from "./lib";
     const takerNegotiator = new TakerNegotiator(taker.comitClient);
     const makerClient = new MakerClient("http://localhost:2318/");
 
-    // TODO: Add comments once Franck's PR is merged
-    // take an order from a maker
-    // Accept any order
+    // Decide if an order is acceptable for the taker and take it.
     const isOrderAcceptable = (order: Order) => {
+        // Check if the returned order matches the requested asset-pair
         if (order.ask.asset !== "ether" || order.bid.asset !== "bitcoin") {
             // These are'nt the droids you're looking for
             return false;
@@ -61,7 +60,7 @@ import { startClient } from "./lib";
             // Let's do safe maths
             return false;
         }
-        // I want at least 1 bitcoin for 10 Ether
+        // Only accept orders that are at least 1 bitcoin for 10 Ether
         const minRate = 0.1;
         const orderRate = bitcoin / ether;
         console.log("Rate offered: ", orderRate);
