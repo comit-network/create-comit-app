@@ -14,7 +14,7 @@ import { startClient } from "./lib";
  * This executable function represents the maker side during a trade.
  * A trade consists of two phases: negotiation and execution.
  *
- * During the negotiation phase the maker publishes and order that the taker can take.
+ * During the negotiation phase the maker publishes an order that the taker can take.
  * Once the negotiation is over (i.e. the taker has accepted the order) the execution of the swap commences.
  *
  * -- Execution details: --
@@ -90,7 +90,7 @@ import { startClient } from "./lib";
     makerNegotiator.addOrder(order);
 
     // Let the world know that there is an order available.
-    // In a real-world application this information could be shared on e.g. social media.
+    // In a real-world application this information could be shared publicly, e.g. on social medias.
     const invitationDetails = `http://localhost:2318/orders/ETH-BTC`;
     console.log(`Waiting for someone taking my order at: ${invitationDetails}`);
 

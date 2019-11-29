@@ -3,12 +3,12 @@
 An example project that shows how to swap Bitcoin for Ether with COMIT.
 
 In this example the taker and maker are split up in separate executable files.
-Upon executing the maker and taker apps the execution will bounce between the maker and taker, making the example more realistic.
+Upon executing the maker and taker apps the execution will bounce between the maker and taker, making the example closer to a production app.
 
 The example includes the simple negotiation protocol provided by the COMIT SDK.
 
-The example sets off at the point where the maker has already published an order for the taker.
-The example then consists of 5 steps:
+It sets off at the point where the maker has already published an order for the taker.
+It then consists of 5 steps:
 1. The taker takes the order and starts the swap execution.
 2. The taker funds the Ethereum HTLC.
 3. The maker funds the Bitcoin HTLC.
