@@ -49,8 +49,6 @@ function createOrder(): Order {
     console.log("[Maker] peer id:", peerId);
     console.log("[Maker] address hint:", addressHint);
 
-    const tryParams: TryParams = { maxTimeoutSecs: 100, tryIntervalSecs: 1 };
-
     // start negotiation protocol handler so that a taker can take the order and receives the latest rate
 
     const makerNegotiator = new MakerNegotiator(
@@ -68,7 +66,7 @@ function createOrder(): Order {
                 ethereum: { network: "regtest" },
             },
         },
-        tryParams
+        { maxTimeoutSecs: 1000, tryIntervalSecs: 0.1 }
     );
 
     const makerHttpApi = new MakerHttpApi(makerNegotiator);
@@ -83,7 +81,7 @@ function createOrder(): Order {
     let swapHandle;
     while (!swapHandle) {
         await new Promise(r => setTimeout(r, 1000));
-        swapHandle = await maker.comitClient.getNewSwaps().then(swaps => {
+        swapHandle = await maker.comitClient.getOngoingSwaps().then(swaps => {
             if (swaps) {
                 return swaps[0];
             } else {
@@ -103,6 +101,8 @@ function createOrder(): Order {
     );
 
     readLineSync.question("2. Continue?");
+
+    const tryParams: TryParams = { maxTimeoutSecs: 100, tryIntervalSecs: 1 };
 
     console.log(
         "Bitcoin HTLC funded! TXID: ",
