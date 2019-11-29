@@ -2,7 +2,7 @@
 
 An example project that shows how to swap Bitcoin for Ether with COMIT.
 
-In this example the taker and maker are split up in separate executable functions.
+In this example the taker and maker are split up in separate executable files.
 Upon executing the maker and taker apps the execution will bounce between the maker and taker, making the example more realistic.
 
 The example includes the simple negotiation protocol provided by the COMIT SDK.
