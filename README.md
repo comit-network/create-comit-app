@@ -16,10 +16,12 @@ If you have any question please [reach out to the team in our Gitter chat](https
 
 1. `yarn create comit-app new <your-app-name>`,
 2. `yarn create comit-app start-env` to start blockchain and COMIT nodes,
-3. Run the [btc-eth](https://github.com/comit-network/create-comit-app/tree/master/new_project/examples/btc_eth) example (in separate terminal):
-    1. Navigate to the btc-eth example app directory `cd <path-to-your-app>/examples/btc_eth`,
+3. Run the [separate-apps](https://github.com/comit-network/create-comit-app/tree/master/new_project/examples/separate_apps) example (in separate terminals for the taker and maker):
+    1. Navigate to the separate-apps example app directory `cd <path-to-your-app>/examples/separate-apps`,
     2. `yarn install` to install dependencies,
-    3. `yarn start` to run the application.
+    3. `yarn run maker` to run the maker app.
+    4. `yarn run taker` to run the taker app.
+    5. Follow the steps be hitting `Return` to complete the swap.
 
 You can find additional examples in the [examples](https://github.com/comit-network/create-comit-app/tree/master/new_project/examples) directory that is created as part of step 1.
 

@@ -2,6 +2,8 @@ import { BitcoinWallet, Cnd, ComitClient, EthereumWallet } from "comit-sdk";
 import fs from "fs";
 
 export async function startClient(index: number): Promise<Actor> {
+    checkEnvFile(process.env.DOTENV_CONFIG_PATH!);
+
     const bitcoinWallet = await BitcoinWallet.newInstance(
         "regtest",
         process.env.BITCOIN_P2P_URI!,
