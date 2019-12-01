@@ -28,7 +28,7 @@ structopt = "0.3"
 tar = "0.4.26"
 tempfile = "3.1.0"
 thiserror = "1"
-tokio = "0.1"
+tokio = "0.2"
 toml = "0.5"
 web3 = { version = "0.8", default-features = false, features = ["http"] }
 
