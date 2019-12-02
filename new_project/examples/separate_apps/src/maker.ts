@@ -8,10 +8,67 @@ import { formatEther } from "ethers/utils";
 import moment from "moment";
 import readLineSync from "readline-sync";
 import { toBitcoin } from "satoshi-bitcoin-ts";
-import { checkEnvFile, startClient } from "./lib";
+import { startClient } from "./lib";
 
-function createOrder(): Order {
-    return {
+/**
+ * This executable function represents the maker side during a trade.
+ * A trade consists of two phases: negotiation and execution.
+ *
+ * During the negotiation phase the maker publishes an order that the taker can take.
+ * Once the negotiation is over (i.e. the taker has accepted the order) the execution of the swap commences.
+ *
+ * -- Execution details: --
+ * Most of the logic of the swap execution is done by COMIT SDK. The example tells the ComitClient that
+ * it wants to execute fund and redeem for a specific swap. The ComitClient checks for the availability of the
+ * fund and redeem action in the comit node daemon.
+ */
+(async function main() {
+    // Initialize the maker Actor
+    const maker = await startClient(0);
+
+    // print balances before swapping
+    console.log(
+        "[Maker] Bitcoin balance: %f. Ether balance: %f",
+        parseFloat(await maker.bitcoinWallet.getBalance()).toFixed(2),
+        parseFloat(
+            formatEther(await maker.ethereumWallet.getBalance())
+        ).toFixed(2)
+    );
+
+    // Initialize the maker negotiator that defines the negotiation phase of the trade.
+    // The maker negotiator manages the maker's orders, makes them available to potential takers
+    // and defines when an order was taken by a taker.
+    // Once an order was taken by a taker the negotiator hands over the order and execution parameters to the
+    // execution phase.
+    const makerNegotiator = new MakerNegotiator(
+        maker.comitClient,
+        {
+            // Connection information for the comit network daemon.
+            // The maker has to provide this to the taker for the execution phase,
+            // so that the taker's comit network daemon can message the maker's comit network daemon.
+            peer: {
+                peer_id: maker.peerId,
+                address_hint: maker.addressHint,
+            },
+            // The expiry time for the taker.
+            alpha_expiry: moment().unix() + 7200,
+            // The expiry time for the maker
+            beta_expiry: moment().unix() + 3600,
+            // The network the swap will be executed on.
+            ledgers: {
+                bitcoin: { network: "regtest" },
+                ethereum: { network: "regtest" },
+            },
+        },
+        { maxTimeoutSecs: 1000, tryIntervalSecs: 0.1 }
+    );
+
+    // Start the HTTP service used to publish orders.
+    const makerHttpApi = new MakerHttpApi(makerNegotiator);
+    // The maker's HTTP service will be served at port 2318.
+    makerHttpApi.listen(2318);
+    // Create an order to be published.
+    const order: Order = {
         id: "123",
         tradingPair: "ETH-BTC",
         validUntil: moment().unix() + 300,
@@ -26,61 +83,22 @@ function createOrder(): Order {
             ledger: "bitcoin",
         },
     };
-}
 
-(async function main() {
-    checkEnvFile(process.env.DOTENV_CONFIG_PATH!);
-
-    const maker = await startClient(0);
-
-    console.log(
-        "[Maker] Bitcoin balance: %f. Ether balance: %f",
-        parseFloat(await maker.bitcoinWallet.getBalance()).toFixed(2),
-        parseFloat(
-            formatEther(await maker.ethereumWallet.getBalance())
-        ).toFixed(2)
-    );
-
-    const peerId = await maker.comitClient.getPeerId();
-    const addressHint = await maker.comitClient
-        .getPeerListenAddresses()
-        .then(addresses => addresses[0]);
-
-    console.log("[Maker] peer id:", peerId);
-    console.log("[Maker] address hint:", addressHint);
-
-    // start negotiation protocol handler so that a taker can take the order and receives the latest rate
-
-    const makerNegotiator = new MakerNegotiator(
-        maker.comitClient,
-        {
-            peer: {
-                peer_id: peerId,
-                address_hint: addressHint,
-            },
-            alpha_expiry: moment().unix() + 7200,
-            beta_expiry: moment().unix() + 3600,
-            ledgers: {
-                bitcoin: { network: "regtest" },
-                // TODO: It should be possible to use the chain_id
-                ethereum: { network: "regtest" },
-            },
-        },
-        { maxTimeoutSecs: 1000, tryIntervalSecs: 0.1 }
-    );
-
-    const makerHttpApi = new MakerHttpApi(makerNegotiator);
-
-    makerHttpApi.listen(2318);
-    const order = createOrder();
+    // Publish the order so the taker can take it.
     makerNegotiator.addOrder(order);
 
+    // Let the world know that there is an order available.
+    // In a real-world application this information could be shared publicly, e.g. on social medias.
     const invitationDetails = `http://localhost:2318/orders/ETH-BTC`;
     console.log(`Waiting for someone taking my order at: ${invitationDetails}`);
 
+    // Wait for a taker to accept the order and send a swap request through the comit network daemon (cnd).
     let swapHandle;
+    // This loop runs until a swap request was sent from the taker to the maker
+    // and a swap is waiting to be processed on the maker's side.
     while (!swapHandle) {
         await new Promise(r => setTimeout(r, 1000));
+        // Check for incoming swaps in the comit node daemon (cnd) of the maker.
         swapHandle = await maker.comitClient.getOngoingSwaps().then(swaps => {
             if (swaps) {
                 return swaps[0];
@@ -90,6 +108,7 @@ function createOrder(): Order {
         });
     }
 
+    // Retrieve the details (properties) of the swap
     const swap = await swapHandle.fetchDetails();
     const swapParams = swap.properties!.parameters;
 
@@ -100,20 +119,57 @@ function createOrder(): Order {
         swapParams.beta_asset.name
     );
 
-    readLineSync.question("2. Continue?");
+    // Wait for commandline input for demo purposes
+    readLineSync.question("3. Continue funding the Bitcoin HTLC?");
 
     const tryParams: TryParams = { maxTimeoutSecs: 100, tryIntervalSecs: 1 };
 
     console.log(
         "Bitcoin HTLC funded! TXID: ",
+
+        // -- FUND --
+        // Wait for the successful execution of the funding transaction of the maker.
+        //
+        // -- Execution Details: --
+        // The maker's fund transaction will only be executed after the maker's comit network daemon (cnd)
+        // has detected the funding transaction of the taker. (The taker funds first.)
+        //
+        // This promise will thus resolve once:
+        // - The taker has sent the fund transaction,
+        // - The maker's comit network daemon has retrieved the taker's fund transaction from an incoming block,
+        // - The maker has sent the fund transaction.
+        //
+        // The transaction ID will be returned by the wallet after sending the transaction.
         await swapHandle.fund(tryParams)
     );
 
-    readLineSync.question("4. Continue?");
+    // Wait for commandline input for demo purposes
+    readLineSync.question("5. Continue redeeming the Ethereum HTLC?");
 
-    console.log("Ether redeemed! TXID: ", await swapHandle.redeem(tryParams));
+    console.log(
+        "Ether redeemed! TXID: ",
+
+        // -- REDEEM --
+        // Wait for the successful execution of the redeem transaction of the maker.
+        //
+        // -- Execution Details: --
+        // The maker's redeem transaction will only be executed after the maker's comit network daemon (cnd)
+        // has detected the redeem transaction of the taker. (The taker redeems first.)
+        //
+        // This promise will thus resolve once:
+        // - The taker has sent the fund transaction,
+        // - The maker's comit network daemon has retrieved the taker's fund transaction from an incoming block,
+        // - The maker has sent the fund transaction,
+        // - The taker's comit network daemon has retrieved the maker's fund transaction from an incoming block,
+        // - The taker has sent the redeem transaction.
+        //
+        // The transaction ID will be returned by the wallet after sending the transaction.
+        await swapHandle.redeem(tryParams)
+    );
 
     console.log("Swapped!");
+
+    // print balances after swapping
     console.log(
         "[Maker] Bitcoin balance: %f. Ether balance: %f",
         parseFloat(await maker.bitcoinWallet.getBalance()).toFixed(2),
@@ -121,5 +177,6 @@ function createOrder(): Order {
             formatEther(await maker.ethereumWallet.getBalance())
         ).toFixed(2)
     );
+
     process.exit();
 })();
