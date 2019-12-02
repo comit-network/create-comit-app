@@ -330,7 +330,7 @@ dependencies = [
 
 [[package]]
 name = "create-comit-app"
-version = "0.5.0"
+version = "0.5.1"
 dependencies = [
  "anyhow 1.0.25 (registry+https://github.com/rust-lang/crates.io-index)",
  "bitcoin 0.19.2 (registry+https://github.com/rust-lang/crates.io-index)",
