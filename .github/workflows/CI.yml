@@ -90,3 +90,17 @@ jobs:
 
       - name: Run e2e tests
         run: make e2e_scripts
+  npm_build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - name: Use Node.js 10.x
+        uses: actions/setup-node@v1
+        with:
+          node-version: 10.x
+      - name: yarn install and test
+        run: |
+          cd .npm
+          yarn install
+          yarn list
+          yarn test
