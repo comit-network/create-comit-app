@@ -5,7 +5,8 @@
   "main": "cca.js",
   "scripts": {
     "start": "node cca.js",
-    "fix": "prettier --write '**/*.{ts,js,json,yml}'"
+    "fix": "prettier --write '**/*.{ts,js,json,yml}'",
+    "test": "prettier --check '**/*.{ts,js,json,yml}'"
   },
   "repository": {
     "type": "git",
