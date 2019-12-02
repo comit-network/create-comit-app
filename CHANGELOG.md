@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## Fixed
+- Upgrade `separate_apps` example to comit-sdk 0.7.0 to fix maker auto-accept.
+
 ## [0.5.0] - 2019-11-28
 
 ## Changed
