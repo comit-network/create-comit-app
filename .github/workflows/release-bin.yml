@@ -53,6 +53,7 @@ jobs:
         uses: actions/setup-node@v1
         with:
           node-version: 10.x
+          always-auth: true
       - name: Build
         run: |
           cd .npm
@@ -61,6 +62,7 @@ jobs:
       - name: Release on NPM
         if: startsWith(github.ref, 'refs/tags/')
         run: |
+          echo "//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}" > ~/.npmrc
           cd .npm
           yarn publish
         env:

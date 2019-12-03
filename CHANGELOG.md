@@ -6,8 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.1] - 2019-12-02
+
 ## Fixed
-- Upgrade `separate_apps` example to comit-sdk 0.7.0 to fix maker auto-accept.
+- Upgrade `separate_apps` example to comit-sdk 0.7.1 to fix maker auto-accept.
 - Add code comments in `separate_apps` to describe the behaviour and help app developers understand how to use COMIT SDK.
 
 ## [0.5.0] - 2019-11-28
@@ -64,7 +66,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 First Release 🎉
 
-[Unreleased]: https://github.com/comit-network/create-comit-app/compare/0.5.0...HEAD
+[Unreleased]: https://github.com/comit-network/create-comit-app/compare/0.5.1...HEAD
+[0.5.1]: https://github.com/comit-network/create-comit-app/compare/0.5.0...0.5.1
 [0.5.0]: https://github.com/comit-network/create-comit-app/compare/0.4.0...0.5.0
 [0.4.0]: https://github.com/comit-network/create-comit-app/compare/0.3.0...0.4.0
 [0.3.0]: https://github.com/comit-network/create-comit-app/compare/0.2.1...0.3.0
