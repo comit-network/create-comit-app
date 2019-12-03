@@ -53,6 +53,7 @@ jobs:
         uses: actions/setup-node@v1
         with:
           node-version: 10.x
+          always-auth: true
       - name: Build
         run: |
           cd .npm
@@ -62,7 +63,6 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/')
         run: |
           cd .npm
-          echo "$NODE_AUTH_TOKEN" | sha256sum
           yarn publish
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
