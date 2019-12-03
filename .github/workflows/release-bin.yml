@@ -62,6 +62,7 @@ jobs:
       - name: Release on NPM
         if: startsWith(github.ref, 'refs/tags/')
         run: |
+          echo "//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}" > ~/.npmrc
           cd .npm
           yarn publish
         env:
