@@ -62,6 +62,7 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/')
         run: |
           cd .npm
+          echo "$NODE_AUTH_TOKEN" | sha256sum
           yarn publish
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
