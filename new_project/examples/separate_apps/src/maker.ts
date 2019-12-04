@@ -167,7 +167,7 @@ import { createActor, sleep } from "./lib";
     // The comit network daemon (cnd) processes new incoming blocks faster than etherjs.
     // This results in the final balance not being printed correctly, even though the redeem transaction was already
     // noticed by cnd.
-    // In order to make sure the final balance is printed correctly we thus sleep for 500ms here.
+    // In order to make sure the final balance is printed correctly we thus sleep for 1 second here.
     await sleep(1000);
 
     // print balances after swapping
