@@ -1,14 +1,9 @@
-import {
-    MakerHttpApi,
-    MakerNegotiator,
-} from "comit-sdk/dist/src/negotiation/maker_negotiator";
-import { Order } from "comit-sdk/dist/src/negotiation/order";
-import { TryParams } from "comit-sdk/dist/src/timeout_promise";
+import { MakerHttpApi, MakerNegotiator, Order, TryParams } from "comit-sdk";
 import { formatEther } from "ethers/utils";
 import moment from "moment";
 import readLineSync from "readline-sync";
 import { toBitcoin } from "satoshi-bitcoin-ts";
-import { startClient } from "./lib";
+import { createActor } from "./lib";
 
 /**
  * This executable function represents the maker side during a trade.
@@ -24,7 +19,7 @@ import { startClient } from "./lib";
  */
 (async function main() {
     // Initialize the maker Actor
-    const maker = await startClient(0);
+    const maker = await createActor(0);
 
     // print balances before swapping
     console.log(

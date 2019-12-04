@@ -1,13 +1,8 @@
-import { Order } from "comit-sdk/dist/src/negotiation/order";
-import {
-    MakerClient,
-    TakerNegotiator,
-} from "comit-sdk/dist/src/negotiation/taker_negotiator";
-import { TryParams } from "comit-sdk/dist/src/timeout_promise";
+import { MakerClient, Order, TakerNegotiator, TryParams } from "comit-sdk";
 import { formatEther } from "ethers/utils";
 import readLineSync from "readline-sync";
 import { toBitcoin } from "satoshi-bitcoin-ts";
-import { startClient } from "./lib";
+import { createActor } from "./lib";
 
 /**
  * This executable function represents the taker side during a trade.
@@ -24,7 +19,7 @@ import { startClient } from "./lib";
  */
 (async function main() {
     // Initialize the taker Actor
-    const taker = await startClient(1);
+    const taker = await createActor(1);
 
     // print balances before swapping
     console.log(
@@ -101,7 +96,7 @@ import { startClient } from "./lib";
     readLineSync.question("2. Continue funding the Ethereum HTLC?");
 
     // Define how often and how long the comit-js-sdk should try to execute the fund and redeem action.
-    const tryParams: TryParams = {  maxTimeoutSecs: 100, tryIntervalSecs: 1 };
+    const tryParams: TryParams = { maxTimeoutSecs: 100, tryIntervalSecs: 1 };
 
     console.log(
         "Ethereum HTLC funded! TXID: ",
