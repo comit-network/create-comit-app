@@ -21,7 +21,7 @@
         "typescript": "^3.7.2"
     },
     "dependencies": {
-        "comit-sdk": "^0.7.1",
+        "comit-sdk": "^0.7.2",
         "dotenv": "^8.2.0",
         "moment": "^2.24.0",
         "satoshi-bitcoin-ts": "^0.2.4"
