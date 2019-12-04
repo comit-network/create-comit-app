@@ -38,3 +38,7 @@ export function checkEnvFile(path: string) {
         process.exit(1);
     }
 }
+
+export async function sleep(ms: number) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}

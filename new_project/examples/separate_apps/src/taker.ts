@@ -23,7 +23,7 @@ import { createActor } from "./lib";
 
     // print balances before swapping
     console.log(
-        "[Taker] Bitcoin balance: %f. Ether balance: %f",
+        "[Taker] Bitcoin balance: %f, Ether balance: %f",
         parseFloat(await taker.bitcoinWallet.getBalance()).toFixed(2),
         parseFloat(
             formatEther(await taker.ethereumWallet.getBalance())
@@ -141,7 +141,7 @@ import { createActor } from "./lib";
 
     // print balances after swapping
     console.log(
-        "[Taker] Bitcoin balance: %f. Ether balance: %f",
+        "[Taker] Bitcoin balance: %f, Ether balance: %f",
         parseFloat(await taker.bitcoinWallet.getBalance()).toFixed(2),
         parseFloat(
             formatEther(await taker.ethereumWallet.getBalance())
