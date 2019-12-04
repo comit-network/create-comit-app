@@ -1,8 +1,8 @@
 import {
+    Actor,
     BigNumber,
     BitcoinWallet,
-    Cnd,
-    ComitClient,
+    createActor as createActorSdk,
     EthereumWallet,
     SwapRequest,
 } from "comit-sdk";
@@ -14,18 +14,12 @@ import { toBitcoin, toSatoshi } from "satoshi-bitcoin-ts";
 (async function main() {
     checkEnvFile(process.env.DOTENV_CONFIG_PATH!);
 
-    const maker = await startClient(0, "Maker");
-    const taker = await startClient(1, "Taker");
+    const maker = await createActor(0, "Maker");
+    const taker = await createActor(1, "Taker");
 
-    console.log(
-        "Maker Ethereum address: ",
-        await maker.ethereumWallet.getAccount()
-    );
+    console.log("Maker Ethereum address: ", maker.ethereumWallet.getAccount());
 
-    console.log(
-        "Taker Ethereum address: ",
-        await taker.ethereumWallet.getAccount()
-    );
+    console.log("Taker Ethereum address: ", taker.ethereumWallet.getAccount());
 
     await printBalances(maker);
     await printBalances(taker);
@@ -90,16 +84,7 @@ import { toBitcoin, toSatoshi } from "satoshi-bitcoin-ts";
     process.exit();
 })();
 
-interface Actor {
-    name: string;
-    comitClient: ComitClient;
-    peerId: string;
-    addressHint: string;
-    bitcoinWallet: BitcoinWallet;
-    ethereumWallet: EthereumWallet;
-}
-
-async function startClient(index: number, name: string): Promise<Actor> {
+async function createActor(index: number, name: string): Promise<Actor> {
     const bitcoinWallet = await BitcoinWallet.newInstance(
         "regtest",
         process.env.BITCOIN_P2P_URI!,
@@ -112,22 +97,12 @@ async function startClient(index: number, name: string): Promise<Actor> {
         process.env[`ETHEREUM_KEY_${index}`]!
     );
 
-    const cnd = new Cnd(process.env[`HTTP_URL_CND_${index}`]!);
-    const peerId = await cnd.getPeerId();
-    const addressHint = await cnd
-        .getPeerListenAddresses()
-        .then(addresses => addresses[0]);
-
-    const comitClient = new ComitClient(bitcoinWallet, ethereumWallet, cnd);
-
-    return {
-        name,
-        comitClient,
-        peerId,
-        addressHint,
+    return createActorSdk(
         bitcoinWallet,
         ethereumWallet,
-    };
+        process.env[`HTTP_URL_CND_${index}`]!,
+        name
+    );
 }
 
 function createSwap(maker: Actor, taker: Actor): SwapRequest {
