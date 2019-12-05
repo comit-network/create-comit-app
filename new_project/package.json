@@ -1,6 +1,7 @@
 {
   "name": "new_project",
   "version": "1.0.0",
+  "private": true,
   "dependencies": {
     "comit-sdk": "^0.7.0"
   }
