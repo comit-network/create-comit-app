@@ -1,5 +1,5 @@
 use crate::{
-    docker::{self, DockerImage, LogMessage, DOCKER_NETWORK},
+    docker::{self, free_local_port::free_local_port, DockerImage, LogMessage, DOCKER_NETWORK},
     temp_fs,
 };
 use futures::compat::Future01CompatExt;
@@ -44,8 +44,7 @@ pub async fn new_instance(index: u32) -> anyhow::Result<CndInstance> {
     options_builder.cmd(vec!["--", "cnd", "--config=/config/cnd.toml"]);
     options_builder.volumes(vec![&format!("{}:/config", config_folder.display())]);
 
-    let http_port =
-        port_check::free_local_port().ok_or(anyhow::anyhow!("failed to grab a free local port"))?;
+    let http_port = free_local_port().await?;
     options_builder.expose(8080, "tcp", http_port as u32);
 
     let options = options_builder.build();

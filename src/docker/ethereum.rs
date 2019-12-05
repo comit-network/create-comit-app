@@ -1,4 +1,6 @@
-use crate::docker::{self, DockerImage, LogMessage, DOCKER_NETWORK};
+use crate::docker::{
+    self, free_local_port::free_local_port, DockerImage, LogMessage, DOCKER_NETWORK,
+};
 use emerald_rs::PrivateKey;
 use futures::compat::Future01CompatExt;
 use lazy_static::lazy_static;
@@ -44,8 +46,7 @@ pub async fn new_parity_instance() -> anyhow::Result<ParityInstance> {
     options_builder.name("ethereum");
     options_builder.network_mode(DOCKER_NETWORK);
 
-    let http_port =
-        port_check::free_local_port().ok_or(anyhow::anyhow!("failed to grab a free local port"))?;
+    let http_port = free_local_port().await?;
     options_builder.expose(8545, "tcp", http_port as u32);
 
     let http_endpoint = ParityHttpEndpoint { port: http_port };

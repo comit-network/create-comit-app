@@ -6,6 +6,7 @@ edition = "2018"
 
 [dependencies]
 anyhow = "1.0.25"
+async-std = "1.2.0"
 derive_more = "0.99.2"
 dirs = "2"
 emerald-vault-core = { git = "http://github.com/thomaseizinger/emerald-vault.git", branch = "create-comit-app-compatible", default-features = false }
@@ -17,7 +18,6 @@ hex = "0.4.0"
 hex-literal = "0.2.1"
 hex-serde = "0.1.0"
 lazy_static = "1.4"
-port_check = "0.1"
 reqwest = { version = "0.9", default-features = false }
 rust_bitcoin = { version = "0.19.1", package = "bitcoin" }
 secp256k1 = { version = "0.12", features = ["rand"] }

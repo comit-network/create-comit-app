@@ -8,6 +8,7 @@ use tokio::prelude::{stream::Stream, Future};
 pub mod bitcoin;
 pub mod cnd;
 pub mod ethereum;
+mod free_local_port;
 
 pub const DOCKER_NETWORK: &str = "create-comit-app";
 

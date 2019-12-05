@@ -1,4 +1,6 @@
-use crate::docker::{self, DockerImage, LogMessage, DOCKER_NETWORK};
+use crate::docker::{
+    self, free_local_port::free_local_port, DockerImage, LogMessage, DOCKER_NETWORK,
+};
 use anyhow::Context;
 use futures::compat::Future01CompatExt;
 use reqwest::r#async::Client;
@@ -56,14 +58,12 @@ pub async fn new_bitcoind_instance() -> anyhow::Result<BitcoindInstance> {
         "-txindex",
     ]);
 
-    let p2p_port =
-        port_check::free_local_port().ok_or(anyhow::anyhow!("failed to grab a free local port"))?;
+    let p2p_port = free_local_port().await?;
     options_builder.expose(18444, "tcp", p2p_port as u32);
 
     let p2p_uri = BitcoindP2PUri { port: p2p_port };
 
-    let http_port =
-        port_check::free_local_port().ok_or(anyhow::anyhow!("failed to grab a free local port"))?;
+    let http_port = free_local_port().await?;
     options_builder.expose(18443, "tcp", http_port as u32);
 
     let http_endpoint = BitcoindHttpEndpoint { port: http_port };
