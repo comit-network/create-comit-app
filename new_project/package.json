@@ -11,5 +11,8 @@
     "comit-sdk": "^0.7.1",
     "dotenv": "^8.2.0",
     "readline-sync": "^1.4.10"
+  },
+  "devDependencies": {
+    "create-comit-app": "^0.5.1"
   }
 }
