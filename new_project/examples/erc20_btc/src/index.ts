@@ -140,7 +140,7 @@ function createSwap(maker: Actor, taker: Actor): SwapRequest {
 function checkEnvFile(path: string) {
     if (!fs.existsSync(path)) {
         console.log(
-            "Could not find %s file. Did you run \\`create-comit-app start-env\\`?",
+            "Could not find file %s. Did you run `yarn create comit-app start-env`?",
             path
         );
         process.exit(1);

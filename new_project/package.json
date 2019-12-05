@@ -1,7 +1,14 @@
 {
   "name": "new_project",
-  "version": "1.0.0",
+  "version": "0.1.0",
+  "private": true,
+  "main": "index.js",
+  "scripts": {
+    "start": "DOTENV_CONFIG_PATH=$HOME/.create-comit-app/env node -r dotenv/config ./src/index.js"
+  },
   "dependencies": {
-    "comit-sdk": "^0.7.0"
+    "comit-sdk": "^0.7.1",
+    "dotenv": "^8.2.0",
+    "readline-sync": "^1.4.10"
   }
 }
