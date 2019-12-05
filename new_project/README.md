@@ -4,7 +4,7 @@ This project was bootstrapped with [Create Comit App](https://github.com/comit-n
 
 In the project directory, you can run:
 
-### `yarn create comit-app start-env`
+### `yarn env`
 
 Sets up the development environment, starting blockchain nodes and COMIT nodes.
 
