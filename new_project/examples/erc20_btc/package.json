@@ -20,7 +20,7 @@
         "typescript": "^3.7.3"
     },
     "dependencies": {
-        "comit-sdk": "^0.7.1",
+        "comit-sdk": "^0.7.2",
         "dotenv": "^8.1.0",
         "moment": "^2.24.0",
         "readline-sync": "^1.4.10",

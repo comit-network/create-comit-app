@@ -1,7 +1,12 @@
-import { BitcoinWallet, Cnd, ComitClient, EthereumWallet } from "comit-sdk";
+import {
+    Actor,
+    BitcoinWallet,
+    createActor as createActorSdk,
+    EthereumWallet,
+} from "comit-sdk";
 import fs from "fs";
 
-export async function startClient(index: number): Promise<Actor> {
+export async function createActor(index: number): Promise<Actor> {
     checkEnvFile(process.env.DOTENV_CONFIG_PATH!);
 
     const bitcoinWallet = await BitcoinWallet.newInstance(
@@ -17,29 +22,11 @@ export async function startClient(index: number): Promise<Actor> {
         process.env[`ETHEREUM_KEY_${index}`]!
     );
 
-    const cnd = new Cnd(process.env[`HTTP_URL_CND_${index}`]!);
-    const peerId = await cnd.getPeerId();
-    const addressHint = await cnd
-        .getPeerListenAddresses()
-        .then(addresses => addresses[0]);
-
-    const comitClient = new ComitClient(bitcoinWallet, ethereumWallet, cnd);
-
-    return {
-        comitClient,
-        peerId,
-        addressHint,
+    return await createActorSdk(
         bitcoinWallet,
         ethereumWallet,
-    };
-}
-
-export interface Actor {
-    comitClient: ComitClient;
-    peerId: string;
-    addressHint: string;
-    bitcoinWallet: BitcoinWallet;
-    ethereumWallet: EthereumWallet;
+        process.env[`HTTP_URL_CND_${index}`]!
+    );
 }
 
 export function checkEnvFile(path: string) {
