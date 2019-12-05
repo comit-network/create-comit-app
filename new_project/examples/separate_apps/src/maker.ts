@@ -3,7 +3,7 @@ import { formatEther } from "ethers/utils";
 import moment from "moment";
 import readLineSync from "readline-sync";
 import { toBitcoin } from "satoshi-bitcoin-ts";
-import { createActor } from "./lib";
+import { createActor, sleep } from "./lib";
 
 /**
  * This executable function represents the maker side during a trade.
@@ -23,7 +23,7 @@ import { createActor } from "./lib";
 
     // print balances before swapping
     console.log(
-        "[Maker] Bitcoin balance: %f. Ether balance: %f",
+        "[Maker] Bitcoin balance: %f, Ether balance: %f",
         parseFloat(await maker.bitcoinWallet.getBalance()).toFixed(2),
         parseFloat(
             formatEther(await maker.ethereumWallet.getBalance())
@@ -164,9 +164,15 @@ import { createActor } from "./lib";
 
     console.log("Swapped!");
 
+    // The comit network daemon (cnd) processes new incoming blocks faster than etherjs.
+    // This results in the final balance not being printed correctly, even though the redeem transaction was already
+    // noticed by cnd.
+    // In order to make sure the final balance is printed correctly we thus sleep for 1 second here.
+    await sleep(1000);
+
     // print balances after swapping
     console.log(
-        "[Maker] Bitcoin balance: %f. Ether balance: %f",
+        "[Maker] Bitcoin balance: %f, Ether balance: %f",
         parseFloat(await maker.bitcoinWallet.getBalance()).toFixed(2),
         parseFloat(
             formatEther(await maker.ethereumWallet.getBalance())

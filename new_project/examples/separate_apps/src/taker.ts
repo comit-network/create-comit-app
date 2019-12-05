@@ -2,7 +2,7 @@ import { MakerClient, Order, TakerNegotiator, TryParams } from "comit-sdk";
 import { formatEther } from "ethers/utils";
 import readLineSync from "readline-sync";
 import { toBitcoin } from "satoshi-bitcoin-ts";
-import { createActor } from "./lib";
+import { createActor, sleep } from "./lib";
 
 /**
  * This executable function represents the taker side during a trade.
@@ -23,7 +23,7 @@ import { createActor } from "./lib";
 
     // print balances before swapping
     console.log(
-        "[Taker] Bitcoin balance: %f. Ether balance: %f",
+        "[Taker] Bitcoin balance: %f, Ether balance: %f",
         parseFloat(await taker.bitcoinWallet.getBalance()).toFixed(2),
         parseFloat(
             formatEther(await taker.ethereumWallet.getBalance())
@@ -139,9 +139,15 @@ import { createActor } from "./lib";
 
     console.log("Swapped!");
 
+    // The comit network daemon (cnd) processes new incoming blocks faster than bcoin.
+    // This results in the final balance not being printed correctly, even though the redeem transaction was already
+    // noticed by cnd.
+    // In order to make sure the final balance is printed correctly we thus sleep for 1 second here.
+    await sleep(1000);
+
     // print balances after swapping
     console.log(
-        "[Taker] Bitcoin balance: %f. Ether balance: %f",
+        "[Taker] Bitcoin balance: %f, Ether balance: %f",
         parseFloat(await taker.bitcoinWallet.getBalance()).toFixed(2),
         parseFloat(
             formatEther(await taker.ethereumWallet.getBalance())
