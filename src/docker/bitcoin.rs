@@ -16,8 +16,8 @@ use shiplift::ContainerOptions;
 
 const IMAGE: &str = "coblox/bitcoin-core:0.17.0";
 
-const USERNAME: &'static str = "bitcoin";
-const PASSWORD: &'static str = "t68ej4UX2pB0cLlGwSwHFBLKxXYgomkXyFyxuBmm2U8=";
+const USERNAME: &str = "bitcoin";
+const PASSWORD: &str = "t68ej4UX2pB0cLlGwSwHFBLKxXYgomkXyFyxuBmm2U8=";
 
 #[derive(derive_more::Display, Copy, Clone)]
 #[display(fmt = "127.0.0.1:{}", port)]

@@ -45,7 +45,7 @@ pub async fn start(
 
     let container = docker.containers().get(&container.id);
 
-    let _ = container.start().compat().await?;
+    container.start().compat().await?;
 
     let _ = container
         .logs(
