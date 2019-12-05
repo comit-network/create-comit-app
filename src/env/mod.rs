@@ -1,14 +1,6 @@
-use crate::{
-    docker::bitcoin::{self, BitcoindHttpEndpoint},
-    env::start::SignalReceived,
-    print_progress,
-};
-use futures::{compat::Future01CompatExt, FutureExt, TryFutureExt};
-use std::{
-    ops::Add,
-    time::{Duration, Instant},
-};
-use tokio::{runtime::Runtime, timer::Delay};
+use crate::{docker::bitcoin, env::start::SignalReceived, print_progress};
+use futures::{FutureExt, TryFutureExt};
+use tokio::runtime::Runtime;
 
 mod clean_up;
 mod start;
@@ -40,7 +32,7 @@ pub fn start() {
 
     match runtime.block_on(self::start::execute(terminate.clone()).boxed().compat()) {
         Ok(self::start::Environment { bitcoind, .. }) => {
-            let miner = new_miner(bitcoind.http_endpoint)
+            let miner = bitcoin::new_miner(bitcoind)
                 .map_err(|_| ())
                 .boxed()
                 .compat();
@@ -69,14 +61,5 @@ pub fn start() {
                 .expect("Clean up failed");
             println!("✓");
         }
-    }
-}
-
-async fn new_miner(endpoint: BitcoindHttpEndpoint) -> anyhow::Result<()> {
-    loop {
-        Delay::new(Instant::now().add(Duration::from_secs(1)))
-            .compat()
-            .await?;
-        bitcoin::mine_a_block(endpoint).await?;
     }
 }

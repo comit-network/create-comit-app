@@ -7,6 +7,7 @@ edition = "2018"
 [dependencies]
 anyhow = "1.0.25"
 async-std = "1.2.0"
+bytes = "0.4"
 derive_more = "0.99.2"
 dirs = "2"
 emerald-vault-core = { git = "http://github.com/thomaseizinger/emerald-vault.git", branch = "create-comit-app-compatible", default-features = false }

@@ -9,6 +9,7 @@ use std::{net::Ipv4Addr, path::Path};
 use tokio::prelude::stream::Stream;
 
 pub mod bitcoin;
+mod bitcoin_network_message_codec;
 pub mod cnd;
 pub mod ethereum;
 mod free_local_port;

@@ -16,6 +16,9 @@ update_configs:
       # version of ethabi depends on web3 version and have to be updated in lockstep
       - match:
           dependency_name: "ethabi"
+      # version of bytes depends on tokio version and have to be updated in lockstep
+      - match:
+          dependency_name: "bytes"
   - package_manager: "javascript"
     directory: "/new_project"
     update_schedule: "daily"

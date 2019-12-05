@@ -1,13 +1,21 @@
 use crate::docker::{
-    self, docker_daemon_ip, free_local_port::free_local_port, DockerImage, LogMessage,
-    DOCKER_NETWORK,
+    self, bitcoin_network_message_codec::RawNetworkMessageCodec, docker_daemon_ip,
+    free_local_port::free_local_port, DockerImage, LogMessage, DOCKER_NETWORK,
 };
 use anyhow::Context;
-use futures::compat::Future01CompatExt;
+use futures::{
+    compat::{Future01CompatExt, Sink01CompatExt, Stream01CompatExt},
+    SinkExt, StreamExt,
+};
 use reqwest::r#async::Client;
 use rust_bitcoin::{
     self,
     hashes::sha256d,
+    network::{
+        message::{NetworkMessage, RawNetworkMessage},
+        message_blockdata::InvType,
+        message_network::VersionMessage,
+    },
     util::bip32::{ChildNumber, ExtendedPrivKey},
     Address, Amount, Network,
 };
@@ -16,7 +24,11 @@ use secp256k1::{
     Secp256k1,
 };
 use shiplift::ContainerOptions;
-use std::net::Ipv4Addr;
+use std::{
+    net::{Ipv4Addr, SocketAddr, SocketAddrV4},
+    time::SystemTime,
+};
+use tokio::{codec::Decoder, prelude::Stream};
 
 const IMAGE: &str = "coblox/bitcoin-core:0.17.0";
 
@@ -28,6 +40,12 @@ const PASSWORD: &str = "t68ej4UX2pB0cLlGwSwHFBLKxXYgomkXyFyxuBmm2U8=";
 pub struct BitcoindP2PUri {
     port: u16,
     ip: Ipv4Addr,
+}
+
+impl From<BitcoindP2PUri> for SocketAddr {
+    fn from(bitcoind_p2puri: BitcoindP2PUri) -> Self {
+        SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::LOCALHOST, bitcoind_p2puri.port))
+    }
 }
 
 #[derive(derive_more::Display, Copy, Clone)]
@@ -114,7 +132,72 @@ async fn fund_new_account(endpoint: BitcoindHttpEndpoint) -> anyhow::Result<Acco
     Ok(account)
 }
 
-pub async fn mine_a_block(endpoint: BitcoindHttpEndpoint) -> anyhow::Result<()> {
+pub async fn new_miner(instance: BitcoindInstance) -> anyhow::Result<()> {
+    let socket_addr = SocketAddr::from(instance.p2p_uri);
+    let stream = tokio::net::TcpStream::connect(&socket_addr)
+        .compat()
+        .await?;
+
+    let (sink, stream) = RawNetworkMessageCodec.framed(stream).split();
+    let mut stream = stream.compat();
+    let mut sink = sink.sink_compat();
+
+    let _ = sink.send(announce_version_message(&socket_addr)).await;
+
+    loop {
+        if let Some(Ok(message)) = stream.next().await {
+            match message.payload {
+                // Ack the version of the node to kick of the communication
+                NetworkMessage::Version(_) => {
+                    let _ = sink
+                        .send(RawNetworkMessage {
+                            magic: Network::Regtest.magic(),
+                            payload: NetworkMessage::Verack,
+                        })
+                        .await;
+                }
+                // If we get told about a new transaction, tell the node to mine a block
+                NetworkMessage::Inv(inventory)
+                    if inventory.iter().any(|i| i.inv_type == InvType::Transaction) =>
+                {
+                    let _ = mine_a_block(instance.http_endpoint).await;
+                }
+                // Ignore all other incoming messages
+                _ => {}
+            }
+        }
+    }
+}
+
+fn announce_version_message(socket_addr: &SocketAddr) -> RawNetworkMessage {
+    #[allow(clippy::clippy::cast_possible_wrap)]
+    let now = SystemTime::now()
+        .duration_since(SystemTime::UNIX_EPOCH)
+        .unwrap()
+        .as_secs() as i64;
+
+    let services = rust_bitcoin::network::constants::SERVICES;
+
+    RawNetworkMessage {
+        magic: Network::Regtest.magic(),
+        payload: NetworkMessage::Version(VersionMessage {
+            version: rust_bitcoin::network::constants::PROTOCOL_VERSION,
+            services,
+            timestamp: now,
+            receiver: rust_bitcoin::network::address::Address::new(&socket_addr, 0),
+            sender: rust_bitcoin::network::address::Address::new(
+                &SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::LOCALHOST, 0)),
+                services,
+            ),
+            nonce: 0,
+            user_agent: "create-comit-app".to_string(),
+            start_height: 0,
+            relay: false,
+        }),
+    }
+}
+
+async fn mine_a_block(endpoint: BitcoindHttpEndpoint) -> anyhow::Result<()> {
     let _ = reqwest::r#async::Client::new()
         .post(&endpoint.to_string())
         .basic_auth(USERNAME, Some(PASSWORD))
