@@ -4,7 +4,7 @@
   "description": " Set up a local development environment for COMIT apps with one command.",
   "main": "cca.js",
   "scripts": {
-    "start": "node cca.js",
+    "start": "node cca.js new",
     "fix": "prettier --write '**/*.{ts,js,json,yml}'",
     "test": "prettier --check '**/*.{ts,js,json,yml}'"
   },
