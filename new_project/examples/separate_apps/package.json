@@ -7,7 +7,8 @@
         "check": "tsc && tslint -p . && prettier --check '**/*.{ts,json,yml}'",
         "maker": "DOTENV_CONFIG_PATH=$HOME/.create-comit-app/env ts-node -r dotenv/config ./src/maker.ts",
         "taker": "DOTENV_CONFIG_PATH=$HOME/.create-comit-app/env ts-node -r dotenv/config ./src/taker.ts",
-        "fix": "tslint -p . --fix && prettier --write '**/*.{ts,js,json,yml}'"
+        "fix": "tslint -p . --fix && prettier --write '**/*.{ts,js,json,yml}'",
+        "env": "create-comit-app start-env"
     },
     "keywords": [],
     "author": "",
