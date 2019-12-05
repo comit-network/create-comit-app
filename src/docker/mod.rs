@@ -1,9 +1,11 @@
 use crate::print_progress;
-use futures::compat::Future01CompatExt;
+use futures::{
+    compat::{Future01CompatExt, Stream01CompatExt},
+    StreamExt, TryStreamExt,
+};
 use shiplift::{
     ContainerOptions, Docker, LogsOptions, NetworkCreateOptions, PullOptions, RmContainerOptions,
 };
-use tokio::prelude::{stream::Stream, Future};
 
 pub mod bitcoin;
 pub mod cnd;
@@ -39,7 +41,11 @@ pub async fn start(
     if !image_is_present_locally {
         print_progress!("Downloading {}", image.0);
         let options = PullOptions::builder().image(image.0).build();
-        docker.images().pull(&options).collect().compat().await?;
+        let _ = docker
+            .images()
+            .pull(&options)
+            .compat()
+            .try_collect::<Vec<_>>();
     }
 
     let container = docker.containers().create(&options).compat().await?;
@@ -56,13 +62,17 @@ pub async fn start(
                 .follow(true)
                 .build(),
         )
-        .take_while(|chunk| {
-            let log = chunk.as_string_lossy();
-            Ok(!log.contains(wait_for.0))
-        })
-        .collect()
         .compat()
-        .await?;
+        .take_while(|chunk| {
+            let log = match chunk {
+                Ok(chunk) => chunk.as_string_lossy(),
+                Err(_) => return futures::future::ready(false),
+            };
+
+            futures::future::ready(!log.contains(wait_for.0))
+        })
+        .try_collect::<Vec<_>>()
+        .await;
 
     Ok(())
 }
@@ -99,15 +109,29 @@ pub async fn create_network() -> anyhow::Result<String> {
     Ok(response.id)
 }
 
-pub fn delete_network() -> impl Future<Item = (), Error = shiplift::Error> {
-    Docker::new().networks().get(DOCKER_NETWORK).delete()
+pub async fn delete_network() -> anyhow::Result<()> {
+    Docker::new()
+        .networks()
+        .get(DOCKER_NETWORK)
+        .delete()
+        .compat()
+        .await?;
+
+    Ok(())
 }
 
-pub fn delete_container(name: &str) -> impl Future<Item = (), Error = shiplift::Error> {
-    Docker::new().containers().get(name).remove(
-        RmContainerOptions::builder()
-            .force(true)
-            .volumes(true)
-            .build(),
-    )
+pub async fn delete_container(name: &str) -> anyhow::Result<()> {
+    Docker::new()
+        .containers()
+        .get(name)
+        .remove(
+            RmContainerOptions::builder()
+                .force(true)
+                .volumes(true)
+                .build(),
+        )
+        .compat()
+        .await?;
+
+    Ok(())
 }

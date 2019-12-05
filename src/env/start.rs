@@ -55,6 +55,8 @@ pub async fn execute(terminate: Arc<AtomicBool>) -> anyhow::Result<Environment> 
         .await
         .context("Could not start cnd 0, cleaning up...")?;
 
+    panic!("this is a test");
+
     let cnd_1 = cnd::new_instance(1)
         .await
         .context("Could not start cnd 1, cleaning up...")?;

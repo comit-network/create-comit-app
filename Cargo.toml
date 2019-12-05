@@ -6,14 +6,13 @@ edition = "2018"
 
 [dependencies]
 anyhow = "1.0.25"
-async-std = "1.2.0"
 derive_more = "0.99.2"
 dirs = "2"
 emerald-vault-core = { git = "http://github.com/thomaseizinger/emerald-vault.git", branch = "create-comit-app-compatible", default-features = false }
 envfile = "0.2"
 ethabi = "8.0"
 flate2 = "1.0.13"
-futures-preview = { version = "0.3.0-alpha.19", features = ["compat"] }
+futures = { version = "0.3", features = ["compat"] }
 hex = "0.4.0"
 hex-literal = "0.2.1"
 hex-serde = "0.1.0"
@@ -24,12 +23,12 @@ secp256k1 = { version = "0.12", features = ["rand"] }
 serde = "1"
 serde_json = "1"
 shiplift = { version = "0.5", default-features = false }
-signal-hook = { version = "0.1", features = ["tokio-support"] }
+signal-hook = { version = "0.1", features = [] }
 structopt = "0.3"
 tar = "0.4.26"
 tempfile = "3.1.0"
 thiserror = "1"
-tokio = "0.1"
+tokio = { version = "0.2", features = ["time", "fs", "tcp", "macros"] }
 toml = "0.5"
 web3 = { version = "0.8", default-features = false, features = ["http"] }
 

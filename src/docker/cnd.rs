@@ -2,7 +2,6 @@ use crate::{
     docker::{self, free_local_port::free_local_port, DockerImage, LogMessage, DOCKER_NETWORK},
     temp_fs,
 };
-use futures::compat::Future01CompatExt;
 use shiplift::ContainerOptions;
 use std::net::{IpAddr, Ipv4Addr};
 
@@ -36,7 +35,7 @@ pub async fn new_instance(index: u32) -> anyhow::Result<CndInstance> {
     let config_file = config_folder.join("cnd.toml");
     let settings = toml::to_string(&settings).expect("could not serialize hardcoded settings");
 
-    tokio::fs::write(config_file, settings).compat().await?;
+    tokio::fs::write(config_file, settings).await?;
 
     let mut options_builder = ContainerOptions::builder(IMAGE);
     options_builder.network_mode(DOCKER_NETWORK);

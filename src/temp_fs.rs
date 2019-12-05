@@ -30,9 +30,9 @@ pub fn create_env_file() -> anyhow::Result<String> {
     ))
 }
 
-pub fn dir_exist() -> bool {
+pub async fn dir_exist() -> bool {
     if let Ok(dir_path) = dir_path() {
-        std::fs::read_dir(dir_path).is_ok()
+        tokio::fs::read_dir(dir_path).await.is_ok()
     } else {
         false
     }

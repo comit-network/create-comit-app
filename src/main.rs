@@ -4,13 +4,14 @@ use structopt::StructOpt;
 
 const NEW_PROJECT_ARCHIVE: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/new_project.tar.gz"));
 
-fn main() -> io::Result<()> {
+#[tokio::main]
+async fn main() -> io::Result<()> {
     let create_comit_app = CreateComitApp::from_args();
 
     match create_comit_app {
-        CreateComitApp::StartEnv => env::start(),
+        CreateComitApp::StartEnv => env::start().await,
         CreateComitApp::New { name } => new(name, NEW_PROJECT_ARCHIVE)?,
-        CreateComitApp::ForceCleanEnv => env::clean_up(),
+        CreateComitApp::ForceCleanEnv => env::clean_up().await,
     }
 
     Ok(())

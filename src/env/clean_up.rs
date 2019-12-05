@@ -9,15 +9,17 @@ use std::{
     },
     time::Duration,
 };
-use tokio::prelude::{stream, Future, Stream};
+use tokio::time::delay_for;
 
-pub fn handle_signal(terminate: Arc<AtomicBool>) -> impl Future<Item = (), Error = ()> {
+pub async fn handle_signal(terminate: Arc<AtomicBool>) {
     while !terminate.load(Ordering::Relaxed) {
-        std::thread::sleep(Duration::from_millis(50))
+        delay_for(Duration::from_millis(50)).await;
     }
+
     println!("Signal received, terminating...");
     print_progress!("🧹 Cleaning up");
-    clean_up()
+
+    clean_up().await;
 }
 
 pub fn register_signals() -> anyhow::Result<Arc<AtomicBool>> {
@@ -33,18 +35,17 @@ pub fn register_signals() -> anyhow::Result<Arc<AtomicBool>> {
     Ok(terminate)
 }
 
-pub fn clean_up() -> impl Future<Item = (), Error = ()> {
-    delete_container("bitcoin")
-        .then(|_| delete_container("ethereum"))
-        .then(|_| {
-            stream::iter_ok(vec![0, 1])
-                .and_then(move |i| delete_container(format!("cnd_{}", i).as_str()))
-                .collect()
-        })
-        .then(|_| delete_network())
-        .then(|_| {
-            let _ = crate::temp_fs::dir_path().map(std::fs::remove_dir_all);
-            Ok(())
-        })
-        .map_err(|_: ()| ())
+/// Try to delete all running containers
+///
+/// This function purposely does not do any error handling to make sure that it always completes.
+pub async fn clean_up() {
+    let _ = delete_container("bitcoin").await;
+    let _ = delete_container("ethereum").await;
+    let _ = delete_container("cnd_0").await;
+    let _ = delete_container("cnd_1").await;
+    let _ = delete_network().await;
+
+    if let Ok(path) = crate::temp_fs::dir_path() {
+        let _ = tokio::fs::remove_dir_all(path).await;
+    }
 }
