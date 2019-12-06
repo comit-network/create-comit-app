@@ -90,7 +90,7 @@ async fn fund_new_account(endpoint: ParityHttpEndpoint) -> anyhow::Result<Accoun
         client.clone(),
         Some(derive_address(account.private_key)),
         30_000,
-        U256::from(100u128 * 10u128.pow(18)),
+        U256::from(1000u128 * 10u128.pow(18)),
         Vec::new(),
     )
     .await?;
