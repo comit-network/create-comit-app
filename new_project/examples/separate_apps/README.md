@@ -17,7 +17,7 @@ It then consists of 5 steps:
 
 ## How to run this example
 
-1. Run `yarn env` to setup the environment.
+1. Run `yarn start-env` to setup the environment.
 
 In a separate terminal:
 

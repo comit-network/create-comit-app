@@ -40,7 +40,7 @@ if (fs.existsSync(configPath)) {
   console.log("2. ", process.env.HTTP_URL_CND_1);
 } else {
   console.log(
-    "Could not find file %s. Did you run `yarn create comit-app start-env`?",
+    "Could not find file %s. Did you run `yarn start-env`?",
     configPath
   );
 }

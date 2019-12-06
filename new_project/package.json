@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "start": "DOTENV_CONFIG_PATH=$HOME/.create-comit-app/env node -r dotenv/config ./src/index.js",
-    "env": "create-comit-app start-env"
+    "start-env": "create-comit-app start-env"
   },
   "dependencies": {
     "comit-sdk": "^0.7.1",
