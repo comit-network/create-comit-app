@@ -17,9 +17,7 @@ It then consists of 5 steps:
 
 ## How to run this example
 
-1. Run `yarn start-env` to setup the environment.
-
-In a separate terminal:
+Ensure that the environment is up in a separate terminal.
 
 1. Run `yarn install` to install the necessary dependencies,
 2. Run `yarn run maker` to start the maker app,

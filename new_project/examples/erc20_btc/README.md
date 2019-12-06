@@ -6,9 +6,7 @@ Both maker and taker are processed in the same terminal.
 
 ## How to run this example
 
-1. Run `yarn start-env` to setup the environment.
-
-In a separate terminal:
+Ensure that the environment is up in a separate terminal.
 
 1. Run `yarn install` to install the necessary dependencies,
 2. Run `yarn swap` to start the swap,
