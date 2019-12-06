@@ -4,7 +4,7 @@
   "private": true,
   "main": "index.js",
   "scripts": {
-    "start": "DOTENV_CONFIG_PATH=$HOME/.create-comit-app/env node -r dotenv/config ./src/index.js",
+    "start": "node ./src/index.js",
     "start-env": "create-comit-app start-env"
   },
   "dependencies": {

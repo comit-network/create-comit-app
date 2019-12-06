@@ -8,9 +8,9 @@ CARGO_NIGHTLY = $(RUSTUP) run --install $(NIGHTLY_TOOLCHAIN) cargo --color alway
 
 # cannot use the unix-socket to talk to the docker daemon on windows
 ifeq ($(OS),Windows_NT)
-    BUILD_ARGS := --no-default-features
-    TEST_ARGS := --no-default-features
-    INSTALL_ARGS := --no-default-features
+    BUILD_ARGS = --no-default-features --features windows
+    TEST_ARGS = --no-default-features --features windows
+    INSTALL_ARGS = --no-default-features --features windows
 endif
 
 build: build_debug
@@ -53,6 +53,9 @@ build: build_debug
 
 build_debug:
 	$(CARGO) build --all --all-targets $(BUILD_ARGS)
+
+release:
+	$(CARGO) build --all --all-targets --release $(BUILD_ARGS)
 
 clippy: install_clippy
 	$(CARGO) clippy --all-targets -- -D warnings

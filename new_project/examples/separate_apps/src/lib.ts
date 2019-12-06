@@ -5,9 +5,12 @@ import {
     EthereumWallet,
 } from "comit-sdk";
 import fs from "fs";
+import * as os from "os";
+import * as path from "path";
+import dotenv from "dotenv";
 
 export async function createActor(index: number): Promise<Actor> {
-    checkEnvFile(process.env.DOTENV_CONFIG_PATH!);
+    loadEnvironment();
 
     const bitcoinWallet = await BitcoinWallet.newInstance(
         "regtest",
@@ -29,14 +32,18 @@ export async function createActor(index: number): Promise<Actor> {
     );
 }
 
-export function checkEnvFile(path: string) {
-    if (!fs.existsSync(path)) {
+function loadEnvironment() {
+    let envFilePath = path.join(os.homedir(), ".create-comit-app", "env");
+
+    if (!fs.existsSync(envFilePath)) {
         console.log(
             "Could not find file %s. Did you run `yarn start-env`?",
-            path
+            envFilePath
         );
         process.exit(1);
     }
+
+    dotenv.config({path: envFilePath});
 }
 
 export async function sleep(ms: number) {

@@ -1,5 +1,6 @@
 use crate::docker::{
-    self, free_local_port::free_local_port, DockerImage, LogMessage, DOCKER_NETWORK,
+    self, docker_daemon_ip, free_local_port::free_local_port, DockerImage, LogMessage,
+    DOCKER_NETWORK,
 };
 use anyhow::Context;
 use futures::compat::Future01CompatExt;
@@ -15,6 +16,7 @@ use secp256k1::{
     Secp256k1,
 };
 use shiplift::ContainerOptions;
+use std::net::Ipv4Addr;
 
 const IMAGE: &str = "coblox/bitcoin-core:0.17.0";
 
@@ -22,15 +24,17 @@ const USERNAME: &str = "bitcoin";
 const PASSWORD: &str = "t68ej4UX2pB0cLlGwSwHFBLKxXYgomkXyFyxuBmm2U8=";
 
 #[derive(derive_more::Display, Copy, Clone)]
-#[display(fmt = "127.0.0.1:{}", port)]
+#[display(fmt = "{}:{}", ip, port)]
 pub struct BitcoindP2PUri {
     port: u16,
+    ip: Ipv4Addr,
 }
 
 #[derive(derive_more::Display, Copy, Clone)]
-#[display(fmt = "http://localhost:{}", port)]
+#[display(fmt = "http://{}:{}", ip, port)]
 pub struct BitcoindHttpEndpoint {
     port: u16,
+    ip: Ipv4Addr,
 }
 
 pub struct BitcoindInstance {
@@ -61,12 +65,18 @@ pub async fn new_bitcoind_instance() -> anyhow::Result<BitcoindInstance> {
     let p2p_port = free_local_port().await?;
     options_builder.expose(18444, "tcp", p2p_port as u32);
 
-    let p2p_uri = BitcoindP2PUri { port: p2p_port };
+    let p2p_uri = BitcoindP2PUri {
+        port: p2p_port,
+        ip: docker_daemon_ip()?,
+    };
 
     let http_port = free_local_port().await?;
     options_builder.expose(18443, "tcp", http_port as u32);
 
-    let http_endpoint = BitcoindHttpEndpoint { port: http_port };
+    let http_endpoint = BitcoindHttpEndpoint {
+        port: http_port,
+        ip: docker_daemon_ip()?,
+    };
 
     let options = options_builder.build();
 
@@ -74,6 +84,7 @@ pub async fn new_bitcoind_instance() -> anyhow::Result<BitcoindInstance> {
         DockerImage(IMAGE),
         options,
         LogMessage("Flushed wallet.dat"),
+        vec![],
     )
     .await?;
 

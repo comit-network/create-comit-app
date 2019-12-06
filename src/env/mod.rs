@@ -14,8 +14,10 @@ mod clean_up;
 mod start;
 
 pub fn clean_up() {
-    tokio::runtime::current_thread::block_on_all(self::clean_up::clean_up())
-        .expect("Clean up failed");
+    tokio::runtime::current_thread::block_on_all(
+        self::clean_up::clean_up().unit_error().boxed().compat(),
+    )
+    .expect("Clean up failed");
     println!("Clean up done!");
 }
 
@@ -45,7 +47,12 @@ pub fn start() {
 
             runtime.spawn(miner);
             runtime
-                .block_on(self::clean_up::handle_signal(terminate))
+                .block_on(
+                    self::clean_up::handle_signal(terminate)
+                        .unit_error()
+                        .boxed()
+                        .compat(),
+                )
                 .expect("Handle signal failed");
             println!("✓");
         }
@@ -58,7 +65,7 @@ pub fn start() {
 
             print_progress!("🧹 Cleaning up");
             runtime
-                .block_on(self::clean_up::clean_up())
+                .block_on(self::clean_up::clean_up().unit_error().boxed().compat())
                 .expect("Clean up failed");
             println!("✓");
         }

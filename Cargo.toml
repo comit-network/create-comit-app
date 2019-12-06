@@ -17,6 +17,7 @@ futures-preview = { version = "0.3.0-alpha.19", features = ["compat"] }
 hex = "0.4.0"
 hex-literal = "0.2.1"
 hex-serde = "0.1.0"
+http = "0.1"
 lazy_static = "1.4"
 reqwest = { version = "0.9", default-features = false }
 rust_bitcoin = { version = "0.19.1", package = "bitcoin" }
@@ -34,10 +35,13 @@ toml = "0.5"
 web3 = { version = "0.8", default-features = false, features = ["http"] }
 
 [features]
-default = ["shiplift/unix-socket"]
+default = ["unix"]
+unix = ["shiplift/unix-socket"]
+windows = ["shiplift/tls"]
 
 [build-dependencies]
 anyhow = "1.0.25"
 flate2 = "1.0.13"
 ignore = "0.4.10"
 tar = "0.4.26"
+
