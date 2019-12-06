@@ -19,7 +19,7 @@ hex-literal = "0.2.1"
 hex-serde = "0.1.0"
 lazy_static = "1.4"
 reqwest = { version = "0.9", default-features = false }
-rust_bitcoin = { version = "0.19.1", package = "bitcoin" }
+rust_bitcoin = { version = "0.19.1", package = "bitcoin", features = ["use-serde"] }
 secp256k1 = { version = "0.12", features = ["rand"] }
 serde = "1"
 serde_json = "1"
