@@ -56,7 +56,7 @@ import { createActor, sleep } from "./lib";
             return false;
         }
         // Only accept orders that are at least 1 bitcoin for 10 Ether
-        const minRate = 0.1;
+        const minRate = 0.001;
         const orderRate = bitcoin / ether;
         console.log("Rate offered: ", orderRate);
         return orderRate > minRate;
