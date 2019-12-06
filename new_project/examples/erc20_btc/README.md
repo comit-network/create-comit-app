@@ -6,8 +6,9 @@ Both maker and taker are processed in the same terminal.
 
 ## How to run this example
 
-1. Make sure you have an environment setup through `create-comit-app`, 
-2. Run `yarn install` to install the necessary dependencies,
-3. Run `yarn start` to start the swap,
-4. Press `Enter` when asked to continue,
-5. Profit!
+Ensure that the environment is up in a separate terminal.
+
+1. Run `yarn install` to install the necessary dependencies,
+2. Run `yarn swap` to start the swap,
+3. Press `Enter` when asked to continue,
+4. Profit!

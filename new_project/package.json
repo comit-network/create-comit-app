@@ -4,11 +4,15 @@
   "private": true,
   "main": "index.js",
   "scripts": {
-    "start": "DOTENV_CONFIG_PATH=$HOME/.create-comit-app/env node -r dotenv/config ./src/index.js"
+    "start": "DOTENV_CONFIG_PATH=$HOME/.create-comit-app/env node -r dotenv/config ./src/index.js",
+    "start-env": "create-comit-app start-env"
   },
   "dependencies": {
     "comit-sdk": "^0.7.1",
     "dotenv": "^8.2.0",
     "readline-sync": "^1.4.10"
+  },
+  "devDependencies": {
+    "create-comit-app": "^0.5.1"
   }
 }

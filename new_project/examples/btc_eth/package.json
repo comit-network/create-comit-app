@@ -5,14 +5,16 @@
     "main": "index.js",
     "scripts": {
         "check": "tsc && tslint -p . && prettier --check '**/*.{ts,json,yml}'",
-        "start": "DOTENV_CONFIG_PATH=$HOME/.create-comit-app/env ts-node -r dotenv/config ./src/index.ts",
-        "fix": "tslint -p . --fix && prettier --write '**/*.{ts,js,json,yml}'"
+        "swap": "DOTENV_CONFIG_PATH=$HOME/.create-comit-app/env ts-node -r dotenv/config ./src/index.ts",
+        "fix": "tslint -p . --fix && prettier --write '**/*.{ts,js,json,yml}'",
+        "start-env": "create-comit-app start-env"
     },
     "keywords": [],
     "author": "",
     "license": "ISC",
     "devDependencies": {
         "@types/readline-sync": "^1.4.3",
+        "create-comit-app": "^0.5.1",
         "jest": "^24.9.0",
         "prettier": "^1.19.1",
         "ts-node": "^8.5.4",
