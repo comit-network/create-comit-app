@@ -67,7 +67,7 @@ cd "${EXAMPLE_DIR}"
 
 yarn install > /dev/null
 
-yarn run start > "${LOG_FILE}" 2>&1 &
+yarn run swap > "${LOG_FILE}" 2>&1 &
 RUN_PID=$!
 
 function check_swap() {
