@@ -43,6 +43,31 @@ jobs:
       - name: Build ${{ matrix.os }} release binary
         run: make release
 
+      - name: Use Node.js 10.x
+        uses: actions/setup-node@v1
+        with:
+          node-version: 10.x
+
+      - name: Create archive
+        if: startsWith(github.ref, 'refs/tags/')
+        shell: bash
+        run: |
+          VERSION=$(git describe --tags)
+
+          # We need to do bash -c to make sure this also works on GitBash for Windows.
+          # GitHub actions uses GitBash for Windows if we say 'shell: bash' on a Windows executor.
+          ARCHIVE=$(bash -c "node .npm/printArchiveName.js ${VERSION}")
+
+          tar czvf ${ARCHIVE} -C target/release ${{ matrix.binary }}
+
+      - name: Upload asset to GitHub release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: create-comit-app_*.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   npm_build:
     name: NPM Project
     runs-on: ubuntu-latest
