@@ -148,6 +148,9 @@ function checkEnvFile(path: string) {
 }
 
 async function printBalances(actor: Actor) {
+    // Wait a second to let the Ethereum wallet catch up
+    await new Promise(r => setTimeout(r, 1000));
+
     console.log(
         "%s Bitcoin balance: %d. Erc20 Token balance: %d",
         actor.name,
