@@ -6,13 +6,35 @@ Set up a local development environment for COMIT apps with one command.
 
 If you have any question please [reach out to the team in our Gitter chat](https://gitter.im/comit-network/community)!
 
-## 1 - Install
+## 1 - Install docker
 
-1. Install Docker,
-2. Install [yarn](https://yarnpkg.com/lang/en/docs/install/),
-3. Run `yarn create comit-app --help`.
+### Unix
 
-## 2 - Create your first project!
+Install docker through your package manager.
+Make sure the unix-socket of the docker daemon is accessible.
+
+### Windows
+
+Windows users have the choice between Docker Toolbox (the "old" docker) and Docker for Windows (the "new" docker).
+Docker for Windows requires Windows 10 Pro, whereas Docker Toolbox also works on older versions of Windows and Windows 10 Home.
+
+#### Docker Toolbox
+
+Install Docker Toolbox and start the virtual machine.
+Double check that the environment variables `DOCKER_HOST`, `DOCKER_CERT_PATH` and `DOCKER_TLS_VERIFY` have been set.
+
+#### Docker for Windows
+
+To use create-comit-app with Docker for Windows please follow these steps:
+
+1. Set the `DOCKER_HOST` variable to the docker daemon endpoint. You can find that in the docker control panel, should be something like `tcp://127.0.0.1:2375`.
+2. Disable the TLS verification of the docker daemon endpoint: In your docker control panel: Settings > General > Expose daemon on tcp... without TLS
+
+## 2 - Install yarn & nodeJS
+
+Install them either from the website or through your package manager.
+
+## 3 - Create your first project!
 
 1. `yarn create comit-app new <your-app-name>`,
 2. `cd <your-app-name>` and `yarn start-env` to start blockchain and COMIT nodes,
