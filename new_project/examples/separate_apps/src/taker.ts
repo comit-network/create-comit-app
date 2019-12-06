@@ -44,7 +44,7 @@ import { createActor, sleep } from "./lib";
     const isOrderAcceptable = (order: Order) => {
         // Check if the returned order matches the requested asset-pair
         if (order.ask.asset !== "ether" || order.bid.asset !== "bitcoin") {
-            // These are'nt the droids you're looking for
+            // These aren't the droids you're looking for
             return false;
         }
 
@@ -56,7 +56,7 @@ import { createActor, sleep } from "./lib";
             return false;
         }
         // Only accept orders that are at least 1 bitcoin for 10 Ether
-        const minRate = 0.1;
+        const minRate = 0.001;
         const orderRate = bitcoin / ether;
         console.log("Rate offered: ", orderRate);
         return orderRate > minRate;

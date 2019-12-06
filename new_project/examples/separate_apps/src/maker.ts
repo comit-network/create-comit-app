@@ -68,7 +68,7 @@ import { createActor, sleep } from "./lib";
         tradingPair: "ETH-BTC",
         validUntil: moment().unix() + 300,
         ask: {
-            nominalAmount: "9",
+            nominalAmount: "50",
             asset: "ether",
             ledger: "ethereum",
         },

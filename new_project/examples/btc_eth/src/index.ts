@@ -104,11 +104,11 @@ function createSwap(maker: Actor, taker: Actor): SwapRequest {
         },
         alpha_asset: {
             name: "bitcoin",
-            quantity: toSatoshi(1).toString(),
+            quantity: toSatoshi(0.1).toString(),
         },
         beta_asset: {
             name: "ether",
-            quantity: "1000000000000000000",
+            quantity: "5000000000000000000",
         },
         beta_ledger_redeem_identity: redeemAddress,
         alpha_expiry: moment().unix() + 7200,
