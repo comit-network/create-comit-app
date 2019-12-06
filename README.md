@@ -14,7 +14,7 @@ If you have any question please [reach out to the team in our Gitter chat](https
 
 ## 2 - Create your first project!
 
-1. `yarn create comit-app <your-app-name>`,
+1. `yarn create comit-app new <your-app-name>`,
 2. `cd <your-app-name>` and `yarn start-env` to start blockchain and COMIT nodes,
 3. Run the [separate-apps](https://github.com/comit-network/create-comit-app/tree/master/new_project/examples/separate_apps) example (in separate terminals for the taker and maker):
     1. Navigate to the separate-apps example app directory `cd ./examples/separate_apps`,
