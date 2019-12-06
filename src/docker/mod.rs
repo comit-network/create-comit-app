@@ -5,7 +5,7 @@ use http::Uri;
 use shiplift::{
     ContainerOptions, Docker, LogsOptions, NetworkCreateOptions, PullOptions, RmContainerOptions,
 };
-use std::{env::VarError, net::Ipv4Addr, path::Path};
+use std::{net::Ipv4Addr, path::Path};
 use tokio::prelude::stream::Stream;
 
 pub mod bitcoin;
@@ -186,16 +186,20 @@ fn parse_ip(uri: String) -> anyhow::Result<Ipv4Addr> {
     Ok(ip)
 }
 
+#[cfg(feature = "windows")]
 fn new_docker_client() -> anyhow::Result<Docker> {
-    let uri = match std::env::var("DOCKER_HOST") {
-        Ok(docker_host) => https_docker_host(docker_host)?,
-        Err(VarError::NotPresent) => Uri::from_static("unix://var/run/docker.sock"),
-        Err(e) => return Err(anyhow::Error::from(e)),
-    };
-
-    Ok(Docker::host(uri))
+    match std::env::var("DOCKER_HOST") {
+        Ok(docker_host) => Ok(Docker::host(https_docker_host(docker_host)?)),
+        _ => anyhow::bail!("DOCKER_HOST must be set in windows"),
+    }
 }
 
+#[cfg(feature = "unix")]
+fn new_docker_client() -> anyhow::Result<Docker> {
+    Ok(Docker::unix("/var/run/docker.sock"))
+}
+
+#[allow(dead_code)]
 // In order for to communicate with docker on windows, we need to patch the content of the
 // DOCKER_HOST variable to use `https` as the scheme because hyper-openssl otherwise does not
 // establish a TLS connection.
