@@ -9,9 +9,9 @@
 )]
 #![forbid(unsafe_code)]
 
-pub mod cnd_settings;
 pub mod create_comit_app;
 pub mod docker;
 pub mod env;
 pub mod new;
 pub mod print_progress;
+pub mod temp_fs;

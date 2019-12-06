@@ -1,18 +1,22 @@
-use crate::docker::{ExposedPorts, Image};
+use crate::docker::{
+    self, free_local_port::free_local_port, DockerImage, LogMessage, DOCKER_NETWORK,
+};
 use emerald_rs::PrivateKey;
 use futures::compat::Future01CompatExt;
 use lazy_static::lazy_static;
-use secp256k1::SecretKey;
+use secp256k1::{rand::thread_rng, SecretKey};
+use shiplift::ContainerOptions;
 use std::{io::Cursor, time::Duration};
 use web3::{
     api::Web3,
-    transports::{EventLoopHandle, Http},
+    transports::Http,
     types::{Address, Bytes, TransactionReceipt, H160, U256},
 };
 
-pub const TOKEN_CONTRACT: &str = include_str!("../../../erc20_token/build/contract.hex");
-pub const CONTRACT_ABI: &str = include_str!("../../../erc20_token/build/abi.json");
-pub const HTTP_URL_KEY: &str = "ETHEREUM_NODE_HTTP_URL";
+pub const TOKEN_CONTRACT: &str = include_str!("../../erc20_token/build/contract.hex");
+pub const CONTRACT_ABI: &str = include_str!("../../erc20_token/build/abi.json");
+
+const IMAGE: &str = "coblox/parity-poa:v2.5.9-stable";
 
 lazy_static! {
     static ref DEV_ACCOUNT: web3::types::Address = "00a329c0648769a73afac7f9381e08fb43dbea72"
@@ -24,63 +28,90 @@ lazy_static! {
     .expect("Should not fail: parsing static private key ");
 }
 
-pub struct EthereumNode {
-    pub http_client: Web3<Http>,
-    _event_loop: EventLoopHandle,
+#[derive(derive_more::Display, Copy, Clone)]
+#[display(fmt = "http://localhost:{}", port)]
+pub struct ParityHttpEndpoint {
+    port: u16,
 }
 
-impl Image for EthereumNode {
-    const IMAGE: &'static str = "coblox/parity-poa:v2.5.9-stable";
-    const LOG_READY: &'static str = "Public node URL:";
+pub struct ParityInstance {
+    pub http_endpoint: ParityHttpEndpoint,
+    pub account_0: Account,
+    pub account_1: Account,
+    pub erc20_contract_address: web3::types::Address,
+}
 
-    fn arguments_for_create() -> Vec<&'static str> {
-        vec![]
-    }
+pub async fn new_parity_instance() -> anyhow::Result<ParityInstance> {
+    let mut options_builder = ContainerOptions::builder(IMAGE);
+    options_builder.name("ethereum");
+    options_builder.network_mode(DOCKER_NETWORK);
 
-    // TODO: Probably actually use the name instead of HTTP_URL_KEY
-    fn expose_ports(_: &str) -> Vec<ExposedPorts> {
-        vec![ExposedPorts {
-            for_client: true,
-            srcport: 8545,
-            env_file_key: HTTP_URL_KEY.to_string(),
-            env_file_value: Box::new(|port| format!("http://localhost:{}", port)),
-        }]
-    }
+    let http_port = free_local_port().await?;
+    options_builder.expose(8545, "tcp", http_port as u32);
 
-    fn new(endpoint: Option<String>) -> Self {
-        let endpoint: String = endpoint.unwrap_or_else(|| {
-            panic!("Internal Error: Url for web3 client should have been set.");
-        });
-        let (_event_loop, transport) = Http::new(&endpoint).unwrap();
-        let http_client = Web3::new(transport);
+    let http_endpoint = ParityHttpEndpoint { port: http_port };
+
+    let options = options_builder.build();
+
+    docker::start(DockerImage(IMAGE), options, LogMessage("Public node URL:")).await?;
+
+    let account_0 = fund_new_account(http_endpoint).await?;
+    let account_1 = fund_new_account(http_endpoint).await?;
+    let contract_address = new_erc20_contract(http_endpoint, vec![account_0, account_1]).await?;
+
+    Ok(ParityInstance {
+        http_endpoint,
+        account_0,
+        account_1,
+        erc20_contract_address: contract_address,
+    })
+}
+
+#[derive(Clone, Copy)]
+pub struct Account {
+    pub private_key: SecretKey,
+}
+
+impl Account {
+    fn new_random() -> Self {
         Self {
-            http_client,
-            _event_loop,
+            private_key: SecretKey::new(&mut thread_rng()),
         }
     }
 }
 
-pub async fn fund_ether(
-    client: Web3<Http>,
-    keys: Vec<SecretKey>,
-    amount: U256,
-) -> Result<(), web3::Error> {
-    for address in keys.into_iter().map(derive_address) {
-        send_transaction(client.clone(), Some(address), 30_000, amount, Vec::new()).await?;
-    }
+async fn fund_new_account(endpoint: ParityHttpEndpoint) -> anyhow::Result<Account> {
+    let (_event_loop_handle, transport) = Http::new(&endpoint.to_string())?;
+    let client = Web3::new(transport);
 
-    Ok(())
+    let account = Account::new_random();
+
+    send_transaction(
+        client.clone(),
+        Some(derive_address(account.private_key)),
+        30_000,
+        U256::from(100u128 * 10u128.pow(18)),
+        Vec::new(),
+    )
+    .await?;
+
+    Ok(account)
 }
 
-pub async fn fund_erc20(
-    client: Web3<Http>,
-    keys: Vec<SecretKey>,
-    amount: U256,
-) -> Result<Address, web3::Error> {
+async fn new_erc20_contract(
+    endpoint: ParityHttpEndpoint,
+    accounts: Vec<Account>,
+) -> anyhow::Result<Address> {
+    let (_event_loop_handle, transport) = Http::new(&endpoint.to_string())?;
+    let client = Web3::new(transport);
+
     let contract_address = deploy_erc20_contract(client.clone()).await?;
 
-    for address in keys.into_iter().map(derive_address) {
-        let transfer = transfer_fn(address, amount).map_err(|e| {
+    for address in accounts
+        .into_iter()
+        .map(|account| derive_address(account.private_key))
+    {
+        let transfer = transfer_fn(address, U256::from(100u128 * 10u128.pow(18))).map_err(|e| {
             eprintln!("Failed to generate ERC20 transfer fn data: {:?}", e);
             web3::Error::Internal
         })?;
@@ -88,7 +119,7 @@ pub async fn fund_erc20(
             client.clone(),
             Some(contract_address),
             100_000,
-            U256::from(0),
+            U256::from(0u64),
             transfer,
         )
         .await?;
@@ -157,7 +188,7 @@ async fn get_chain_id(client: Web3<Http>) -> Result<u8, web3::Error> {
     })
 }
 
-pub fn derive_address(secret_key: secp256k1::SecretKey) -> Address {
+fn derive_address(secret_key: secp256k1::SecretKey) -> Address {
     let address = PrivateKey::try_from(&secret_key[..])
         .expect("can never happen")
         .to_address();
