@@ -31,7 +31,7 @@ import { createActor, sleep } from "./lib";
     );
 
     // Wait for commandline input for demo purposes
-    readLineSync.question("1. Ready to accept and order from the maker?");
+    readLineSync.question("1. Ready to accept an order from the maker?");
 
     // Initialize the taker negotiator that defines the negotiation phase of the trade.
     // The taker negotiator manages retrieving orders from the maker and deciding if they are acceptable for the taker.
