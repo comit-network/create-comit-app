@@ -37,7 +37,7 @@ Install them either from the website or through your package manager.
 ## 3 - Create your first project!
 
 1. `yarn create comit-app new <your-app-name>`,
-2. `cd <your-app-name>` and `yarn start-env` to start blockchain and COMIT nodes,
+2. `cd <your-app-name>`, `yarn intall` and `yarn start-env` to start blockchain and COMIT nodes,
 3. Run the [separate-apps](https://github.com/comit-network/create-comit-app/tree/master/new_project/examples/separate_apps) example (in separate terminals for the taker and maker):
     1. Navigate to the separate-apps example app directory `cd ./examples/separate_apps`,
     2. `yarn install` to install dependencies,
