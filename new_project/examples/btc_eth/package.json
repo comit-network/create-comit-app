@@ -14,7 +14,7 @@
     "license": "ISC",
     "devDependencies": {
         "@types/readline-sync": "^1.4.3",
-        "create-comit-app": "^0.5.2",
+        "create-comit-app": "^0.6.0",
         "jest": "^24.9.0",
         "prettier": "^1.19.1",
         "ts-node": "^8.5.4",
