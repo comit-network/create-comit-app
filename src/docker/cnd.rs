@@ -1,17 +1,21 @@
-use crate::{
-    docker::{self, free_local_port::free_local_port, DockerImage, LogMessage, DOCKER_NETWORK},
-    temp_fs,
+use crate::docker::{
+    self, docker_daemon_ip, free_local_port::free_local_port, DockerImage, File, LogMessage,
+    DOCKER_NETWORK,
 };
-use futures::compat::Future01CompatExt;
+use anyhow::Context;
 use shiplift::ContainerOptions;
-use std::net::{IpAddr, Ipv4Addr};
+use std::{
+    net::{IpAddr, Ipv4Addr},
+    path::Path,
+};
 
 const IMAGE: &str = "comitnetwork/cnd:0.4.0";
 
 #[derive(derive_more::Display, Copy, Clone)]
-#[display(fmt = "http://localhost:{}", port)]
+#[display(fmt = "http://{}:{}", ip, port)]
 pub struct HttpEndpoint {
     port: u16,
+    ip: Ipv4Addr,
 }
 
 pub struct CndInstance {
@@ -19,8 +23,6 @@ pub struct CndInstance {
 }
 
 pub async fn new_instance(index: u32) -> anyhow::Result<CndInstance> {
-    let config_folder = temp_fs::temp_folder()?;
-
     let settings = Settings {
         bitcoin: Bitcoin {
             network: String::from("regtest"),
@@ -33,16 +35,12 @@ pub async fn new_instance(index: u32) -> anyhow::Result<CndInstance> {
         ..Default::default()
     };
 
-    let config_file = config_folder.join("cnd.toml");
-    let settings = toml::to_string(&settings).expect("could not serialize hardcoded settings");
-
-    tokio::fs::write(config_file, settings).compat().await?;
+    let settings = toml::to_string(&settings).context("failed to serialize settings")?;
 
     let mut options_builder = ContainerOptions::builder(IMAGE);
     options_builder.network_mode(DOCKER_NETWORK);
     options_builder.name(&format!("cnd_{}", index));
-    options_builder.cmd(vec!["--", "cnd", "--config=/config/cnd.toml"]);
-    options_builder.volumes(vec![&format!("{}:/config", config_folder.display())]);
+    options_builder.cmd(vec!["--", "cnd", "--config=/cnd.toml"]);
 
     let http_port = free_local_port().await?;
     options_builder.expose(8080, "tcp", http_port as u32);
@@ -53,11 +51,18 @@ pub async fn new_instance(index: u32) -> anyhow::Result<CndInstance> {
         DockerImage(IMAGE),
         options,
         LogMessage("Starting HTTP server on"),
+        vec![File {
+            location: Path::new("/cnd.toml"),
+            content: settings.as_bytes(),
+        }],
     )
     .await?;
 
     Ok(CndInstance {
-        http_endpoint: HttpEndpoint { port: http_port },
+        http_endpoint: HttpEndpoint {
+            port: http_port,
+            ip: docker_daemon_ip()?,
+        },
     })
 }
 

@@ -9,9 +9,12 @@ import {
 import fs from "fs";
 import moment from "moment";
 import { toBitcoin, toSatoshi } from "satoshi-bitcoin-ts";
+import * as path from "path";
+import dotenv from "dotenv";
+import * as os from "os";
 
 (async function main() {
-    checkEnvFile(process.env.DOTENV_CONFIG_PATH!);
+    loadEnvironment();
 
     const maker = await createActor(0, "Maker");
     const taker = await createActor(1, "Taker");
@@ -120,14 +123,18 @@ function createSwap(maker: Actor, taker: Actor): SwapRequest {
     };
 }
 
-function checkEnvFile(path: string) {
-    if (!fs.existsSync(path)) {
+function loadEnvironment() {
+    let envFilePath = path.join(os.homedir(), ".create-comit-app", "env");
+
+    if (!fs.existsSync(envFilePath)) {
         console.log(
             "Could not find file %s. Did you run `yarn start-env`?",
-            path
+            envFilePath
         );
         process.exit(1);
     }
+
+    dotenv.config({path: envFilePath});
 }
 
 async function printBalances(actor: Actor) {

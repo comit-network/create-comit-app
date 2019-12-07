@@ -55,6 +55,13 @@ jobs:
           toolchain: ${{ env.RUST_TOOLCHAIN }}
           override: true
 
+      - name: Install OpenSSL and configure it to link statically
+        run: |
+          vcpkg install openssl:x64-windows-static
+          vcpkg integrate install
+          echo "::set-env name=RUSTFLAGS::-Ctarget-feature=+crt-static"
+        if: matrix.os == 'windows'
+
       - name: Build ${{ matrix.os }} binary
         run: make build
 

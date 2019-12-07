@@ -5,8 +5,8 @@
     "main": "index.js",
     "scripts": {
         "check": "tsc && tslint -p . && prettier --check '**/*.{ts,json,yml}'",
-        "maker": "DOTENV_CONFIG_PATH=$HOME/.create-comit-app/env ts-node -r dotenv/config ./src/maker.ts",
-        "taker": "DOTENV_CONFIG_PATH=$HOME/.create-comit-app/env ts-node -r dotenv/config ./src/taker.ts",
+        "maker": "ts-node ./src/maker.ts",
+        "taker": "ts-node ./src/taker.ts",
         "fix": "tslint -p . --fix && prettier --write '**/*.{ts,js,json,yml}'",
         "start-env": "create-comit-app start-env"
     },

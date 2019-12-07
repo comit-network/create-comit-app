@@ -1,6 +1,10 @@
 const fs = require("fs");
+const path = require("path");
+const os = require("os");
+const dotenv = require("dotenv");
 
-const configPath = process.env.DOTENV_CONFIG_PATH;
+const configPath = path.join(os.homedir(), ".create-comit-app", "env");
+dotenv.config({path: configPath});
 
 if (fs.existsSync(configPath)) {
   console.log("Environment configuration:");

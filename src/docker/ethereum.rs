@@ -1,12 +1,14 @@
 use crate::docker::{
-    self, free_local_port::free_local_port, DockerImage, LogMessage, DOCKER_NETWORK,
+    self, docker_daemon_ip, free_local_port::free_local_port, DockerImage, LogMessage,
+    DOCKER_NETWORK,
 };
+use anyhow::Context;
 use emerald_rs::PrivateKey;
 use futures::compat::Future01CompatExt;
 use lazy_static::lazy_static;
 use secp256k1::{rand::thread_rng, SecretKey};
 use shiplift::ContainerOptions;
-use std::{io::Cursor, time::Duration};
+use std::{io::Cursor, net::Ipv4Addr, time::Duration};
 use web3::{
     api::Web3,
     transports::Http,
@@ -29,8 +31,9 @@ lazy_static! {
 }
 
 #[derive(derive_more::Display, Copy, Clone)]
-#[display(fmt = "http://localhost:{}", port)]
+#[display(fmt = "http://{}:{}", ip, port)]
 pub struct ParityHttpEndpoint {
+    ip: Ipv4Addr,
     port: u16,
 }
 
@@ -46,17 +49,33 @@ pub async fn new_parity_instance() -> anyhow::Result<ParityInstance> {
     options_builder.name("ethereum");
     options_builder.network_mode(DOCKER_NETWORK);
 
-    let http_port = free_local_port().await?;
+    let http_port = free_local_port()
+        .await
+        .context("failed to acquire free local port")?;
     options_builder.expose(8545, "tcp", http_port as u32);
 
-    let http_endpoint = ParityHttpEndpoint { port: http_port };
+    let http_endpoint = ParityHttpEndpoint {
+        port: http_port,
+        ip: docker_daemon_ip()?,
+    };
 
     let options = options_builder.build();
 
-    docker::start(DockerImage(IMAGE), options, LogMessage("Public node URL:")).await?;
+    docker::start(
+        DockerImage(IMAGE),
+        options,
+        LogMessage("Public node URL:"),
+        vec![],
+    )
+    .await
+    .context("failed to start container")?;
 
-    let account_0 = fund_new_account(http_endpoint).await?;
-    let account_1 = fund_new_account(http_endpoint).await?;
+    let account_0 = fund_new_account(http_endpoint)
+        .await
+        .context("failed to fund first account")?;
+    let account_1 = fund_new_account(http_endpoint)
+        .await
+        .context("failed to fund second account")?;
     let contract_address = new_erc20_contract(http_endpoint, vec![account_0, account_1]).await?;
 
     Ok(ParityInstance {
@@ -81,19 +100,28 @@ impl Account {
 }
 
 async fn fund_new_account(endpoint: ParityHttpEndpoint) -> anyhow::Result<Account> {
-    let (_event_loop_handle, transport) = Http::new(&endpoint.to_string())?;
+    let (_event_loop_handle, transport) = Http::new(&endpoint.to_string())
+        .context("unable to initialize http transport to ethereum node")?;
     let client = Web3::new(transport);
 
     let account = Account::new_random();
+    let address = derive_address(account.private_key);
 
     send_transaction(
         client.clone(),
-        Some(derive_address(account.private_key)),
+        Some(address),
         30_000,
         U256::from(1000u128 * 10u128.pow(18)),
         Vec::new(),
     )
-    .await?;
+    .await
+    .with_context(|| {
+        format!(
+            "failed to send transaction for funding account {:x} with ether to {}",
+            address,
+            endpoint.to_string()
+        )
+    })?;
 
     Ok(account)
 }
@@ -122,13 +150,20 @@ async fn new_erc20_contract(
             U256::from(0u64),
             transfer,
         )
-        .await?;
+        .await
+        .with_context(|| {
+            format!(
+                "failed to send transaction for funding account {:x} with erc20 to {}",
+                address,
+                endpoint.to_string()
+            )
+        })?;
     }
 
     Ok(contract_address)
 }
 
-async fn deploy_erc20_contract(client: Web3<Http>) -> Result<Address, web3::Error> {
+async fn deploy_erc20_contract(client: Web3<Http>) -> anyhow::Result<Address> {
     let data = TOKEN_CONTRACT[2..].trim(); // remove the 0x in the front and any whitespace
     let erc20_contract = hex::decode(data).expect("token contract should be valid hex");
 
@@ -153,7 +188,7 @@ async fn send_transaction(
     gas_limit: u64,
     amount: U256,
     data: Vec<u8>,
-) -> Result<TransactionReceipt, web3::Error> {
+) -> anyhow::Result<TransactionReceipt> {
     let chain_id = get_chain_id(client.clone()).await?;
     let tx = emerald_rs::Transaction {
         nonce: client
@@ -168,24 +203,22 @@ async fn send_transaction(
         value: amount.into(),
         data,
     };
-    let signed_raw_tx = tx
-        .to_signed_raw(*DEV_ACCOUNT_PRIVATE_KEY, chain_id)
-        .expect("signing transaction should work");
+    let signed_raw_tx = tx.to_signed_raw(*DEV_ACCOUNT_PRIVATE_KEY, chain_id)?;
 
-    client
+    let tx_id = client
         .send_raw_transaction_with_confirmation(Bytes(signed_raw_tx), Duration::from_millis(100), 1)
         .compat()
-        .await
+        .await?;
+
+    Ok(tx_id)
 }
 
-async fn get_chain_id(client: Web3<Http>) -> Result<u8, web3::Error> {
+async fn get_chain_id(client: Web3<Http>) -> anyhow::Result<u8> {
     let network = client.net().version().compat().await?;
-    network.parse::<u8>().map_err(|e| {
-        web3::Error::InvalidResponse(format!(
-            "{} is not a valid chain id because it cannot be parsed as a u8: {:?}",
-            network, e
-        ))
-    })
+
+    network
+        .parse::<u8>()
+        .with_context(|| format!("{} is not a valid chain-id", network))
 }
 
 fn derive_address(secret_key: secp256k1::SecretKey) -> Address {

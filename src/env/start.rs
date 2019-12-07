@@ -25,27 +25,21 @@ pub struct Environment {
 pub async fn execute(terminate: Arc<AtomicBool>) -> anyhow::Result<Environment> {
     print_progress!("Creating Docker network (create-comit-app)");
 
-    let docker_network_id = docker::create_network()
-        .await
-        .context("Could not create docker network, aborting...")?;
+    let docker_network_id = docker::create_network().await?;
 
     println!("✓");
     check_signal(terminate.as_ref())?;
 
     print_progress!("Starting Ethereum node");
 
-    let parity = ethereum::new_parity_instance()
-        .await
-        .context("Could not start Ethereum node, aborting...")?;
+    let parity = ethereum::new_parity_instance().await?;
 
     println!("✓");
     check_signal(terminate.as_ref())?;
 
     print_progress!("Starting Bitcoin node");
 
-    let bitcoind = bitcoin::new_bitcoind_instance()
-        .await
-        .context("Could not start bitcoin node, aborting...")?;
+    let bitcoind = bitcoin::new_bitcoind_instance().await?;
 
     println!("✓");
     check_signal(terminate.as_ref())?;
@@ -53,11 +47,11 @@ pub async fn execute(terminate: Arc<AtomicBool>) -> anyhow::Result<Environment> 
     print_progress!("Starting two cnds");
     let cnd_0 = cnd::new_instance(0)
         .await
-        .context("Could not start cnd 0, cleaning up...")?;
+        .context("failed to start first cnd")?;
 
     let cnd_1 = cnd::new_instance(1)
         .await
-        .context("Could not start cnd 1, cleaning up...")?;
+        .context("failed to start second cnd")?;
 
     println!("✓");
     check_signal(terminate.as_ref())?;
