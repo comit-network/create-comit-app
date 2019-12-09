@@ -13,7 +13,9 @@ ifeq ($(OS),Windows_NT)
     INSTALL_ARGS = --no-default-features --features windows
 endif
 
-build: build_debug
+.PHONY: install_rust install_rust_nightly install_clippy install_rustfmt install_tomlfmt install clean all format build build_debug release clippy test doc check_format e2e_scripts e2e
+
+default: build
 
 install_rust:
 	$(RUSTUP) install $(TOOLCHAIN)
