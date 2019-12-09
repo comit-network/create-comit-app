@@ -73,6 +73,7 @@ check_format: install_rustfmt install_tomlfmt
 	$(CARGO) tomlfmt -d -p Cargo.toml
 
 yarn_install_all:
+	(cd ./.npm; yarn install)
 	(cd ./new_project/examples/btc_eth; yarn install)
 	(cd ./new_project/examples/erc20_btc; yarn install)
 	(cd ./new_project/examples/separate_apps; yarn install)
