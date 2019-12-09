@@ -72,6 +72,14 @@ check_format: install_rustfmt install_tomlfmt
 	$(CARGO_NIGHTLY) fmt -- --check
 	$(CARGO) tomlfmt -d -p Cargo.toml
 
+yarn_install_all:
+	(cd ./new_project/examples/btc_eth; yarn install)
+	(cd ./new_project/examples/erc20_btc; yarn install)
+	(cd ./new_project/examples/separate_apps; yarn install)
+
+check_lock_files: build_debug yarn_install_all
+	(git status -s |grep -q lock && exit 1) # If grep is successful then the task should fail
+
 e2e_scripts:
 	./tests/new.sh
 	./tests/start_env.sh
