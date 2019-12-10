@@ -31,10 +31,21 @@ function createOrder(): Order {
     const maker = await startClient("MAKER");
 
     console.log(
+        `Fund me with BTC please: ${await maker.bitcoinWallet.getAddress()}`
+    );
+    console.log(
+        `Fund me with ETH please: ${await maker.ethereumWallet.getAccount()}`
+    );
+
+    readLineSync.question(
+        "Continue? (note, if you only funded just now, you might need to wait until the wallet has synced)"
+    );
+
+    console.log(
         "[Maker] Bitcoin balance: %f. Ether balance: %f",
         parseFloat(await maker.bitcoinWallet.getBalance()).toFixed(2),
         parseFloat(
-            formatEther(await maker.ethereumWallet.getBalance())
+            formatEther((await maker.ethereumWallet.getBalance()).toString())
         ).toFixed(2)
     );
 
@@ -71,10 +82,10 @@ function createOrder(): Order {
     const invitationDetails = `http://localhost:2318/orders/ETH-BTC`;
     console.log(`Waiting for someone taking my order at: ${invitationDetails}`);
 
-    let swapHandle;
-    while (!swapHandle) {
+    let swap;
+    while (!swap) {
         await new Promise(r => setTimeout(r, 1000));
-        swapHandle = await maker.comitClient.getNewSwaps().then(swaps => {
+        swap = await maker.comitClient.getNewSwaps().then(swaps => {
             if (swaps) {
                 return swaps[0];
             } else {
@@ -83,19 +94,18 @@ function createOrder(): Order {
         });
     }
 
-    const actionConfig = { timeout: 100000, tryInterval: 1000 };
-
-    const swap = await swapHandle.getEntity();
-    const swapParams = swap.properties!.parameters;
+    const actionConfig = { maxTimeoutSecs: 100000, tryIntervalSecs: 1000 };
 
     // only accept a request if it fits to the created order above
+    const swapDetails = await swap.fetchDetails();
+    const swapParams = swapDetails.properties!.parameters;
     if (isValid(swapParams, order)) {
         console.log("Requested order is invalid");
-        await swapHandle.decline(actionConfig);
+        await swap.decline(actionConfig);
         process.exit();
     }
     console.log("Requested order is still valid");
-    await swapHandle.accept(actionConfig);
+    await swap.accept(actionConfig);
 
     console.log(
         "Swap started! Swapping %d Ether for %d %s",
@@ -108,30 +118,26 @@ function createOrder(): Order {
 
     let btcBalance = await maker.bitcoinWallet.getBalance();
     while (btcBalance <= 0) {
-        console.log("0 bitcoin balance, wallet most likely not properly initialized!");
+        console.log(
+            "0 bitcoin balance, wallet most likely not properly initialized!"
+        );
         readLineSync.question("2. Try Again?");
         btcBalance = await maker.bitcoinWallet.getBalance();
     }
 
     console.log("Bitcoin balance: " + btcBalance);
-    console.log(
-        "Bitcoin HTLC funded! TXID: ",
-        await swapHandle.fund(actionConfig)
-    );
+    console.log("Bitcoin HTLC funded! TXID: ", await swap.fund(actionConfig));
 
     readLineSync.question("4. Continue?");
 
-    console.log(
-        "Ether redeemed! TXID: ",
-        await swapHandle.redeem(actionConfig)
-    );
+    console.log("Ether redeemed! TXID: ", await swap.redeem(actionConfig));
 
     console.log("Swapped!");
     console.log(
         "[Maker] Bitcoin balance: %f. Ether balance: %f",
         parseFloat(await maker.bitcoinWallet.getBalance()).toFixed(2),
         parseFloat(
-            formatEther(await maker.ethereumWallet.getBalance())
+            formatEther((await maker.ethereumWallet.getBalance()).toString())
         ).toFixed(2)
     );
     process.exit();

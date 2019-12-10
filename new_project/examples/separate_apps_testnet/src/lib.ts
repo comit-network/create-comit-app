@@ -1,11 +1,12 @@
 import { BitcoinWallet, Cnd, ComitClient, EthereumWallet } from "comit-sdk";
 import fs from "fs";
+import { TestnetBitcoinWallet } from "./bcoinWallet";
 
 export async function startClient(actor: string): Promise<Actor> {
-    const bitcoinWallet = await BitcoinWallet.newInstance(
+    const bitcoinWallet = await TestnetBitcoinWallet.newInstance(
         "testnet",
-        process.env.BITCOIN_P2P_URI!,
-        process.env[`BITCOIN_HD_KEY_${actor}`]!
+        process.env[`BITCOIN_HD_KEY_${actor}`]!,
+        actor
     );
 
     // Waiting for the Bitcoin wallet to read the balance

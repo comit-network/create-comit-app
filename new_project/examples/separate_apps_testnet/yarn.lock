@@ -322,7 +322,7 @@ bitcoin-core@^2.2.0:
     semver "^5.1.0"
     standard-error "^1.1.0"
 
-blgr@~0.1.7:
+blgr@^0.1.7, blgr@~0.1.7:
   version "0.1.7"
   resolved "https://registry.yarnpkg.com/blgr/-/blgr-0.1.7.tgz#69ed054282e5d3be7b6b19b03962a397227ab498"
   integrity sha512-+jSaU2jnYqF+ec9e8nzjfjU7QhZIntkDNG8/AEwoxW7J3mmwvmUfAI5lm9BFYs1OzT+1UgIZTFHa2qWjTBURfw==

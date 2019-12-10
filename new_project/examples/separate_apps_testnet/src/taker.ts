@@ -16,10 +16,21 @@ import {
     const taker = await startClient("TAKER");
 
     console.log(
+        `Fund me with BTC please: ${await taker.bitcoinWallet.getAddress()}`
+    );
+    console.log(
+        `Fund me with ETH please: ${await taker.ethereumWallet.getAccount()}`
+    );
+
+    readLineSync.question(
+        "Continue? (note, if you only funded just now, you might need to wait until the wallet has synced)"
+    );
+
+    console.log(
         "[Taker] Bitcoin balance: %f. Ether balance: %f",
         parseFloat(await taker.bitcoinWallet.getBalance()).toFixed(2),
         parseFloat(
-            formatEther(await taker.ethereumWallet.getBalance())
+            formatEther((await taker.ethereumWallet.getBalance()).toString())
         ).toFixed(2)
     );
 
@@ -47,9 +58,9 @@ import {
 
     const swapMessage = createSwap(taker, order, execution_params);
 
-    const swapHandle = await taker.comitClient.sendSwap(swapMessage);
+    const swap = await taker.comitClient.sendSwap(swapMessage);
 
-    const actionConfig = { timeout: 100000, tryInterval: 1000 };
+    const actionConfig = { maxTimeoutSecs: 100000, tryIntervalSecs: 1000 };
 
     console.log(
         "Swap started! Swapping %d %s for %d %s",
@@ -61,24 +72,18 @@ import {
 
     readLineSync.question("1. Continue?");
 
-    console.log(
-        "Ethereum HTLC funded! TXID: ",
-        await swapHandle.fund(actionConfig)
-    );
+    console.log("Ethereum HTLC funded! TXID: ", await swap.fund(actionConfig));
 
     readLineSync.question("3. Continue?");
 
-    console.log(
-        "Bitcoin redeemed! TXID: ",
-        await swapHandle.redeem(actionConfig)
-    );
+    console.log("Bitcoin redeemed! TXID: ", await swap.redeem(actionConfig));
 
     console.log("Swapped!");
     console.log(
         "[Taker] Bitcoin balance: %f. Ether balance: %f",
         parseFloat(await taker.bitcoinWallet.getBalance()).toFixed(2),
         parseFloat(
-            formatEther(await taker.ethereumWallet.getBalance())
+            formatEther((await taker.ethereumWallet.getBalance()).toString())
         ).toFixed(2)
     );
     process.exit();

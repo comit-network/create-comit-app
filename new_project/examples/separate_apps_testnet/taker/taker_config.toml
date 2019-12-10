@@ -1,0 +1,19 @@
+[network]
+listen = ["/ip4/0.0.0.0/tcp/9939"]
+
+[bitcoin]
+network = "testnet"
+node_url = "http://bobtimus.coblox.tech:18332"
+
+[ethereum]
+node_url = "http://bobtimus.coblox.tech:8545"
+
+[http_api.socket]
+address = "0.0.0.0"
+port = 8000
+
+[http_api.cors]
+allowed_origins = "all"
+
+[Data]
+dir = "/Users/bonomat/src/github/comit/create-comit-app/new_project/examples/separate_apps_testnet/taker"
