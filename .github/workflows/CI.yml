@@ -75,7 +75,10 @@ jobs:
           path: target/debug/${{ matrix.binary }}
 
   e2e_test:
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [windows, ubuntu]
+    runs-on: ${{ matrix.os }}-latest
     needs: build
     steps:
       - name: Checkout sources
@@ -96,7 +99,9 @@ jobs:
           node-version: '10.x'
 
       - name: Run e2e tests
+        shell: bash
         run: make e2e_scripts
+
   npm_build:
     runs-on: ubuntu-latest
     steps:
