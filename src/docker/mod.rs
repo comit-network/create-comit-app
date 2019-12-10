@@ -1,7 +1,6 @@
 use crate::print_progress;
 use anyhow::Context;
 use futures::compat::Future01CompatExt;
-use http::Uri;
 use shiplift::{
     ContainerOptions, Docker, LogsOptions, NetworkCreateOptions, PullOptions, RmContainerOptions,
 };
@@ -30,7 +29,7 @@ pub async fn start(
     wait_for: LogMessage,
     files: Vec<File<'_>>,
 ) -> anyhow::Result<()> {
-    let docker = new_docker_client()?;
+    let docker = Docker::new();
 
     let images = docker
         .images()
@@ -106,7 +105,7 @@ pub async fn start(
 }
 
 pub async fn create_network() -> anyhow::Result<String> {
-    let docker = new_docker_client()?;
+    let docker = Docker::new();
 
     let response = docker
         .networks()
@@ -139,7 +138,7 @@ pub async fn create_network() -> anyhow::Result<String> {
 }
 
 pub async fn delete_network() -> anyhow::Result<()> {
-    new_docker_client()?
+    Docker::new()
         .networks()
         .get(DOCKER_NETWORK)
         .delete()
@@ -150,7 +149,7 @@ pub async fn delete_network() -> anyhow::Result<()> {
 }
 
 pub async fn delete_container(name: &str) -> anyhow::Result<()> {
-    new_docker_client()?
+    Docker::new()
         .containers()
         .get(name)
         .remove(
@@ -186,36 +185,6 @@ fn parse_ip(uri: String) -> anyhow::Result<Ipv4Addr> {
     Ok(ip)
 }
 
-#[cfg(feature = "windows")]
-fn new_docker_client() -> anyhow::Result<Docker> {
-    match std::env::var("DOCKER_HOST") {
-        Ok(docker_host) => Ok(Docker::host(https_docker_host(docker_host)?)),
-        _ => anyhow::bail!("DOCKER_HOST must be set in windows"),
-    }
-}
-
-#[cfg(feature = "unix")]
-fn new_docker_client() -> anyhow::Result<Docker> {
-    Ok(Docker::unix("/var/run/docker.sock"))
-}
-
-#[allow(dead_code)]
-// In order for to communicate with docker on windows, we need to patch the content of the
-// DOCKER_HOST variable to use `https` as the scheme because hyper-openssl otherwise does not
-// establish a TLS connection.
-fn https_docker_host(host: String) -> anyhow::Result<Uri> {
-    let uri = host
-        .parse::<http::Uri>()
-        .with_context(|| format!("{} is not a valid URI", host))?;
-
-    let mut parts = uri.into_parts();
-    parts.scheme = Some(http::uri::Scheme::HTTPS);
-
-    let uri = http::Uri::from_parts(parts).context("failed to build a valid URI")?;
-
-    Ok(uri)
-}
-
 #[cfg(test)]
 mod tests {
 
@@ -228,14 +197,5 @@ mod tests {
         let ip = parse_ip(docker_host.to_string()).unwrap();
 
         assert_eq!(ip, Ipv4Addr::new(192, 168, 99, 100));
-    }
-
-    #[test]
-    fn can_construct_valid_windows_docker_host() {
-        let docker_host = "tcp://192.168.99.100:2376".to_string();
-
-        let uri = https_docker_host(docker_host).unwrap();
-
-        assert_eq!(uri.to_string(), "https://192.168.99.100:2376/")
     }
 }
