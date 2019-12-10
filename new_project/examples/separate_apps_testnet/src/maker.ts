@@ -28,7 +28,7 @@ function createOrder(): Order {
 (async function main() {
     checkEnvFile(process.env.DOTENV_CONFIG_PATH!);
 
-    const maker = await startClient("MAKER");
+    const maker = await startClient("MAKER", 18333);
 
     console.log(
         `Fund me with BTC please: ${await maker.bitcoinWallet.getAddress()}`

@@ -13,7 +13,7 @@ import {
     checkEnvFile(process.env.DOTENV_CONFIG_PATH!);
 
     console.log("starting client...");
-    const taker = await startClient("TAKER");
+    const taker = await startClient("TAKER", 18332);
 
     console.log(
         `Fund me with BTC please: ${await taker.bitcoinWallet.getAddress()}`
