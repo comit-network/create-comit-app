@@ -1,118 +1,158 @@
-import { SwapRequest } from "comit-sdk";
+import { MakerClient, Order, TakerNegotiator, TryParams } from "comit-sdk";
 import { formatEther } from "ethers/utils";
 import readLineSync from "readline-sync";
 import { toBitcoin } from "satoshi-bitcoin-ts";
-import { Actor, checkEnvFile, startClient } from "./lib";
-import {
-    ExecutionParams,
-    NegotiationProtocolClient,
-    Order,
-} from "./negotiation";
+import { createActor, sleep } from "./lib";
 
+/**
+ * This executable function represents the taker side during a trade.
+ * A trade consists of two phases: negotiation and execution.
+ *
+ * During the negotiation phase the taker retrieves orders that the maker publishes.
+ * The taker then has to decide if he wants to do a swap according to the order (i.e. take the order).
+ * Once the negotiation is over (i.e. the taker has accepted the order) the execution of the swap commences.
+ *
+ * -- Execution details: --
+ * Most of the logic of the swap execution is done by the COMIT SDK. The example tells the ComitClient that
+ * it wants to execute fund and redeem for a specific swap. The ComitClient checks for the availability of the
+ * fund and redeem action in the comit node daemon.
+ */
 (async function main() {
-    checkEnvFile(process.env.DOTENV_CONFIG_PATH!);
+    // Initialize the taker Actor
+    const taker = await createActor(1);
 
-    const taker = await startClient(1);
-
+    // print balances before swapping
     console.log(
-        "[Taker] Bitcoin balance: %f. Ether balance: %f",
+        "[Taker] Bitcoin balance: %f, Ether balance: %f",
         parseFloat(await taker.bitcoinWallet.getBalance()).toFixed(2),
         parseFloat(
             formatEther(await taker.ethereumWallet.getBalance())
         ).toFixed(2)
     );
 
-    readLineSync.question("0. Ready?");
+    // Wait for commandline input for demo purposes
+    readLineSync.question("1. Ready to accept and order from the maker?");
 
-    // take an order from a maker
-    const negotiationProtocolClient = new NegotiationProtocolClient();
-    const {
-        order,
-        execution_params,
-    } = await negotiationProtocolClient.startNegotiation(
-        "http://localhost:2318/orders",
-        "ETH-BTC"
+    // Initialize the taker negotiator that defines the negotiation phase of the trade.
+    // The taker negotiator manages retrieving orders from the maker and deciding if they are acceptable for the taker.
+    // Once an order was taken by a taker the negotiator hands over the order and execution parameters to the
+    // execution phase.
+    const takerNegotiator = new TakerNegotiator(taker.comitClient);
+    const makerClient = new MakerClient("http://localhost:2318/");
+
+    // Decide if an order is acceptable for the taker and take it.
+    const isOrderAcceptable = (order: Order) => {
+        // Check if the returned order matches the requested asset-pair
+        if (order.ask.asset !== "ether" || order.bid.asset !== "bitcoin") {
+            // These aren't the droids you're looking for
+            return false;
+        }
+
+        const ether = parseFloat(order.ask.nominalAmount);
+        const bitcoin = parseFloat(order.bid.nominalAmount);
+
+        if (ether === 0 || bitcoin === 0) {
+            // Let's do safe maths
+            return false;
+        }
+        // Only accept orders that are at least 1 bitcoin for 10 Ether
+        const minRate = 0.001;
+        const orderRate = bitcoin / ether;
+        console.log("Rate offered: ", orderRate);
+        return orderRate > minRate;
+    };
+    const { order, swap } = await takerNegotiator.negotiateAndInitiateSwap(
+        makerClient,
+        // Define the trading pair to request and order for.
+        "ETH-BTC",
+        isOrderAcceptable
     );
 
-    const ether = formatEther(order.ask.amount);
-    const bitcoin = toBitcoin(order.bid.amount);
+    if (!swap) {
+        throw new Error("Could not find an order or something else went wrong");
+    }
+
     console.log(
         `Received latest order details: %s:%s for a rate of %d:%d`,
         order.ask.asset,
         order.bid.asset,
-        ether,
-        bitcoin
+        order.ask.nominalAmount,
+        order.bid.nominalAmount
     );
 
-    const swapMessage = createSwap(taker, order, execution_params);
-
-    const swapHandle = await taker.comitClient.sendSwap(swapMessage);
-
-    const actionConfig = { timeout: 100000, tryInterval: 1000 };
+    // Retrieve the details (properties) of the swap
+    const swapMessage = await swap.fetchDetails();
+    const swapParameters = swapMessage.properties!.parameters;
 
     console.log(
         "Swap started! Swapping %d %s for %d %s",
-        formatEther(swapMessage.alpha_asset.quantity),
-        swapMessage.alpha_asset.name,
-        toBitcoin(swapMessage.beta_asset.quantity),
-        swapMessage.beta_asset.name
+        formatEther(swapParameters.alpha_asset.quantity),
+        swapParameters.alpha_asset.name,
+        toBitcoin(swapParameters.beta_asset.quantity),
+        swapParameters.beta_asset.name
     );
 
-    readLineSync.question("1. Continue?");
+    // Wait for commandline input for demo purposes
+    readLineSync.question("2. Continue funding the Ethereum HTLC?");
+
+    // Define how often and how long the comit-js-sdk should try to execute the fund and redeem action.
+    const tryParams: TryParams = { maxTimeoutSecs: 100, tryIntervalSecs: 1 };
 
     console.log(
         "Ethereum HTLC funded! TXID: ",
-        await swapHandle.fund(actionConfig)
+
+        // -- FUND --
+        // Wait for the successful execution of the funding transaction of the taker.
+        //
+        // -- Execution Details: --
+        // The taker is the first one to fund, thus this is the first transaction sent.
+        //
+        // This promise will thus resolve once:
+        // - The taker has sent the fund transaction.
+        //
+        // The transaction ID will be returned by the wallet after sending the transaction.
+        await swap.fund(tryParams)
     );
 
-    readLineSync.question("3. Continue?");
+    // Wait for commandline input for demo purposes
+    readLineSync.question("4. Continue redeeming the Bitcoin HTLC?");
 
     console.log(
         "Bitcoin redeemed! TXID: ",
-        await swapHandle.redeem(actionConfig)
+
+        // -- REDEEM --
+        // Wait for the successful execution of the redeem transaction of the taker.
+        //
+        // -- Execution Details: --
+        // The takers's redeem transaction will only be executed after the taker's comit network daemon (cnd)
+        // has detected the fund transaction of the maker.
+        //
+        // This promise will thus resolve once:
+        // - The taker has sent the fund transaction,
+        // - The maker's comit network daemon has retrieved the taker's fund transaction from an incoming block,
+        // - The maker has sent the fund transaction,
+        // - The taker's comit network daemon has retrieved the maker's fund transaction from an incoming block,
+        //
+        // The transaction ID will be returned by the wallet after sending the transaction.
+        await swap.redeem(tryParams)
     );
 
     console.log("Swapped!");
+
+    // The comit network daemon (cnd) processes new incoming blocks faster than bcoin.
+    // This results in the final balance not being printed correctly, even though the redeem transaction was already
+    // noticed by cnd.
+    // In order to make sure the final balance is printed correctly we thus sleep for 1 second here.
+    await sleep(1000);
+
+    // print balances after swapping
     console.log(
-        "[Taker] Bitcoin balance: %f. Ether balance: %f",
+        "[Taker] Bitcoin balance: %f, Ether balance: %f",
         parseFloat(await taker.bitcoinWallet.getBalance()).toFixed(2),
         parseFloat(
             formatEther(await taker.ethereumWallet.getBalance())
         ).toFixed(2)
     );
+
     process.exit();
 })();
-
-function createSwap(
-    actor: Actor,
-    order: Order,
-    executionParams: ExecutionParams
-): SwapRequest {
-    const refundAddress = actor.ethereumWallet.getAccount();
-
-    return {
-        alpha_ledger: {
-            name: order.ask.ledger,
-            network: order.ask.network,
-        },
-        beta_ledger: {
-            name: order.bid.ledger,
-            network: order.bid.network,
-        },
-        alpha_asset: {
-            name: order.ask.asset,
-            quantity: order.ask.amount,
-        },
-        beta_asset: {
-            name: order.bid.asset,
-            quantity: order.bid.amount,
-        },
-        alpha_ledger_refund_identity: refundAddress,
-        alpha_expiry: executionParams.expiries.ask_expiry,
-        beta_expiry: executionParams.expiries.bid_expiry,
-        peer: {
-            peer_id: executionParams.connection_info.peer_id,
-            address_hint: executionParams.connection_info.address_hint,
-        },
-    };
-}

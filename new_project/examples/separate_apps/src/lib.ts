@@ -1,7 +1,17 @@
-import { BitcoinWallet, Cnd, ComitClient, EthereumWallet } from "comit-sdk";
+import {
+    Actor,
+    BitcoinWallet,
+    createActor as createActorSdk,
+    EthereumWallet,
+} from "comit-sdk";
 import fs from "fs";
+import * as os from "os";
+import * as path from "path";
+import dotenv from "dotenv";
 
-export async function startClient(index: number): Promise<Actor> {
+export async function createActor(index: number): Promise<Actor> {
+    loadEnvironment();
+
     const bitcoinWallet = await BitcoinWallet.newInstance(
         "regtest",
         process.env.BITCOIN_P2P_URI!,
@@ -15,37 +25,27 @@ export async function startClient(index: number): Promise<Actor> {
         process.env[`ETHEREUM_KEY_${index}`]!
     );
 
-    const cnd = new Cnd(process.env[`HTTP_URL_CND_${index}`]!);
-    const peerId = await cnd.getPeerId();
-    const addressHint = await cnd
-        .getPeerListenAddresses()
-        .then(addresses => addresses[0]);
-
-    const comitClient = new ComitClient(bitcoinWallet, ethereumWallet, cnd);
-
-    return {
-        comitClient,
-        peerId,
-        addressHint,
+    return await createActorSdk(
         bitcoinWallet,
         ethereumWallet,
-    };
+        process.env[`HTTP_URL_CND_${index}`]!
+    );
 }
 
-export interface Actor {
-    comitClient: ComitClient;
-    peerId: string;
-    addressHint: string;
-    bitcoinWallet: BitcoinWallet;
-    ethereumWallet: EthereumWallet;
-}
+function loadEnvironment() {
+    let envFilePath = path.join(os.homedir(), ".create-comit-app", "env");
 
-export function checkEnvFile(path: string) {
-    if (!fs.existsSync(path)) {
+    if (!fs.existsSync(envFilePath)) {
         console.log(
-            "Could not find %s file. Did you run \\`create-comit-app start-env\\`?",
-            path
+            "Could not find file %s. Did you run `yarn start-env`?",
+            envFilePath
         );
         process.exit(1);
     }
+
+    dotenv.config({path: envFilePath});
+}
+
+export async function sleep(ms: number) {
+    return new Promise(resolve => setTimeout(resolve, ms));
 }

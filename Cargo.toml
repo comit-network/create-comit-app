@@ -1,38 +1,47 @@
 [package]
 name = "create-comit-app"
-version = "0.3.0"
+version = "0.5.1"
 authors = ["CoBloX developers <team@coblox.tech>"]
 edition = "2018"
 
 [dependencies]
+anyhow = "1.0.25"
+async-std = "1.2.0"
+derive_more = "0.99.2"
 dirs = "2"
 emerald-vault-core = { git = "http://github.com/thomaseizinger/emerald-vault.git", branch = "create-comit-app-compatible", default-features = false }
 envfile = "0.2"
 ethabi = "8.0"
-flate2 = "1.0.12"
+flate2 = "1.0.13"
 futures-preview = { version = "0.3.0-alpha.19", features = ["compat"] }
 hex = "0.4.0"
 hex-literal = "0.2.1"
 hex-serde = "0.1.0"
+http = "0.1"
 lazy_static = "1.4"
-port_check = "0.1"
-rand = "0.4"
 reqwest = { version = "0.9", default-features = false }
-rust_bitcoin = { version = "0.19.1", package = "bitcoin" }
+rust_bitcoin = { version = "0.19.1", package = "bitcoin", features = ["use-serde"] }
 secp256k1 = { version = "0.12", features = ["rand"] }
 serde = "1"
 serde_json = "1"
-shiplift = { version = "0.5", default-features = false, features = ["unix-socket"] }
+shiplift = { version = "0.6", default-features = false }
 signal-hook = { version = "0.1", features = ["tokio-support"] }
 structopt = "0.3"
 tar = "0.4.26"
 tempfile = "3.1.0"
+thiserror = "1"
 tokio = "0.1"
 toml = "0.5"
-web3 = "0.8"
+web3 = { version = "0.8", default-features = false, features = ["http"] }
+
+[features]
+default = ["unix"]
+unix = ["shiplift/unix-socket"]
+windows = ["shiplift/tls"]
 
 [build-dependencies]
-anyhow = "1.0.19"
-flate2 = "1.0.12"
+anyhow = "1.0.25"
+flate2 = "1.0.13"
 ignore = "0.4.10"
 tar = "0.4.26"
+

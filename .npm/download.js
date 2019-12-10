@@ -1,30 +1,14 @@
 const fs = require("fs");
 const util = require("util");
-const exec = util.promisify(require("child_process").exec);
 const extract = util.promisify(require("targz").decompress);
 const axios = require("axios");
 const path = require("path");
-
-async function getSystem() {
-  const { stdout } = await exec("uname -s");
-  return stdout.trim();
-}
-
-async function getArch() {
-  const { stdout } = await exec("uname -m");
-  return stdout.trim();
-}
+const makeArchiveName = require("./makeArchiveName").default;
 
 async function download(version, binTarget) {
-  const system = await getSystem();
-  const arch = await getArch();
-  if (!version || !system || !arch) {
-    throw new Error("Could not retrieve needed information.");
-  }
-
   const targetDir = path.dirname(binTarget);
 
-  const archiveName = `create-comit-app_${version}_${system}_${arch}.tar.gz`;
+  const archiveName = makeArchiveName(version);
   const archivePath = targetDir + "/" + archiveName;
 
   if (!fs.existsSync(targetDir)) {

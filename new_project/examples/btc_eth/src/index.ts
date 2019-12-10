@@ -1,55 +1,77 @@
-import { BitcoinWallet, EthereumWallet } from "comit-sdk";
-import { formatEther } from "ethers/utils";
+import {
+    Actor,
+    BigNumber,
+    BitcoinWallet,
+    createActor as createActorSdk,
+    EthereumWallet,
+    SwapRequest,
+} from "comit-sdk";
 import fs from "fs";
-import { CoinType, HelloSwap, WhoAmI } from "./helloSwap";
-import { createLogger } from "./logger";
-import { OrderBook } from "./orderBook";
+import moment from "moment";
+import { toBitcoin, toSatoshi } from "satoshi-bitcoin-ts";
+import * as path from "path";
+import dotenv from "dotenv";
+import * as os from "os";
 
 (async function main() {
-    checkEnvFile(process.env.DOTENV_CONFIG_PATH!);
+    loadEnvironment();
 
-    const orderBook = new OrderBook();
+    const maker = await createActor(0, "Maker");
+    const taker = await createActor(1, "Taker");
 
-    const maker = await startApp("maker", 0);
-    const taker = await startApp("taker", 1);
+    console.log("Maker Ethereum address: ", maker.ethereumWallet.getAccount());
 
-    // Maker creates and publishes offer
-    const makerOffer = await maker.createOffer(
-        {
-            coin: CoinType.Ether,
-            amount: 10,
-        },
-        {
-            coin: CoinType.Bitcoin,
-            amount: 1,
-        }
+    console.log("Taker Ethereum address: ", taker.ethereumWallet.getAccount());
+
+    await printBalances(maker);
+    await printBalances(taker);
+
+    const swapMessage = createSwap(maker, taker);
+
+    const takerSwapHandle = await taker.comitClient.sendSwap(swapMessage);
+    await new Promise(r => setTimeout(r, 1000));
+    const makerSwapHandle = await maker.comitClient
+        .getNewSwaps()
+        .then(swaps => swaps[0]);
+
+    const tryParams = { maxTimeoutSecs: 10, tryIntervalSecs: 1 };
+    await makerSwapHandle.accept(tryParams);
+
+    console.log(
+        "Swap started! Swapping %d %s for %d %s",
+        toBitcoin(swapMessage.alpha_asset.quantity),
+        swapMessage.alpha_asset.name,
+        toNominal(swapMessage.beta_asset.quantity, 18),
+        swapMessage.beta_asset.name
     );
-    orderBook.addOffer(makerOffer);
 
-    // Taker finds and takes offer
-    const foundOffers = orderBook.findOffers({
-        buyCoin: CoinType.Ether,
-        sellCoin: CoinType.Bitcoin,
-        buyAmount: 5,
-    });
-    await taker.takeOffer(foundOffers[0]);
+    console.log(
+        "Ethereum HTLC funded! TXID: ",
+        await takerSwapHandle.fund(tryParams)
+    );
 
-    process.stdin.resume(); // so the program will not close instantly
+    console.log(
+        "Bitcoin HTLC funded! TXID: ",
+        await makerSwapHandle.fund(tryParams)
+    );
 
-    async function exitHandler() {
-        maker.stop();
-        taker.stop();
+    console.log(
+        "Bitcoin HTLC redeemed! TXID: ",
+        await takerSwapHandle.redeem(tryParams)
+    );
 
-        await logBalances(maker).then(() => logBalances(taker));
-        process.exit();
-    }
+    console.log(
+        "Ethereum HTLC redeemed! TXID: ",
+        await makerSwapHandle.redeem(tryParams)
+    );
 
-    process.on("SIGINT", exitHandler);
-    process.on("SIGUSR1", exitHandler);
-    process.on("SIGUSR2", exitHandler);
+    console.log("Swapped!");
+    await printBalances(maker);
+    await printBalances(taker);
+    process.exit();
 })();
 
-async function startApp(whoAmI: WhoAmI, index: number) {
+async function createActor(index: number, name: string): Promise<Actor> {
     const bitcoinWallet = await BitcoinWallet.newInstance(
         "regtest",
         process.env.BITCOIN_P2P_URI!,
@@ -58,38 +80,73 @@ async function startApp(whoAmI: WhoAmI, index: number) {
     await new Promise(r => setTimeout(r, 1000));
 
     const ethereumWallet = new EthereumWallet(
-        process.env[`ETHEREUM_KEY_${index}`]!,
-        process.env.ETHEREUM_NODE_HTTP_URL!
+        process.env.ETHEREUM_NODE_HTTP_URL!,
+        process.env[`ETHEREUM_KEY_${index}`]!
     );
 
-    const app = new HelloSwap(
-        process.env[`HTTP_URL_CND_${index}`]!,
-        whoAmI,
+    return createActorSdk(
         bitcoinWallet,
-        ethereumWallet
-    );
-
-    await logBalances(app);
-
-    return app;
-}
-
-async function logBalances(app: HelloSwap) {
-    const logger = createLogger();
-    logger[app.whoAmI](
-        "Bitcoin balance: %f. Ether balance: %f",
-        parseFloat(await app.getBitcoinBalance()).toFixed(2),
-        parseFloat(formatEther(await app.getEtherBalance())).toFixed(2)
+        ethereumWallet,
+        process.env[`HTTP_URL_CND_${index}`]!,
+        name
     );
 }
 
-function checkEnvFile(path: string) {
-    if (!fs.existsSync(path)) {
-        const logger = createLogger();
-        logger.error(
-            "Could not find %s file. Did you run \\`create-comit-app start-env\\`?",
-            path
+function createSwap(maker: Actor, taker: Actor): SwapRequest {
+    const to = maker.peerId;
+    const redeemAddress = taker.ethereumWallet.getAccount();
+
+    return {
+        alpha_ledger: {
+            name: "bitcoin",
+            network: "regtest",
+        },
+        beta_ledger: {
+            name: "ethereum",
+            network: "regtest",
+        },
+        alpha_asset: {
+            name: "bitcoin",
+            quantity: toSatoshi(0.1).toString(),
+        },
+        beta_asset: {
+            name: "ether",
+            quantity: "5000000000000000000",
+        },
+        beta_ledger_redeem_identity: redeemAddress,
+        alpha_expiry: moment().unix() + 7200,
+        beta_expiry: moment().unix() + 3600,
+        peer: {
+            peer_id: to,
+            address_hint: maker.addressHint,
+        },
+    };
+}
+
+function loadEnvironment() {
+    let envFilePath = path.join(os.homedir(), ".create-comit-app", "env");
+
+    if (!fs.existsSync(envFilePath)) {
+        console.log(
+            "Could not find file %s. Did you run `yarn start-env`?",
+            envFilePath
         );
         process.exit(1);
     }
+
+    dotenv.config({path: envFilePath});
+}
+
+async function printBalances(actor: Actor) {
+    const tokenWei = await actor.ethereumWallet.getBalance();
+    console.log(
+        "%s Bitcoin balance: %d. Ether balance: %d",
+        actor.name,
+        parseFloat(await actor.bitcoinWallet.getBalance()).toFixed(2),
+        toNominal(tokenWei.toString(), 18)
+    );
+}
+
+function toNominal(tokenWei: string, decimals: number) {
+    return new BigNumber(tokenWei).div(new BigNumber(10).pow(decimals));
 }

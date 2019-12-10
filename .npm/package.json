@@ -1,11 +1,12 @@
 {
   "name": "create-comit-app",
-  "version": "0.3.0",
+  "version": "0.6.0",
   "description": " Set up a local development environment for COMIT apps with one command.",
   "main": "cca.js",
   "scripts": {
-    "start": "node cca.js",
-    "fix": "prettier --write '**/*.{ts,js,json,yml}'"
+    "start": "node cca.js new",
+    "fix": "prettier --write '**/*.{ts,js,json,yml}'",
+    "test": "prettier --check '**/*.{ts,js,json,yml}'"
   },
   "repository": {
     "type": "git",

@@ -65,14 +65,15 @@ TEST_PASSED=false
 
 cd "${EXAMPLE_DIR}"
 
+yarn remove create-comit-app > /dev/null
 yarn install > /dev/null
 
-yarn run start  > "${LOG_FILE}" 2>&1 &
+yarn run swap > "${LOG_FILE}" 2>&1 &
 RUN_PID=$!
 
 function check_swap() {
   local LOG_FILE=$1;
-  grep -q "maker.*SWAPPED" "$LOG_FILE" && grep -q "taker.*SWAPPED" "$LOG_FILE";
+  grep -q "Bitcoin HTLC redeemed! TXID" "$LOG_FILE" && grep -q "Ethereum HTLC redeemed! TXID" "$LOG_FILE";
   echo $?;
 }
 
@@ -96,8 +97,16 @@ else
   EXIT_CODE=1;
 fi
 
-kill $RUN_PID;
-kill $CCA_PID;
+
+function kill_process() {
+  if ! kill $1 > /dev/null 2>&1; then
+    echo "Could not send SIGTERM to process $1. Not running anymore?" >&2
+fi
+}
+
+kill_process $RUN_PID;
+kill_process $CCA_PID;
+
 wait $RUN_PID || echo -ne ""; # It always return bad code. See #108
 wait $CCA_PID;
 exit $EXIT_CODE;

@@ -1,8 +1,12 @@
 pull_request_rules:
   - name: instruct bors to merge dependabot PRs with passing tests
     conditions:
-      - "status-success=ci/circleci: build_test"
-      - "status-success=ci/circleci: static_analysis"
+      - "status-success=static_analysis"
+      - "status-success=build (macos)"
+      - "status-success=build (windows)"
+      - "status-success=build (ubuntu)"
+      - "status-success=e2e_test"
+      - "status-success=license/cla"
       - "author:dependabot-preview[bot]"
     actions:
       comment:
@@ -11,8 +15,11 @@ pull_request_rules:
     conditions:
       - "#approved-reviews-by>=2"
       - "#changes-requested-reviews-by=0"
-      - "status-success=ci/circleci: build_test"
-      - "status-success=ci/circleci: static_analysis"
+      - "status-success=static_analysis"
+      - "status-success=build (macos)"
+      - "status-success=build (windows)"
+      - "status-success=build (ubuntu)"
+      - "status-success=e2e_test"
       - "status-success=license/cla"
       - -conflict
       - label!=work-in-progress
@@ -29,7 +36,8 @@ pull_request_rules:
       delete_head_branch:
   - name: nag if changelog is not updated
     conditions:
-      - "files~=(?!.*CHANGELOG.md.*)"
+      - "author!=dependabot-preview[bot]"
+      - "files!=CHANGELOG.md"
       - review-requested!=''
     actions:
       comment:

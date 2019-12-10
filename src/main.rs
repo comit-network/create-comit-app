@@ -1,6 +1,4 @@
-use create_comit_app::create_comit_app::CreateComitApp;
-use create_comit_app::env;
-use create_comit_app::new::new;
+use create_comit_app::{create_comit_app::CreateComitApp, env, new::new};
 use std::io;
 use structopt::StructOpt;
 

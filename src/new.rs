@@ -1,8 +1,9 @@
 use flate2::read::GzDecoder;
-use std::fs::File;
-use std::io;
-use std::io::{Read, Write};
-use std::path::Path;
+use std::{
+    fs::File,
+    io::{self, Read, Write},
+    path::Path,
+};
 use tar::Archive;
 
 pub fn new(name: String, examples_archive: &[u8]) -> io::Result<()> {

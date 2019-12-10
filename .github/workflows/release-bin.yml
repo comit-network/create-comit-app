@@ -7,39 +7,88 @@ on:
       - '[0-9]+.[0-9]+.[0-9]+'
 
 jobs:
-  build:
-    name: Rust project
-    runs-on: ${{ matrix.os }}
+  rust_build:
     strategy:
       matrix:
-        os: [ubuntu-latest, macOS-latest]
+        os: [macos, windows, ubuntu]
+        include:
+          - os: windows
+            binary: create-comit-app.exe
+          - os: ubuntu
+            binary: create-comit-app
+          - os: macos
+            binary: create-comit-app
+    runs-on: ${{ matrix.os }}-latest
     steps:
-      - uses: actions/checkout@master
-      # Workaround until actions/virtual-environments#6 is fixed
-      - name: Get Toolchain version
-        if: startsWith(matrix.os, 'macOS')
-        run: |
-          echo ::set-env name=TOOLCHAIN::$(cat rust-toolchain|head -n1)
-      - name: Install Rust
-        if: startsWith(matrix.os, 'macOS')
+      - name: Checkout sources
+        uses: actions/checkout@v1
+
+      - name: Extract toolchain version from rust-toolchain
+        run: echo "::set-env name=RUST_TOOLCHAIN::$(cat rust-toolchain)"
+
+      - name: Install ${{ env.RUST_TOOLCHAIN }} toolchain
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: ${{ env.TOOLCHAIN }}
-      - name: Build release
-        uses: actions-rs/cargo@v1
+          profile: minimal
+          toolchain: ${{ env.RUST_TOOLCHAIN }}
+          override: true
+
+      - name: Install OpenSSL and configure it to link statically
+        run: |
+          vcpkg install openssl:x64-windows-static
+          vcpkg integrate install
+          echo "::set-env name=RUSTFLAGS::-Ctarget-feature=+crt-static"
+        if: matrix.os == 'windows'
+
+      - name: Build ${{ matrix.os }} release binary
+        run: make release
+
+      - name: Use Node.js 10.x
+        uses: actions/setup-node@v1
         with:
-          command: build
-          args: --release --all-features
+          node-version: 10.x
+
       - name: Create archive
         if: startsWith(github.ref, 'refs/tags/')
+        shell: bash
         run: |
-          VERSION=${GITHUB_REF##*/};
-          (cd ./target/release; tar czvf ~/create-comit-app_${VERSION}_$(uname -s)_$(uname -m).tar.gz create-comit-app;)
-          mv ~/create-comit-app_*.tar.gz .
-      - name: Upload asset
+          VERSION=$(git describe --tags)
+
+          # We need to do bash -c to make sure this also works on GitBash for Windows.
+          # GitHub actions uses GitBash for Windows if we say 'shell: bash' on a Windows executor.
+          ARCHIVE=$(bash -c "node .npm/printArchiveName.js ${VERSION}")
+
+          tar czvf ${ARCHIVE} -C target/release ${{ matrix.binary }}
+
+      - name: Upload asset to GitHub release
         uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
         with:
           files: create-comit-app_*.tar.gz
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  npm_build:
+    name: NPM Project
+    runs-on: ubuntu-latest
+    needs: rust_build # Do not publish if the build failed
+    steps:
+      - uses: actions/checkout@v1
+      - name: Use Node.js 10.x
+        uses: actions/setup-node@v1
+        with:
+          node-version: 10.x
+          always-auth: true
+      - name: Build
+        run: |
+          cd .npm
+          yarn install
+          yarn list
+      - name: Release on NPM
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          echo "//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}" > ~/.npmrc
+          cd .npm
+          yarn publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

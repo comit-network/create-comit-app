@@ -5,27 +5,25 @@ set -e
 PROJECT_DIR=${0%/tests/*.sh}
 
 CCA="${PROJECT_DIR}/target/debug/create-comit-app"
-
-# Random 10 char name
-NAME=$(LC_CTYPE=C tr -dc A-Za-z0-9 < /dev/urandom |  fold -w 10 | head -n 1)
+PROJECT_NAME="example-test-project"
 
 function clean () {
-    rm -rf "$NAME"
+    rm -rf "$PROJECT_NAME"
 }
 
 ## Start tests
 echo "Running $0"
 
-$CCA new "${NAME}" > /dev/null || (echo "FAIL: Non-zero exit code returned."; clean ; exit 1;)
+$CCA new "${PROJECT_NAME}" > /dev/null || (echo "FAIL: Non-zero exit code returned."; clean ; exit 1;)
 
-test -d "${NAME}" > /dev/null || (echo "FAIL: Project directory ${NAME} was not created."; clean; exit 1;)
+test -d "${PROJECT_NAME}" > /dev/null || (echo "FAIL: Project directory ${PROJECT_NAME} was not created."; clean; exit 1;)
 
-test -f "${NAME}/package.json" > /dev/null  || (echo "FAIL: ${NAME} project was not initialized with a package.json file."; clean; exit 1;)
+test -f "${PROJECT_NAME}/package.json" > /dev/null  || (echo "FAIL: ${PROJECT_NAME} project was not initialized with a package.json file."; clean; exit 1;)
 
-PACKAGE_JSON_PROJECT_NAME=$(cat "${NAME}/package.json" | jq .name)
-if [ "$PACKAGE_JSON_PROJECT_NAME" != "\"$NAME\"" ]
+PACKAGE_JSON_PROJECT_NAME=$(cat "${PROJECT_NAME}/package.json" | jq .name)
+if [ "$PACKAGE_JSON_PROJECT_NAME" != "\"$PROJECT_NAME\"" ]
 then
-  echo "FAIL: Project was not properly initialized with ${NAME} in package.json."
+  echo "FAIL: Project was not properly initialized with ${PROJECT_NAME} in package.json."
   clean
   exit 1
 fi

@@ -1,8 +1,8 @@
 import {
+    Actor,
     BigNumber,
     BitcoinWallet,
-    Cnd,
-    ComitClient,
+    createActor as createActorSdk,
     EthereumWallet,
     SwapRequest,
 } from "comit-sdk";
@@ -10,22 +10,19 @@ import fs from "fs";
 import moment from "moment";
 import readLineSync from "readline-sync";
 import { toBitcoin, toSatoshi } from "satoshi-bitcoin-ts";
+import * as path from "path";
+import dotenv from "dotenv";
+import * as os from "os";
 
 (async function main() {
-    checkEnvFile(process.env.DOTENV_CONFIG_PATH!);
+    loadEnvironment();
 
-    const maker = await startClient(0, "Maker");
-    const taker = await startClient(1, "Taker");
+    const maker = await createActor(0, "Maker");
+    const taker = await createActor(1, "Taker");
 
-    console.log(
-        "Maker Ethereum address: ",
-        await maker.ethereumWallet.getAccount()
-    );
+    console.log("Maker Ethereum address: ", maker.ethereumWallet.getAccount());
 
-    console.log(
-        "Taker Ethereum address: ",
-        await taker.ethereumWallet.getAccount()
-    );
+    console.log("Taker Ethereum address: ", taker.ethereumWallet.getAccount());
 
     await printBalances(maker);
     await printBalances(taker);
@@ -38,8 +35,8 @@ import { toBitcoin, toSatoshi } from "satoshi-bitcoin-ts";
         .getNewSwaps()
         .then(swaps => swaps[0]);
 
-    const actionConfig = { timeout: 10000, tryInterval: 1000 };
-    await makerSwapHandle.accept(actionConfig);
+    const tryParams = { maxTimeoutSecs: 10, tryIntervalSecs: 1 };
+    await makerSwapHandle.accept(tryParams);
 
     console.log(
         "Swap started! Swapping %d tokens @ contract address %s for %d %s",
@@ -53,35 +50,35 @@ import { toBitcoin, toSatoshi } from "satoshi-bitcoin-ts";
 
     console.log(
         "Ethereum HTLC deployed! TXID: ",
-        await takerSwapHandle.deploy(actionConfig)
+        await takerSwapHandle.deploy(tryParams)
     );
 
     readLineSync.question("Continue?");
 
     console.log(
         "Ethereum HTLC funded! TXID: ",
-        await takerSwapHandle.fund(actionConfig)
+        await takerSwapHandle.fund(tryParams)
     );
 
     readLineSync.question("Continue?");
 
     console.log(
         "Bitcoin HTLC funded! TXID: ",
-        await makerSwapHandle.fund(actionConfig)
+        await makerSwapHandle.fund(tryParams)
     );
 
     readLineSync.question("Continue?");
 
     console.log(
         "Bitcoin HTLC redeemed! TXID: ",
-        await takerSwapHandle.redeem(actionConfig)
+        await takerSwapHandle.redeem(tryParams)
     );
 
     readLineSync.question("Continue?");
 
     console.log(
         "Ethereum HTLC redeemed! TXID: ",
-        await makerSwapHandle.redeem(actionConfig)
+        await makerSwapHandle.redeem(tryParams)
     );
 
     console.log("Swapped!");
@@ -90,16 +87,7 @@ import { toBitcoin, toSatoshi } from "satoshi-bitcoin-ts";
     process.exit();
 })();
 
-interface Actor {
-    name: string;
-    comitClient: ComitClient;
-    peerId: string;
-    addressHint: string;
-    bitcoinWallet: BitcoinWallet;
-    ethereumWallet: EthereumWallet;
-}
-
-async function startClient(index: number, name: string): Promise<Actor> {
+async function createActor(index: number, name: string): Promise<Actor> {
     const bitcoinWallet = await BitcoinWallet.newInstance(
         "regtest",
         process.env.BITCOIN_P2P_URI!,
@@ -112,22 +100,12 @@ async function startClient(index: number, name: string): Promise<Actor> {
         process.env[`ETHEREUM_KEY_${index}`]!
     );
 
-    const cnd = new Cnd(process.env[`HTTP_URL_CND_${index}`]!);
-    const peerId = await cnd.getPeerId();
-    const addressHint = await cnd
-        .getPeerListenAddresses()
-        .then(addresses => addresses[0]);
-
-    const comitClient = new ComitClient(bitcoinWallet, ethereumWallet, cnd);
-
-    return {
-        name,
-        comitClient,
-        peerId,
-        addressHint,
+    return createActorSdk(
         bitcoinWallet,
         ethereumWallet,
-    };
+        process.env[`HTTP_URL_CND_${index}`]!,
+        name
+    );
 }
 
 function createSwap(maker: Actor, taker: Actor): SwapRequest {
@@ -162,17 +140,24 @@ function createSwap(maker: Actor, taker: Actor): SwapRequest {
     };
 }
 
-function checkEnvFile(path: string) {
-    if (!fs.existsSync(path)) {
+function loadEnvironment() {
+    let envFilePath = path.join(os.homedir(), ".create-comit-app", "env");
+
+    if (!fs.existsSync(envFilePath)) {
         console.log(
-            "Could not find %s file. Did you run \\`create-comit-app start-env\\`?",
-            path
+            "Could not find file %s. Did you run `yarn start-env`?",
+            envFilePath
         );
         process.exit(1);
     }
+
+    dotenv.config({path: envFilePath});
 }
 
 async function printBalances(actor: Actor) {
+    // Wait a second to let the Ethereum wallet catch up
+    await new Promise(r => setTimeout(r, 1000));
+
     console.log(
         "%s Bitcoin balance: %d. Erc20 Token balance: %d",
         actor.name,

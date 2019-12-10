@@ -1,259 +1,241 @@
 use crate::print_progress;
-use envfile::EnvFile;
-use shiplift::builder::ContainerOptionsBuilder;
+use anyhow::Context;
+use futures::compat::Future01CompatExt;
+use http::Uri;
 use shiplift::{
     ContainerOptions, Docker, LogsOptions, NetworkCreateOptions, PullOptions, RmContainerOptions,
 };
-use std::path::PathBuf;
-use tokio::prelude::future::Either;
+use std::{net::Ipv4Addr, path::Path};
 use tokio::prelude::stream::Stream;
-use tokio::prelude::Future;
 
-pub mod blockchain;
+pub mod bitcoin;
 pub mod cnd;
-
-pub use self::blockchain::{bitcoin, ethereum};
-pub use self::cnd::Cnd;
+pub mod ethereum;
+mod free_local_port;
 
 pub const DOCKER_NETWORK: &str = "create-comit-app";
 
-pub struct ExposedPorts {
-    pub for_client: bool,
-    pub srcport: u32,
-    pub env_file_key: String,
-    pub env_file_value: Box<dyn Fn(u32) -> String>,
+pub struct DockerImage(pub &'static str);
+pub struct LogMessage(pub &'static str);
+
+/// A file that should be copied into the container before it is started
+pub struct File<'a> {
+    location: &'a Path,
+    content: &'a [u8],
 }
 
-pub trait Image {
-    const IMAGE: &'static str;
-    const LOG_READY: &'static str;
+pub async fn start(
+    image: DockerImage,
+    options: ContainerOptions,
+    wait_for: LogMessage,
+    files: Vec<File<'_>>,
+) -> anyhow::Result<()> {
+    let docker = new_docker_client()?;
 
-    fn arguments_for_create() -> Vec<&'static str>;
-    fn expose_ports(name: &str) -> Vec<ExposedPorts>;
-    fn new(endpoint: Option<String>) -> Self;
-}
+    let images = docker
+        .images()
+        .list(&Default::default())
+        .compat()
+        .await
+        .context("unable to list local docker images")?;
 
-pub struct Node<I: Image> {
-    pub node_image: I,
-}
-
-// TODO: Probably good idea to convert into a builder
-// TODO: Move free_local_port outside
-impl<I: Image> Node<I> {
-    pub fn start(
-        envfile_path: PathBuf,
-        name: &str,
-    ) -> impl Future<Item = Self, Error = shiplift::errors::Error> {
-        let name = name.to_string();
-
-        let mut create_options = ContainerOptions::builder(I::IMAGE);
-        create_options.name(&name);
-        create_options.network_mode(DOCKER_NETWORK);
-        create_options.cmd(I::arguments_for_create());
-
-        let (to_write_in_env, client_endpoint, create_options) =
-            <Node<I>>::write_env_file(&name, &mut create_options);
-
-        Self::get_image().and_then(move |_| {
-            Self::start_container(
-                envfile_path,
-                create_options,
-                client_endpoint,
-                to_write_in_env,
-            )
+    let image_is_present_locally = images
+        .iter()
+        .find(|local_image| {
+            local_image
+                .repo_tags
+                .as_ref()
+                .and_then(|repo_tags| repo_tags.iter().find(|tag| *tag == image.0).map(|_| true))
+                .unwrap_or(false)
         })
-    }
+        .map(|_| true)
+        .unwrap_or(false);
 
-    pub fn start_with_volume(
-        envfile_path: PathBuf,
-        name: &str,
-        volume: &str,
-    ) -> impl Future<Item = Self, Error = shiplift::Error> {
-        let mut create_options = ContainerOptions::builder(I::IMAGE);
-        create_options.name(&name);
-        create_options.network_mode(DOCKER_NETWORK);
-        create_options.cmd(I::arguments_for_create());
-        create_options.volumes(vec![volume]);
-
-        let (to_write_in_env, client_endpoint, create_options) =
-            <Node<I>>::write_env_file(&name, &mut create_options);
-
-        Self::get_image().and_then(move |_| {
-            Self::start_container(
-                envfile_path,
-                create_options,
-                client_endpoint,
-                to_write_in_env,
-            )
-        })
-    }
-
-    fn get_image() -> impl Future<Item = (), Error = shiplift::Error> {
-        Docker::new()
+    if !image_is_present_locally {
+        print_progress!("Downloading {}", image.0);
+        let options = PullOptions::builder().image(image.0).build();
+        docker
             .images()
-            .list(&Default::default())
-            .map(|images| {
-                images
-                    .iter()
-                    .find(|image| {
-                        image
-                            .repo_tags
-                            .as_ref()
-                            .and_then(|repo_tags| {
-                                repo_tags
-                                    .iter()
-                                    .find(|tag| *tag == &I::IMAGE.to_string())
-                                    .map(|_| true)
-                            })
-                            .unwrap_or(false)
-                    })
-                    .map(|_| true)
-                    .unwrap_or(false)
-            })
-            .and_then(|image_present| {
-                if !image_present {
-                    print_progress!("Downloading {}", I::IMAGE);
-                    Either::A(
-                        Docker::new()
-                            .images()
-                            .pull(&PullOptions::builder().image(I::IMAGE).build())
-                            .collect()
-                            .map(|_| ()),
-                    )
-                } else {
-                    Either::B(tokio::prelude::future::ok(()))
-                }
-            })
+            .pull(&options)
+            .collect()
+            .compat()
+            .await
+            .context("failed to pull image")?;
     }
 
-    fn write_env_file(
-        name: &str,
-        create_options: &mut ContainerOptionsBuilder,
-    ) -> (Vec<(String, String)>, Option<String>, ContainerOptions) {
-        let mut to_write_in_env: Vec<(String, String)> = vec![];
-        let mut http_url: Option<String> = None;
-        for expose_port in I::expose_ports(name) {
-            let port: u32 = port_check::free_local_port().unwrap().into();
-            create_options.expose(expose_port.srcport, "tcp", port);
+    let container = docker
+        .containers()
+        .create(&options)
+        .compat()
+        .await
+        .context("failed to create container")?;
 
-            let value = (*expose_port.env_file_value)(port);
+    let container = docker.containers().get(&container.id);
 
-            if expose_port.for_client {
-                http_url = Some(value.clone());
-            }
-
-            to_write_in_env.push((expose_port.env_file_key, value));
-        }
-        let create_options = create_options.build();
-        (to_write_in_env, http_url, create_options)
+    for file in files {
+        container
+            .copy_file_into(file.location, file.content)
+            .compat()
+            .await?;
     }
 
-    fn start_container(
-        envfile_path: PathBuf,
-        create_options: ContainerOptions,
-        client_endpoint: Option<String>,
-        to_write_in_env: Vec<(String, String)>,
-    ) -> impl Future<Item = Self, Error = shiplift::errors::Error> {
-        Docker::new()
-            .containers()
-            .create(&create_options)
-            .map_err(|e| {
-                eprintln!("Error encountered when creating container: {:?}", e);
-                e
-            })
-            .and_then({
-                move |container| {
-                    let id = container.id;
-                    Docker::new()
-                        .containers()
-                        .get(&id)
-                        .start()
-                        .map(|_| id)
-                        .map_err(|e| {
-                            eprintln!("Error encountered when starting container: {:?}", e);
-                            e
-                        })
-                }
-            })
-            .and_then({
-                move |id| {
-                    Docker::new()
-                        .containers()
-                        .get(&id)
-                        .logs(
-                            &LogsOptions::builder()
-                                .stdout(true)
-                                .stderr(true)
-                                .follow(true)
-                                .build(),
-                        )
-                        .take_while(|chunk| {
-                            let log = chunk.as_string_lossy();
-                            Ok(!log.contains(I::LOG_READY))
-                        })
-                        .collect()
-                        .map_err(|e| {
-                            eprintln!("Error encountered when getting logs: {:?}", e);
-                            e
-                        })
-                        .map(|_| id)
-                }
-            })
-            .and_then({
-                let http_url = client_endpoint.clone();
-                move |_| {
-                    Ok(Self {
-                        node_image: I::new(http_url),
-                    })
-                }
-            })
-            .and_then({
-                let envfile_path = envfile_path.clone();
-                move |node| {
-                    let mut envfile = EnvFile::new(envfile_path).unwrap();
-                    for key_value in to_write_in_env {
-                        envfile.update(&key_value.0, &key_value.1).write().unwrap();
-                    }
+    container
+        .start()
+        .compat()
+        .await
+        .context("failed to start container")?;
 
-                    Ok(node)
-                }
-            })
-    }
+    container
+        .logs(
+            &LogsOptions::builder()
+                .stdout(true)
+                .stderr(true)
+                .follow(true)
+                .build(),
+        )
+        .take_while(|chunk| {
+            let log = chunk.as_string_lossy();
+            Ok(!log.contains(wait_for.0))
+        })
+        .collect()
+        .compat()
+        .await
+        .context("failed while waiting for container to be ready")?;
+
+    Ok(())
 }
 
-pub fn create_network() -> impl Future<Item = String, Error = shiplift::Error> {
-    Docker::new()
+pub async fn create_network() -> anyhow::Result<String> {
+    let docker = new_docker_client()?;
+
+    let response = docker
         .networks()
         .get(DOCKER_NETWORK)
         .inspect()
-        .map(|info| {
-            eprintln!(
-                "\n[warn] {} Docker network already exist, re-using it.",
-                DOCKER_NETWORK
-            );
-            info.id
-        })
-        .or_else(|_| {
-            Docker::new()
-                .networks()
-                .create(
-                    &NetworkCreateOptions::builder(DOCKER_NETWORK)
-                        .driver("bridge")
-                        .build(),
-                )
-                .and_then(|info| Ok(info.id))
-        })
+        .compat()
+        .await;
+
+    if let Ok(info) = response {
+        eprintln!(
+            "\n[warn] {} Docker network already exist, re-using it.",
+            DOCKER_NETWORK
+        );
+
+        return Ok(info.id);
+    }
+
+    let response = docker
+        .networks()
+        .create(
+            &NetworkCreateOptions::builder(DOCKER_NETWORK)
+                .driver("bridge")
+                .build(),
+        )
+        .compat()
+        .await
+        .with_context(|| format!("failed to created docker network {}", DOCKER_NETWORK))?;
+
+    Ok(response.id)
 }
 
-pub fn delete_network() -> impl Future<Item = (), Error = shiplift::Error> {
-    Docker::new().networks().get(DOCKER_NETWORK).delete()
+pub async fn delete_network() -> anyhow::Result<()> {
+    new_docker_client()?
+        .networks()
+        .get(DOCKER_NETWORK)
+        .delete()
+        .compat()
+        .await?;
+
+    Ok(())
 }
 
-pub fn delete_container(name: &str) -> impl Future<Item = (), Error = shiplift::Error> {
-    Docker::new().containers().get(name).remove(
-        RmContainerOptions::builder()
-            .force(true)
-            .volumes(true)
-            .build(),
-    )
+pub async fn delete_container(name: &str) -> anyhow::Result<()> {
+    new_docker_client()?
+        .containers()
+        .get(name)
+        .remove(
+            RmContainerOptions::builder()
+                .force(true)
+                .volumes(true)
+                .build(),
+        )
+        .compat()
+        .await?;
+
+    Ok(())
+}
+
+pub fn docker_daemon_ip() -> anyhow::Result<Ipv4Addr> {
+    let socket = match std::env::var("DOCKER_HOST") {
+        Ok(host) => parse_ip(host)?,
+        Err(_) => Ipv4Addr::LOCALHOST,
+    };
+
+    Ok(socket)
+}
+
+fn parse_ip(uri: String) -> anyhow::Result<Ipv4Addr> {
+    let uri = uri.parse::<http::Uri>()?;
+    let host = uri
+        .host()
+        .ok_or_else(|| anyhow::anyhow!("DOCKER_HOST {} is not a URI with a host"))?;
+    let ip = host
+        .parse()
+        .with_context(|| format!("{} is not a valid ipv4 address", host))?;
+
+    Ok(ip)
+}
+
+#[cfg(feature = "windows")]
+fn new_docker_client() -> anyhow::Result<Docker> {
+    match std::env::var("DOCKER_HOST") {
+        Ok(docker_host) => Ok(Docker::host(https_docker_host(docker_host)?)),
+        _ => anyhow::bail!("DOCKER_HOST must be set in windows"),
+    }
+}
+
+#[cfg(feature = "unix")]
+fn new_docker_client() -> anyhow::Result<Docker> {
+    Ok(Docker::unix("/var/run/docker.sock"))
+}
+
+#[allow(dead_code)]
+// In order for to communicate with docker on windows, we need to patch the content of the
+// DOCKER_HOST variable to use `https` as the scheme because hyper-openssl otherwise does not
+// establish a TLS connection.
+fn https_docker_host(host: String) -> anyhow::Result<Uri> {
+    let uri = host
+        .parse::<http::Uri>()
+        .with_context(|| format!("{} is not a valid URI", host))?;
+
+    let mut parts = uri.into_parts();
+    parts.scheme = Some(http::uri::Scheme::HTTPS);
+
+    let uri = http::Uri::from_parts(parts).context("failed to build a valid URI")?;
+
+    Ok(uri)
+}
+
+#[cfg(test)]
+mod tests {
+
+    use super::*;
+
+    #[test]
+    fn can_parse_ip_from_docker_host() {
+        let docker_host = "tcp://192.168.99.100:2376";
+
+        let ip = parse_ip(docker_host.to_string()).unwrap();
+
+        assert_eq!(ip, Ipv4Addr::new(192, 168, 99, 100));
+    }
+
+    #[test]
+    fn can_construct_valid_windows_docker_host() {
+        let docker_host = "tcp://192.168.99.100:2376".to_string();
+
+        let uri = https_docker_host(docker_host).unwrap();
+
+        assert_eq!(uri.to_string(), "https://192.168.99.100:2376/")
+    }
 }
