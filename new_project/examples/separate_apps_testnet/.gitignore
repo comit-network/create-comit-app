@@ -121,3 +121,10 @@ Temporary Items
 .apdisk
 
 # End of https://www.gitignore.io/api/macos
+
+maker/.bcoin
+maker/seed.pem
+maker/cnd.sqlite
+taker/.bcoin
+taker/cnd.sqlite
+taker/seed.pem
