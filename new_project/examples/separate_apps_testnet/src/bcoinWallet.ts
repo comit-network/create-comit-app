@@ -8,7 +8,7 @@ export class TestnetBitcoinWallet implements BitcoinWallet {
         hdKey: string,
         location: string,
         prefix?: string,
-        httpPort: number = 18333,
+        httpPort: number = 18333
     ): Promise<TestnetBitcoinWallet> {
         const parsedNetwork = Network.get(network);
 
@@ -30,7 +30,7 @@ export class TestnetBitcoinWallet implements BitcoinWallet {
             listen: true,
             loader: require,
             prefix: `${location}/.bcoin/`,
-            httpPort
+            httpPort,
         });
 
         // We do not need the RPC interface

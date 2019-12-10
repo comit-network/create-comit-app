@@ -2,7 +2,10 @@ import { BitcoinWallet, Cnd, ComitClient, EthereumWallet } from "comit-sdk";
 import fs from "fs";
 import { TestnetBitcoinWallet } from "./bcoinWallet";
 
-export async function startClient(actor: string, bcoinWalletPort: number): Promise<Actor> {
+export async function startClient(
+    actor: string,
+    bcoinWalletPort: number
+): Promise<Actor> {
     const bitcoinWallet = await TestnetBitcoinWallet.newInstance(
         "testnet",
         process.env[`BITCOIN_HD_KEY_${actor}`]!,
@@ -52,4 +55,8 @@ export function checkEnvFile(path: string) {
         );
         process.exit(1);
     }
+}
+
+export async function sleep(ms: number) {
+    return new Promise(resolve => setTimeout(resolve, ms));
 }
