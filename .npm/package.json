@@ -4,7 +4,6 @@
   "description": " Set up a local development environment for COMIT apps with one command.",
   "main": "cca.js",
   "scripts": {
-    "start": "node cca.js new",
     "fix": "prettier --write '**/*.{ts,js,json,yml}'",
     "test": "prettier --check '**/*.{ts,js,json,yml}'"
   },
@@ -25,7 +24,8 @@
   },
   "homepage": "https://github.com/comit-network/create-comit-app#readme",
   "bin": {
-    "create-comit-app": "cca.js"
+    "create-comit-app": "new.js",
+    "start-env": "startEnv.js"
   },
   "devDependencies": {
     "prettier": "^1.18.2"
