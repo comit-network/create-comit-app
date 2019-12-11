@@ -8,7 +8,7 @@
     "start-env": "create-comit-app start-env"
   },
   "dependencies": {
-    "comit-sdk": "^0.7.1",
+    "comit-sdk": "^0.8.0",
     "dotenv": "^8.2.0",
     "readline-sync": "^1.4.10"
   },
