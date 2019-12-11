@@ -3,9 +3,9 @@ const util = require("util");
 const extract = util.promisify(require("targz").decompress);
 const axios = require("axios");
 const path = require("path");
-const makeArchiveName = require("./makeArchiveName").default;
+const makeArchiveName = require("./makeArchiveName");
 
-async function download(version, binTarget) {
+module.exports = async function download(version, binTarget) {
   const targetDir = path.dirname(binTarget);
 
   const archiveName = makeArchiveName(version);
@@ -55,6 +55,4 @@ async function download(version, binTarget) {
   fs.unlinkSync(archivePath);
   fs.renameSync(targetDir + "/create-comit-app", binTarget);
   fs.chmodSync(binTarget, 755);
-}
-
-module.exports = { download };
+};

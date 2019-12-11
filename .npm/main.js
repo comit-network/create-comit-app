@@ -1,7 +1,7 @@
 const packageJson = require("./package");
 const fs = require("fs");
-const { download } = require("./download");
-const { execute } = require("./execute");
+const download = require("./download");
+const execute = require("./execute");
 
 async function main(dirPath, args) {
   const ccaVersion = /^\d\.\d\.\d/.exec(packageJson.version)[0];
