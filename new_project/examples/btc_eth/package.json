@@ -13,6 +13,7 @@
     "author": "",
     "license": "ISC",
     "devDependencies": {
+        "@types/node": "^12.12.17",
         "@types/readline-sync": "^1.4.3",
         "create-comit-app": "^0.6.0",
         "jest": "^24.9.0",
