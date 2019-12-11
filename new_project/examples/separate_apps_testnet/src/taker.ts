@@ -23,7 +23,7 @@ import { checkEnvFile, sleep, startClient } from "./lib";
 
     console.log(
         "[Taker] Bitcoin balance: %f. Ether balance: %f",
-        parseFloat(await taker.bitcoinWallet.getBalance()).toFixed(2),
+        parseFloat((await taker.bitcoinWallet.getBalance()).toString()).toFixed(2),
         parseFloat(
             formatEther((await taker.ethereumWallet.getBalance()).toString())
         ).toFixed(2)
@@ -95,7 +95,7 @@ import { checkEnvFile, sleep, startClient } from "./lib";
     readLineSync.question("2. Continue funding the Ethereum HTLC?");
 
     // Define how often and how long the comit-js-sdk should try to execute the fund and redeem action.
-    const tryParams: TryParams = { maxTimeoutSecs: 100, tryIntervalSecs: 1 };
+    const tryParams: TryParams = { maxTimeoutSecs: 40 * 60, tryIntervalSecs: 1 };
 
     console.log(
         "Ethereum HTLC funded! TXID: ",
@@ -147,7 +147,7 @@ import { checkEnvFile, sleep, startClient } from "./lib";
     // print balances after swapping
     console.log(
         "[Taker] Bitcoin balance: %f, Ether balance: %f",
-        parseFloat(await taker.bitcoinWallet.getBalance()).toFixed(2),
+        parseFloat((await taker.bitcoinWallet.getBalance()).toString()).toFixed(2),
         parseFloat(
             formatEther((await taker.ethereumWallet.getBalance()).toString())
         ).toFixed(2)

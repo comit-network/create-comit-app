@@ -8,7 +8,7 @@ export class TestnetBitcoinWallet implements BitcoinWallet {
         hdKey: string,
         location: string,
         prefix?: string,
-        httpPort: number = 18333
+        httpPort: number = 18332
     ): Promise<TestnetBitcoinWallet> {
         const parsedNetwork = Network.get(network);
 

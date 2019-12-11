@@ -24,7 +24,7 @@ import { sleep } from "./lib";
 
     console.log(
         "[Maker] Bitcoin balance: %f. Ether balance: %f",
-        parseFloat(await maker.bitcoinWallet.getBalance()).toFixed(2),
+        parseFloat((await maker.bitcoinWallet.getBalance()).toString()).toFixed(2),
         parseFloat(
             formatEther((await maker.ethereumWallet.getBalance()).toString())
         ).toFixed(2)
@@ -40,8 +40,8 @@ import { sleep } from "./lib";
             alpha_expiry: moment().unix() + 7200,
             beta_expiry: moment().unix() + 3600,
             ledgers: {
-                bitcoin: { network: "regtest" },
-                ethereum: { network: "regtest" },
+                bitcoin: { network: "testnet" },
+                ethereum: { network: "ropsten" },
             },
         },
         { maxTimeoutSecs: 1000, tryIntervalSecs: 0.1 }
@@ -57,12 +57,12 @@ import { sleep } from "./lib";
         tradingPair: "ETH-BTC",
         validUntil: moment().unix() + 300,
         ask: {
-            nominalAmount: "0.1",
+            nominalAmount: "0.02",
             asset: "ether",
             ledger: "ethereum",
         },
         bid: {
-            nominalAmount: "0.001",
+            nominalAmount: "0.0002",
             asset: "bitcoin",
             ledger: "bitcoin",
         },
@@ -106,7 +106,7 @@ import { sleep } from "./lib";
     // Wait for commandline input for demo purposes
     readLineSync.question("3. Continue funding the Bitcoin HTLC?");
 
-    const tryParams: TryParams = { maxTimeoutSecs: 100, tryIntervalSecs: 1 };
+    const tryParams: TryParams = { maxTimeoutSecs: 40 * 60, tryIntervalSecs: 1 };
 
     console.log(
         "Bitcoin HTLC funded! TXID: ",
@@ -162,7 +162,7 @@ import { sleep } from "./lib";
     // print balances after swapping
     console.log(
         "[Maker] Bitcoin balance: %f, Ether balance: %f",
-        parseFloat(await maker.bitcoinWallet.getBalance()).toFixed(2),
+        parseFloat((await maker.bitcoinWallet.getBalance()).toString()).toFixed(2),
         parseFloat(
             formatEther((await maker.ethereumWallet.getBalance()).toString())
         ).toFixed(2)
