@@ -1,16 +1,9 @@
-#!/usr/bin/env node
-
 const packageJson = require("./package");
 const fs = require("fs");
 const { download } = require("./download");
 const { execute } = require("./execute");
-const path = require("path");
 
-(async () => {
-  let args = process.argv;
-  args.shift(); // node
-  const dirPath = path.dirname(args[0]);
-
+async function main(dirPath, args) {
   const ccaVersion = /^\d\.\d\.\d/.exec(packageJson.version)[0];
   const binPath = `${dirPath}/create-comit-app_${ccaVersion}/create-comit-app`;
 
@@ -23,8 +16,10 @@ const path = require("path");
       console.log("✓");
     }
 
-    await execute(binPath, "start-env");
+    await execute(binPath, args);
   } catch (error) {
     console.error("Issue encountered:", error);
   }
-})();
+}
+
+module.exports = main;

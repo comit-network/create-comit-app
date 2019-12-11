@@ -1,6 +1,6 @@
 const spawn = require("child_process").spawn;
 
-export async function execute(binPath, args) {
+async function execute(binPath, args) {
   const cca = spawn(binPath, args);
 
   cca.on("error", error => {
@@ -35,3 +35,5 @@ export async function execute(binPath, args) {
     process.exit(code);
   });
 }
+
+module.exports = { execute };

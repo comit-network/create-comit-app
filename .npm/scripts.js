@@ -7,7 +7,7 @@ const path = require("path");
   let args = process.argv;
   args.shift(); // Remove arg "node"
   const dirPath = path.dirname(args[0]);
-  args[0] = "new"; // Replace ".../cca.js" with "new"
+  args.shift(); // Remove arg ".../cca.js"
 
   await main(dirPath, args);
 })();
