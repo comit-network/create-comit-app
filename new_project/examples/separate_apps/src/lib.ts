@@ -1,13 +1,8 @@
-import {
-    Actor,
-    BitcoinWallet,
-    createActor as createActorSdk,
-    EthereumWallet,
-} from "comit-sdk";
+import { Actor, BitcoinWallet, createActor as createActorSdk, EthereumWallet } from "comit-sdk";
+import dotenv from "dotenv";
 import fs from "fs";
 import * as os from "os";
 import * as path from "path";
-import dotenv from "dotenv";
 
 export async function createActor(index: number): Promise<Actor> {
     loadEnvironment();
@@ -33,7 +28,7 @@ export async function createActor(index: number): Promise<Actor> {
 }
 
 function loadEnvironment() {
-    let envFilePath = path.join(os.homedir(), ".create-comit-app", "env");
+    const envFilePath = path.join(os.homedir(), ".create-comit-app", "env");
 
     if (!fs.existsSync(envFilePath)) {
         console.log(
@@ -43,7 +38,7 @@ function loadEnvironment() {
         process.exit(1);
     }
 
-    dotenv.config({path: envFilePath});
+    dotenv.config({ path: envFilePath });
 }
 
 export async function sleep(ms: number) {
