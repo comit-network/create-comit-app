@@ -1,7 +1,6 @@
 import {
     Actor,
     BigNumber,
-    BitcoinWallet,
     createActor as createActorSdk,
     EthereumWallet,
     InMemoryBitcoinWallet,

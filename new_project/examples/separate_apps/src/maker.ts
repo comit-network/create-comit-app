@@ -26,7 +26,7 @@ import { createActor, sleep } from "./lib";
         "[Maker] Bitcoin balance: %f, Ether balance: %f",
         parseFloat(await maker.bitcoinWallet.getBalance()).toFixed(2),
         parseFloat(
-            formatEther(await maker.ethereumWallet.getBalance())
+            formatEther((await maker.ethereumWallet.getBalance()).toString())
         ).toFixed(2)
     );
 
@@ -175,7 +175,7 @@ import { createActor, sleep } from "./lib";
         "[Maker] Bitcoin balance: %f, Ether balance: %f",
         parseFloat(await maker.bitcoinWallet.getBalance()).toFixed(2),
         parseFloat(
-            formatEther(await maker.ethereumWallet.getBalance())
+            formatEther((await maker.ethereumWallet.getBalance()).toString())
         ).toFixed(2)
     );
 

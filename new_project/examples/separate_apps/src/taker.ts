@@ -26,7 +26,7 @@ import { createActor, sleep } from "./lib";
         "[Taker] Bitcoin balance: %f, Ether balance: %f",
         parseFloat(await taker.bitcoinWallet.getBalance()).toFixed(2),
         parseFloat(
-            formatEther(await taker.ethereumWallet.getBalance())
+            formatEther((await taker.ethereumWallet.getBalance()).toString())
         ).toFixed(2)
     );
 
@@ -150,7 +150,7 @@ import { createActor, sleep } from "./lib";
         "[Taker] Bitcoin balance: %f, Ether balance: %f",
         parseFloat(await taker.bitcoinWallet.getBalance()).toFixed(2),
         parseFloat(
-            formatEther(await taker.ethereumWallet.getBalance())
+            formatEther((await taker.ethereumWallet.getBalance()).toString())
         ).toFixed(2)
     );
 
