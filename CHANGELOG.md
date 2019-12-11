@@ -6,25 +6,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Changed
+- To create new project, `new` is not needed in arguments anymore: `yarn create comit-app foo`.
+- New binary `comit-scripts` to access other create-comit-app features. E.g.: `comit-scripts start-env`.
+
 ## [0.6.0] - 2019-12-07
 
-## Added
+### Added
 - Windows support :tada:.
 
 ## [0.5.2] - 2019-12-06
 
-## Changed
+### Changed
 - Upgrade all examples and new project to `comit-sdk@0.7.1`.
 
 ## [0.5.1] - 2019-12-02
 
-## Fixed
+### Fixed
 - Upgrade `separate_apps` example to comit-sdk 0.7.1 to fix maker auto-accept.
 - Add code comments in `separate_apps` to describe the behaviour and help app developers understand how to use COMIT SDK.
 
 ## [0.5.0] - 2019-11-28
 
-## Changed
+### Changed
 - `separate_apps` example now uses the negotiation protocol provided by comit-sdk.
 - Upgrade to `comit-rs:0.4.0`
 - Upgrade all examples and new project to `comit-sdk@0.7.0`.
