@@ -4,7 +4,18 @@ set -e
 
 PROJECT_DIR=${0%/tests/*.sh}
 
-CCA="${PROJECT_DIR}/target/debug/create-comit-app"
+CCA_UNIX="${PROJECT_DIR}/target/debug/create-comit-app"
+CCA_WINDOWS="${PROJECT_DIR}/target/debug/create-comit-app.exe"
+
+if [ -f "$CCA_UNIX" ]; then
+  CCA=$CCA_UNIX
+elif [ -f "$CCA_WINDOWS" ]; then
+  CCA=$CCA_WINDOWS
+else
+  echo "FAIL: Unable to find cca executable"
+  exit 1;
+fi;
+
 PROJECT_NAME="example-test-project"
 
 function clean () {
