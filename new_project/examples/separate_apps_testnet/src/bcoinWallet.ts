@@ -1,23 +1,31 @@
-import { Amount, Network, Pool, SPVNode, TX, WalletDB } from "bcoin";
+import { Amount, Network, Pool, SPVNode, TX } from "bcoin";
+import * as bcoin from "bcoin";
 import Logger from "blgr";
 import { BitcoinWallet } from "comit-sdk";
 
 export class TestnetBitcoinWallet implements BitcoinWallet {
     public static async newInstance(
-        network: string,
+        networkString: string,
         hdKey: string,
         location: string,
-        prefix?: string,
-        httpPort: number = 18332
+        portInc: number = 0
     ): Promise<TestnetBitcoinWallet> {
-        const parsedNetwork = Network.get(network);
+        const parsedNetwork = Network.get(networkString);
 
         const logger = new Logger({
-            level: "error",
+            level: "info",
         });
 
+        parsedNetwork.rpcPort += portInc;
+        parsedNetwork.port += portInc;
+        parsedNetwork.walletPort += portInc;
+
+        const walletPlugin = bcoin.wallet.plugin;
+        bcoin.set(networkString);
+
         const node = new SPVNode({
-            network,
+            logger,
+            network: networkString,
             file: true,
             argv: true,
             env: true,
@@ -30,8 +38,11 @@ export class TestnetBitcoinWallet implements BitcoinWallet {
             listen: true,
             loader: require,
             prefix: `${location}/.bcoin/`,
-            httpPort,
+            httpPort: parsedNetwork.port,
         });
+
+        node.network.walletPort = parsedNetwork.walletPort;
+        node.network.rpcPort = parsedNetwork.rpcPort;
 
         // We do not need the RPC interface
         node.rpc = null;
@@ -42,33 +53,25 @@ export class TestnetBitcoinWallet implements BitcoinWallet {
             maxPeers: 8,
         });
 
-        const walletdb = new WalletDB({
-            memory: false,
-            prefix: `${network}_${prefix}`,
-            location: `${location}/.bcoin/`,
-            spv: true,
-            witness: true,
-            network,
-            logger,
-        });
+        const walletdb = node.use(walletPlugin).wdb;
 
         // Validate the prefix directory (probably ~/.bcoin)
         await node.ensure();
         await node.open();
-        await walletdb.open();
         await node.connect();
 
         const wallet = await walletdb.ensure({
             debug_logger: logger,
-            network,
+            network: networkString,
             master: hdKey,
             witness: true,
-            id: "primary",
+            accountDepth: 0,
+            id: location,
         });
 
         const account = await wallet.getAccount(0);
 
-        for (let i = 0; i < 100; i++) {
+        for (let i = 0; i < 10; i++) {
             node.pool.watchAddress(await account.deriveReceive(i).getAddress());
             node.pool.watchAddress(await account.deriveChange(i).getAddress());
         }
@@ -88,9 +91,27 @@ export class TestnetBitcoinWallet implements BitcoinWallet {
             }
         });
 
+        wallet.on("balance", (balance: any) => {
+            console.log("Balance updated:\n", balance.toJSON());
+        });
+
+        walletdb.on("confirmed", (details: any) => {
+            console.log(" -- wallet confirmed -- \n", details);
+        });
+
+        walletdb.on("address", (details: any) => {
+            console.log(" -- wallet address -- \n", details);
+        });
+
         node.startSync();
-        await walletdb.syncNode();
         await wallet.open();
+        await walletdb.watch();
+
+        const balance = await wallet.getBalance();
+        console.log("Balance: ", balance);
+        console.log("Wallet State: ", await walletdb.getState());
+        // console.log("Wallet Tip: ", await wdb.getTip());
+        console.log("Wallets: ", await walletdb.getWallets());
 
         return new TestnetBitcoinWallet(parsedNetwork, walletdb, node, wallet);
     }
@@ -105,11 +126,11 @@ export class TestnetBitcoinWallet implements BitcoinWallet {
         private readonly wallet: any
     ) {}
 
-    public async getBalance() {
+    public async getBalance(): Promise<number> {
         const balance = await this.wallet.getBalance();
         // TODO: Balances stay unconfirmed, try to use bcoin.SPVNode (and set node.http to undefined) see if it catches the confirmations
-        const amount = new Amount(balance.toJSON().unconfirmed, "sat");
-        return amount.toBTC();
+        const amount = new Amount(balance.toJSON().confirmed, "sat");
+        return amount.toBTC(true);
     }
 
     public async getAddress() {

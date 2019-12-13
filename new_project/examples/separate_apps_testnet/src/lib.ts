@@ -1,17 +1,17 @@
 import { BitcoinWallet, Cnd, ComitClient, EthereumWallet } from "comit-sdk";
+import { formatEther } from "ethers/utils";
 import fs from "fs";
 import { TestnetBitcoinWallet } from "./bcoinWallet";
 
 export async function startClient(
     actor: string,
-    bcoinWalletPort: number
+    portInc: number
 ): Promise<Actor> {
     const bitcoinWallet = await TestnetBitcoinWallet.newInstance(
         "testnet",
         process.env[`BITCOIN_HD_KEY_${actor}`]!,
         actor,
-        undefined,
-        bcoinWalletPort
+        portInc
     );
 
     // Waiting for the Bitcoin wallet to read the balance
@@ -59,4 +59,14 @@ export function checkEnvFile(path: string) {
 
 export async function sleep(ms: number) {
     return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+export async function printBalance(actor: Actor, name: string) {
+    console.log(
+        `[${name}] Bitcoin balance: %f, Ether balance: %f`,
+        await actor.bitcoinWallet.getBalance(),
+        parseFloat(
+            formatEther((await actor.ethereumWallet.getBalance()).toString())
+        ).toFixed(2)
+    );
 }
