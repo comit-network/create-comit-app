@@ -24,7 +24,9 @@ import { createActor, sleep } from "./lib";
     // print balances before swapping
     console.log(
         "[Taker] Bitcoin balance: %f, Ether balance: %f",
-        parseFloat(await taker.bitcoinWallet.getBalance()).toFixed(2),
+        parseFloat((await taker.bitcoinWallet.getBalance()).toString()).toFixed(
+            2
+        ),
         parseFloat(
             formatEther(await taker.ethereumWallet.getBalance())
         ).toFixed(2)
@@ -37,8 +39,8 @@ import { createActor, sleep } from "./lib";
     // The taker negotiator manages retrieving orders from the maker and deciding if they are acceptable for the taker.
     // Once an order was taken by a taker the negotiator hands over the order and execution parameters to the
     // execution phase.
-    const takerNegotiator = new TakerNegotiator(taker.comitClient);
     const makerClient = new MakerClient("http://localhost:2318/");
+    const takerNegotiator = new TakerNegotiator(taker.comitClient, makerClient);
 
     // Decide if an order is acceptable for the taker and take it.
     const isOrderAcceptable = (order: Order) => {
@@ -61,12 +63,12 @@ import { createActor, sleep } from "./lib";
         console.log("Rate offered: ", orderRate);
         return orderRate > minRate;
     };
-    const { order, swap } = await takerNegotiator.negotiateAndInitiateSwap(
-        makerClient,
-        // Define the trading pair to request and order for.
-        "ETH-BTC",
-        isOrderAcceptable
-    );
+    const order = await takerNegotiator.getOrderByTradingPair("ETH-BTC");
+    if (!isOrderAcceptable(order)) {
+        throw new Error("Order not acceptable!");
+    }
+
+    const swap = await takerNegotiator.takeOrder(order);
 
     if (!swap) {
         throw new Error("Could not find an order or something else went wrong");
@@ -148,7 +150,9 @@ import { createActor, sleep } from "./lib";
     // print balances after swapping
     console.log(
         "[Taker] Bitcoin balance: %f, Ether balance: %f",
-        parseFloat(await taker.bitcoinWallet.getBalance()).toFixed(2),
+        parseFloat((await taker.bitcoinWallet.getBalance()).toString()).toFixed(
+            2
+        ),
         parseFloat(
             formatEther(await taker.ethereumWallet.getBalance())
         ).toFixed(2)

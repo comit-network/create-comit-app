@@ -1,9 +1,8 @@
 import {
     Actor,
     BigNumber,
-    BitcoinWallet,
     createActor as createActorSdk,
-    EthereumWallet,
+    EthereumWallet, InMemoryBitcoinWallet,
     SwapRequest,
 } from "comit-sdk";
 import fs from "fs";
@@ -88,7 +87,7 @@ import * as os from "os";
 })();
 
 async function createActor(index: number, name: string): Promise<Actor> {
-    const bitcoinWallet = await BitcoinWallet.newInstance(
+    const bitcoinWallet = await InMemoryBitcoinWallet.newInstance(
         "regtest",
         process.env.BITCOIN_P2P_URI!,
         process.env[`BITCOIN_HD_KEY_${index}`]!
@@ -141,7 +140,7 @@ function createSwap(maker: Actor, taker: Actor): SwapRequest {
 }
 
 function loadEnvironment() {
-    let envFilePath = path.join(os.homedir(), ".create-comit-app", "env");
+    const envFilePath = path.join(os.homedir(), ".create-comit-app", "env");
 
     if (!fs.existsSync(envFilePath)) {
         console.log(
@@ -161,7 +160,7 @@ async function printBalances(actor: Actor) {
     console.log(
         "%s Bitcoin balance: %d. Erc20 Token balance: %d",
         actor.name,
-        parseFloat(await actor.bitcoinWallet.getBalance()).toFixed(2),
+        parseFloat((await actor.bitcoinWallet.getBalance()).toString()).toFixed(2),
         await actor.ethereumWallet.getErc20Balance(
             process.env.ERC20_CONTRACT_ADDRESS!
         )
