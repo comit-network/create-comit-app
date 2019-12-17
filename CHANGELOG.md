@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 
 ### Changed
-- Upgrade all examples and new project to `comit-sdk@0.8.0`.
+- Upgrade all examples and new project to `comit-sdk@0.9.0`.
 
 ## [0.6.0] - 2019-12-07
 

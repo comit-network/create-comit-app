@@ -2,16 +2,17 @@ import {
     Actor,
     BigNumber,
     createActor as createActorSdk,
-    EthereumWallet, InMemoryBitcoinWallet,
+    EthereumWallet,
+    InMemoryBitcoinWallet,
     SwapRequest,
 } from "comit-sdk";
+import dotenv from "dotenv";
 import fs from "fs";
 import moment from "moment";
+import * as os from "os";
+import * as path from "path";
 import readLineSync from "readline-sync";
 import { toBitcoin, toSatoshi } from "satoshi-bitcoin-ts";
-import * as path from "path";
-import dotenv from "dotenv";
-import * as os from "os";
 
 (async function main() {
     loadEnvironment();
@@ -150,7 +151,7 @@ function loadEnvironment() {
         process.exit(1);
     }
 
-    dotenv.config({path: envFilePath});
+    dotenv.config({ path: envFilePath });
 }
 
 async function printBalances(actor: Actor) {
@@ -160,7 +161,9 @@ async function printBalances(actor: Actor) {
     console.log(
         "%s Bitcoin balance: %d. Erc20 Token balance: %d",
         actor.name,
-        parseFloat((await actor.bitcoinWallet.getBalance()).toString()).toFixed(2),
+        parseFloat((await actor.bitcoinWallet.getBalance()).toString()).toFixed(
+            2
+        ),
         await actor.ethereumWallet.getErc20Balance(
             process.env.ERC20_CONTRACT_ADDRESS!
         )
