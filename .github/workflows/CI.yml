@@ -63,11 +63,8 @@ jobs:
           toolchain: ${{ env.RUST_TOOLCHAIN }}
           override: true
 
-      - name: Install OpenSSL and configure it to link statically
-        run: |
-          vcpkg install openssl:x64-windows-static
-          vcpkg integrate install
-          echo "::set-env name=RUSTFLAGS::-Ctarget-feature=+crt-static"
+      - name: Add strawperryperl to the PATH to override the existing Perl installation so we can compile OpenSSL locally
+        run: echo "##[add-path]C:\strawberry\c\bin;C:\strawberry\perl\site\bin;C:\strawberry\perl\bin"
         if: matrix.os == 'windows'
 
       - name: Build ${{ matrix.os }} binary

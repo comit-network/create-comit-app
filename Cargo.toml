@@ -37,7 +37,7 @@ web3 = { version = "0.8", default-features = false, features = ["http"] }
 [features]
 default = ["unix"]
 unix = ["shiplift/unix-socket"]
-windows = ["shiplift/tls"]
+windows = ["shiplift/vendored-ssl"]
 
 [build-dependencies]
 anyhow = "1.0.25"
