@@ -1,6 +1,6 @@
 const os = require("os");
 
-exports.default = function makeArchiveName(version) {
+module.exports = function makeArchiveName(version) {
   const kernel = os.type();
   const arch = os.arch();
 

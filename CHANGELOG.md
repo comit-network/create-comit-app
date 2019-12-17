@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Upgrade all examples and new project to `comit-sdk@0.8.0`.
+- To create new project, `new` is not needed in arguments anymore: `yarn create comit-app foo`.
+- New binary `comit-scripts` to access other create-comit-app features. E.g.: `comit-scripts start-env`.
 
 ## [0.6.0] - 2019-12-07
 

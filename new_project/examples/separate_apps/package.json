@@ -8,7 +8,7 @@
         "maker": "ts-node ./src/maker.ts",
         "taker": "ts-node ./src/taker.ts",
         "fix": "tslint -p . --fix && prettier --write '**/*.{ts,js,json,yml}'",
-        "start-env": "create-comit-app start-env"
+        "start-env": "comit-scripts start-env"
     },
     "keywords": [],
     "author": "",
