@@ -13,7 +13,9 @@ ifeq ($(OS),Windows_NT)
     INSTALL_ARGS = --no-default-features --features windows
 endif
 
-build: build_debug
+.PHONY: install_rust install_rust_nightly install_clippy install_rustfmt install_tomlfmt install clean all format build build_debug release clippy test doc check_format e2e_scripts e2e
+
+default: build
 
 install_rust:
 	$(RUSTUP) install $(TOOLCHAIN)
@@ -69,6 +71,15 @@ doc:
 check_format: install_rustfmt install_tomlfmt
 	$(CARGO_NIGHTLY) fmt -- --check
 	$(CARGO) tomlfmt -d -p Cargo.toml
+
+yarn_install_all:
+	(cd ./.npm; yarn install)
+	(cd ./new_project/examples/btc_eth; yarn install)
+	(cd ./new_project/examples/erc20_btc; yarn install)
+	(cd ./new_project/examples/separate_apps; yarn install)
+
+check_lock_files: build_debug yarn_install_all
+	(! git status -s | grep -q lock) # If a lock file was changed, this returns 1 otherwise 0
 
 e2e_scripts:
 	./tests/new.sh
