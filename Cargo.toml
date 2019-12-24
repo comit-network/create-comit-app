@@ -5,7 +5,7 @@ authors = ["CoBloX developers <team@coblox.tech>"]
 edition = "2018"
 
 [dependencies]
-anyhow = "1.0.25"
+anyhow = "1.0.26"
 async-std = "1.4.0"
 derive_more = "0.99.2"
 dirs = "2"
@@ -40,7 +40,7 @@ unix = ["shiplift/unix-socket"]
 windows = ["shiplift/vendored-ssl"]
 
 [build-dependencies]
-anyhow = "1.0.25"
+anyhow = "1.0.26"
 flate2 = "1.0.13"
 ignore = "0.4.10"
 tar = "0.4.26"
