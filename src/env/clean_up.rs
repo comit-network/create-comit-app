@@ -2,7 +2,6 @@ use crate::{
     docker::{delete_container, delete_network},
     print_progress,
 };
-use async_std::task;
 use std::{
     sync::{
         atomic::{AtomicBool, Ordering},
@@ -10,10 +9,11 @@ use std::{
     },
     time::Duration,
 };
+use tokio::time::delay_for;
 
 pub async fn handle_signal(terminate: Arc<AtomicBool>) {
     while !terminate.load(Ordering::Relaxed) {
-        task::sleep(Duration::from_millis(50)).await;
+        delay_for(Duration::from_millis(50)).await;
     }
     println!("Signal received, terminating...");
     print_progress!("🧹 Cleaning up");

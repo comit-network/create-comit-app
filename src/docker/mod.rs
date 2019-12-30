@@ -1,11 +1,11 @@
 use crate::print_progress;
 use anyhow::Context;
 use futures::compat::Future01CompatExt;
+use futures_01::stream::Stream;
 use shiplift::{
     ContainerOptions, Docker, LogsOptions, NetworkCreateOptions, PullOptions, RmContainerOptions,
 };
 use std::{net::Ipv4Addr, path::Path};
-use tokio::prelude::stream::Stream;
 
 pub mod bitcoin;
 pub mod cnd;
