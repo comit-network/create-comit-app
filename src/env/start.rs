@@ -50,7 +50,7 @@ pub async fn execute() -> anyhow::Result<Environment> {
 
     print_progress!("Writing configuration in env file");
 
-    let env_file_str = temp_fs::create_env_file()?;
+    let env_file_str = temp_fs::create_env_file().await?;
     let mut envfile = EnvFile::new(env_file_str)?;
 
     envfile.update(

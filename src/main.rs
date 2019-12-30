@@ -1,4 +1,4 @@
-#![type_length_limit = "8576115"]
+#![type_length_limit = "8753955"]
 
 use create_comit_app::{create_comit_app::CreateComitApp, env, new::new};
 use structopt::StructOpt;
