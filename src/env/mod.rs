@@ -33,9 +33,9 @@ pub fn start() {
 
     std::panic::set_hook(Box::new(|panic_info| {
         print_progress!("Panic received, cleaning up");
+        eprintln!("{}", panic_info);
         clean_up();
         println!("✓");
-        eprintln!("{}", panic_info);
     }));
 
     match runtime.block_on(self::start::execute(terminate.clone()).boxed().compat()) {

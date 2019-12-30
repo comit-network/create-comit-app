@@ -71,7 +71,7 @@ pub async fn execute(terminate: Arc<AtomicBool>) -> anyhow::Result<Environment> 
     );
     envfile.update(
         "ERC20_CONTRACT_ADDRESS",
-        &format!("0x{:x}", parity.erc20_contract_address),
+        &format!("{:#x}", parity.erc20_contract_address),
     );
     envfile.update("ETHEREUM_NODE_HTTP_URL", &parity.http_endpoint.to_string());
 
