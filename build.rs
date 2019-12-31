@@ -12,11 +12,13 @@ fn main() -> anyhow::Result<()> {
         .with_context(|| format!("unable to create archive at {}", archive.display()))?;
     let mut archive = tar::Builder::new(GzEncoder::new(archive, Compression::default()));
 
-    let new_project_folder = Path::new("./new_project");
+    let new_project_folder = Path::new(".").canonicalize()?.join("new_project");
+
+    // we set the working directory to the `new_project` folder to avoid it being contained in the archive
     env::set_current_dir(&new_project_folder).context("unable to switch working directory")?;
 
     // use the ignore library to skip all files specified in .gitignore
-    for result in WalkBuilder::new("./").hidden(false).build() {
+    for result in WalkBuilder::new(".").hidden(false).build() {
         let entry = result.context("unable to walk directory")?;
         let path = entry.path();
 
@@ -24,7 +26,10 @@ fn main() -> anyhow::Result<()> {
             .append_path(path)
             .with_context(|| format!("unable to add {} to the archive", path.display()))?;
         // prevent rerun if files did not change
-        println!("cargo:rerun-if-changed={}", path.display());
+        println!(
+            "cargo:rerun-if-changed={}",
+            new_project_folder.join(path).display()
+        );
     }
     Ok(())
 }
