@@ -26,18 +26,24 @@ pub async fn start() {
     pin_mut!(start_env);
     pin_mut!(ctrl_c);
 
-    match try_select(start_env, ctrl_c).await {
-        Ok(Either::Left((self::start::Environment { bitcoind, .. }, _))) => {
+    let result = try_select(start_env, ctrl_c).await;
+
+    match result {
+        Ok(Either::Left((self::start::Environment { bitcoind, .. }, ctrl_c))) => {
             tokio::spawn(new_miner(bitcoind.http_endpoint));
             println!("✓");
+
+            let _ = ctrl_c.await;
         }
-        Ok(Either::Right((_signal, _))) => {
-            print_progress!("🧹 Cleaning up");
-            clean_up().await;
-            println!("✓");
+        Err(Either::Left((start_env_error, _))) => {
+            eprintln!("Failed to start environment: {:?}", start_env_error)
         }
-        Err(_) => clean_up().await,
+        _ => {}
     }
+
+    print_progress!("🧹 Cleaning up");
+    clean_up().await;
+    println!("✓");
 }
 
 async fn new_miner(endpoint: BitcoindHttpEndpoint) -> anyhow::Result<()> {
