@@ -1,16 +1,15 @@
 use anyhow::Context;
-use flate2::{write::GzEncoder, Compression};
 use ignore::WalkBuilder;
 use std::{env, fs::File, path::Path};
 
 fn main() -> anyhow::Result<()> {
     let out_dir = env::var("OUT_DIR").context("unable to read OUT_DIR variable")?;
     let out_dir = Path::new(&out_dir);
-    let archive = out_dir.join("new_project.tar.gz");
+    let archive = out_dir.join("new_project.tar");
 
     let archive = File::create(archive.clone())
         .with_context(|| format!("unable to create archive at {}", archive.display()))?;
-    let mut archive = tar::Builder::new(GzEncoder::new(archive, Compression::default()));
+    let mut archive = tar::Builder::new(archive);
 
     let new_project_folder = Path::new("./new_project");
     env::set_current_dir(&new_project_folder).context("unable to switch working directory")?;

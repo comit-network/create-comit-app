@@ -9,10 +9,6 @@ use crate::{
 };
 use anyhow::Context;
 use envfile::EnvFile;
-use std::sync::{
-    atomic::{AtomicBool, Ordering},
-    Arc,
-};
 
 pub struct Environment {
     pub docker_network_id: String,
@@ -22,27 +18,24 @@ pub struct Environment {
     pub cnd_1: CndInstance,
 }
 
-pub async fn execute(terminate: Arc<AtomicBool>) -> anyhow::Result<Environment> {
+pub async fn execute() -> anyhow::Result<Environment> {
     print_progress!("Creating Docker network (create-comit-app)");
 
     let docker_network_id = docker::create_network().await?;
 
     println!("✓");
-    check_signal(terminate.as_ref())?;
 
     print_progress!("Starting Ethereum node");
 
     let parity = ethereum::new_parity_instance().await?;
 
     println!("✓");
-    check_signal(terminate.as_ref())?;
 
     print_progress!("Starting Bitcoin node");
 
     let bitcoind = bitcoin::new_bitcoind_instance().await?;
 
     println!("✓");
-    check_signal(terminate.as_ref())?;
 
     print_progress!("Starting two cnds");
     let cnd_0 = cnd::new_instance(0)
@@ -54,11 +47,10 @@ pub async fn execute(terminate: Arc<AtomicBool>) -> anyhow::Result<Environment> 
         .context("failed to start second cnd")?;
 
     println!("✓");
-    check_signal(terminate.as_ref())?;
 
     print_progress!("Writing configuration in env file");
 
-    let env_file_str = temp_fs::create_env_file()?;
+    let env_file_str = temp_fs::create_env_file().await?;
     let mut envfile = EnvFile::new(env_file_str)?;
 
     envfile.update(
@@ -92,7 +84,6 @@ pub async fn execute(terminate: Arc<AtomicBool>) -> anyhow::Result<Environment> 
     envfile.write()?;
 
     println!("✓");
-    check_signal(terminate.as_ref())?;
 
     println!("🎉 Environment is ready, time to create a COMIT app!");
     Ok(Environment {
@@ -102,16 +93,4 @@ pub async fn execute(terminate: Arc<AtomicBool>) -> anyhow::Result<Environment> 
         cnd_0,
         cnd_1,
     })
-}
-
-#[derive(Debug, thiserror::Error)]
-#[error("received termination signal")]
-pub struct SignalReceived;
-
-fn check_signal(terminate: &AtomicBool) -> Result<(), SignalReceived> {
-    if terminate.load(Ordering::Relaxed) {
-        Err(SignalReceived)
-    } else {
-        Ok(())
-    }
 }

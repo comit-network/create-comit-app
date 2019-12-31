@@ -38,7 +38,7 @@ while [ $TIMEOUT -gt 0 ]; do
     fi
 done
 
-kill $PID;
+kill -s SIGINT $PID;
 wait $PID;
 
 if ! $TEST_PASSED; then
