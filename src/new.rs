@@ -3,7 +3,10 @@ use std::{
     path::{Path, PathBuf},
 };
 use tar::Archive;
-use tokio::{fs::File, prelude::*};
+use tokio::{
+    fs::File,
+    io::{AsyncReadExt, AsyncWriteExt},
+};
 
 const NEW_PROJECT_ARCHIVE: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/new_project.tar"));
 

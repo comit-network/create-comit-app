@@ -29,7 +29,7 @@ structopt = "0.3"
 tar = "0.4"
 tempfile = "3.1.0"
 thiserror = "1"
-tokio = { version = "0.2", features = ["full"] }
+tokio = { version = "0.2", features = ["rt-core", "time", "tcp", "signal", "fs", "io-util"] }
 tokio-compat = "0.1"
 toml = "0.5"
 web3 = { version = "0.8", default-features = false, features = ["http"] }
