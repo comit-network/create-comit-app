@@ -3,8 +3,6 @@ use crate::docker::{
     DOCKER_NETWORK,
 };
 use anyhow::Context;
-use futures::compat::Future01CompatExt;
-use reqwest::r#async::Client;
 use rust_bitcoin::{
     self,
     hashes::sha256d,
@@ -115,12 +113,11 @@ async fn fund_new_account(endpoint: BitcoindHttpEndpoint) -> anyhow::Result<Acco
 }
 
 pub async fn mine_a_block(endpoint: BitcoindHttpEndpoint) -> anyhow::Result<()> {
-    let _ = reqwest::r#async::Client::new()
+    reqwest::Client::new()
         .post(&endpoint.to_string())
         .basic_auth(USERNAME, Some(PASSWORD))
         .json(&GenerateRequest::new(1))
         .send()
-        .compat()
         .await?;
 
     Ok(())
@@ -215,25 +212,23 @@ struct FundResponse {
 }
 
 async fn fund(endpoint: &str, address: Address, amount: Amount) -> anyhow::Result<sha256d::Hash> {
-    let client = Client::new();
+    let client = reqwest::Client::new();
 
     let _ = client
         .post(endpoint)
         .basic_auth(USERNAME, Some(PASSWORD))
         .json(&GenerateRequest::new(101))
         .send()
-        .compat()
         .await?;
 
-    let mut response = client
+    let response = client
         .post(endpoint)
         .basic_auth(USERNAME, Some(PASSWORD))
         .json(&FundRequest::new(address, amount))
         .send()
-        .compat()
+        .await?
+        .json::<FundResponse>()
         .await?;
-
-    let response = response.json::<FundResponse>().compat().await?;
 
     Ok(response.result)
 }
