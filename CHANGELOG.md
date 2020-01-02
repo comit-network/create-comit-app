@@ -12,6 +12,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - New binary `comit-scripts` to access other create-comit-app features. E.g.: `comit-scripts start-env`.
 - Pressing CTRL+C while `start-env` is running is now handled immediately and not just after the current service is fully started.
 
+## Removed
+- Does not automatically clean-up on a panic anymore.
+
 ## [0.6.0] - 2019-12-07
 
 ### Added

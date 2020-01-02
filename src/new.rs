@@ -2,16 +2,20 @@ use std::{
     io,
     path::{Path, PathBuf},
 };
+
+use flate2::read::GzDecoder;
 use tar::Archive;
 use tokio::{
     fs::File,
     io::{AsyncReadExt, AsyncWriteExt},
 };
 
-const NEW_PROJECT_ARCHIVE: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/new_project.tar"));
+const NEW_PROJECT_ARCHIVE: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/new_project.tar.gz"));
 
 pub async fn new(name: String) -> io::Result<()> {
-    let mut archive = Archive::new(NEW_PROJECT_ARCHIVE);
+    let tar = GzDecoder::new(NEW_PROJECT_ARCHIVE);
+
+    let mut archive = Archive::new(tar);
 
     let path_to_write = PathBuf::from(&name);
     let package_json_path = path_to_write.join("package.json");
