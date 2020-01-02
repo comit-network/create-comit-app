@@ -7,20 +7,20 @@ module.exports = async function execute(binPath, args) {
     console.error("Could not execute create-comit-app:", error);
   });
 
-  async function handleSignal(code) {
+  function handleSignal(code) {
     cca.kill(code);
   }
 
-  process.on("beforeExit", async code => {
-    await handleSignal(code);
+  process.on("beforeExit", code => {
+    handleSignal(code);
   });
 
-  process.on("SIGINT", async code => {
-    await handleSignal(code);
+  process.on("SIGINT", code => {
+    handleSignal(code);
   });
 
-  process.on("SIGTERM", async code => {
-    await handleSignal(code);
+  process.on("SIGTERM", code => {
+    handleSignal(code);
   });
 
   cca.stdout.on("data", data => {
