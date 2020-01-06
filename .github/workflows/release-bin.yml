@@ -81,11 +81,5 @@ jobs:
           cd .npm
           yarn install
           yarn list
-      - name: Release on NPM
-        if: startsWith(github.ref, 'refs/tags/')
-        run: |
-          echo "//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}" > ~/.npmrc
-          cd .npm
-          yarn publish
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
