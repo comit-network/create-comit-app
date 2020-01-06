@@ -1,2 +1,2 @@
 [workspace]
-members = ["comit-scripts", "create"]
+members = ["scripts", "create"]
