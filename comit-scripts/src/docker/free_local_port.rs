@@ -1,5 +1,6 @@
-use anyhow::Context;
 use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4};
+
+use anyhow::Context;
 use tokio::net::TcpListener;
 
 pub async fn free_local_port() -> anyhow::Result<u16> {

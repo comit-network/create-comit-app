@@ -1,18 +1,21 @@
-use crate::docker::{
-    self, docker_daemon_ip, free_local_port::free_local_port, DockerImage, LogMessage,
-    DOCKER_NETWORK,
-};
+use std::{net::Ipv4Addr, time::Duration};
+
 use anyhow::Context;
 use futures::compat::Future01CompatExt;
-use lazy_static::lazy_static;
 use num256::Uint256;
 use secp256k1::{rand::thread_rng, SecretKey};
 use shiplift::ContainerOptions;
-use std::{net::Ipv4Addr, time::Duration};
 use web3::{
     api::Web3,
     transports::Http,
     types::{Bytes, TransactionReceipt, U256},
+};
+
+use lazy_static::lazy_static;
+
+use crate::docker::{
+    self, docker_daemon_ip, DOCKER_NETWORK, DockerImage, free_local_port::free_local_port,
+    LogMessage,
 };
 
 pub const TOKEN_CONTRACT: &str = include_str!("../../erc20_token/build/contract.hex");

@@ -1,3 +1,6 @@
+use anyhow::Context;
+use envfile::EnvFile;
+
 use crate::{
     docker::{
         self,
@@ -7,8 +10,6 @@ use crate::{
     },
     print_progress, temp_fs,
 };
-use anyhow::Context;
-use envfile::EnvFile;
 
 pub struct Environment {
     pub docker_network_id: String,

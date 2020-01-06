@@ -1,11 +1,13 @@
-use crate::print_progress;
+use std::{net::Ipv4Addr, path::Path};
+
 use anyhow::Context;
 use futures::compat::Future01CompatExt;
 use futures_01::stream::Stream;
 use shiplift::{
     ContainerOptions, Docker, LogsOptions, NetworkCreateOptions, PullOptions, RmContainerOptions,
 };
-use std::{net::Ipv4Addr, path::Path};
+
+use crate::print_progress;
 
 pub mod bitcoin;
 pub mod cnd;
@@ -187,7 +189,6 @@ fn parse_ip(uri: String) -> anyhow::Result<Ipv4Addr> {
 
 #[cfg(test)]
 mod tests {
-
     use super::*;
 
     #[test]

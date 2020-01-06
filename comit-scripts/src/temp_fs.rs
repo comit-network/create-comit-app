@@ -1,5 +1,6 @@
-use anyhow::Context;
 use std::path::PathBuf;
+
+use anyhow::Context;
 
 pub const DIR_NAME: &str = ".create-comit-app";
 const ENV_FILE_NAME: &str = "env";

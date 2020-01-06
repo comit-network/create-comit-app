@@ -1,7 +1,7 @@
 use std::{env, fs::File, path::Path};
 
 use anyhow::Context;
-use flate2::{write::GzEncoder, Compression};
+use flate2::{Compression, write::GzEncoder};
 use ignore::WalkBuilder;
 
 fn main() -> anyhow::Result<()> {
@@ -16,7 +16,7 @@ fn main() -> anyhow::Result<()> {
     let new_project_folder = Path::new(".").canonicalize()?.join("new_project");
 
     // we set the working directory to the `new_project` folder to avoid it being contained in the archive
-    env::set_current_dir(&new_project_folder).context("unable to switch working directory")?;
+    env::set_current_dir(&new_project_folder).context("unable to enter new_project directory")?;
 
     // use the ignore library to skip all files specified in .gitignore
     for result in WalkBuilder::new(".").hidden(false).build() {

@@ -1,12 +1,14 @@
-use crate::docker::{
-    self, docker_daemon_ip, free_local_port::free_local_port, DockerImage, File, LogMessage,
-    DOCKER_NETWORK,
-};
-use anyhow::Context;
-use shiplift::ContainerOptions;
 use std::{
     net::{IpAddr, Ipv4Addr},
     path::Path,
+};
+
+use anyhow::Context;
+use shiplift::ContainerOptions;
+
+use crate::docker::{
+    self, docker_daemon_ip, DOCKER_NETWORK, DockerImage, File, free_local_port::free_local_port,
+    LogMessage,
 };
 
 const IMAGE: &str = "comitnetwork/cnd:0.4.0";

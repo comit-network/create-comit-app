@@ -1,3 +1,11 @@
+use std::time::Duration;
+
+use futures::{
+    future::{Either, try_select},
+    pin_mut,
+};
+use tokio::time::delay_for;
+
 use crate::{
     docker::{
         bitcoin::{self, BitcoindHttpEndpoint},
@@ -5,12 +13,6 @@ use crate::{
     },
     print_progress,
 };
-use futures::{
-    future::{try_select, Either},
-    pin_mut,
-};
-use std::time::Duration;
-use tokio::time::delay_for;
 
 mod start;
 
