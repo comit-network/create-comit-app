@@ -5,7 +5,6 @@ authors = ["CoBloX developers <team@coblox.tech>"]
 edition = "2018"
 
 [dependencies]
-anyhow = "1.0.26"
 flate2 = "1.0.13"
 structopt = "0.3"
 tar = "0.4"
