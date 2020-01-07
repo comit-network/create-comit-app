@@ -1215,10 +1215,10 @@ core-util-is@1.0.2, core-util-is@~1.0.0:
   resolved "https://registry.yarnpkg.com/core-util-is/-/core-util-is-1.0.2.tgz#b5fd54220aa2bc5ab57aab7140c940754503c1a7"
   integrity sha1-tf1UIgqivFq1eqtxQMlAdUUDwac=
 
-create-comit-app@^0.6.0:
-  version "0.6.0"
-  resolved "https://registry.yarnpkg.com/create-comit-app/-/create-comit-app-0.6.0.tgz#130ff99043a332419f998ef1e4d36c7aad2b8010"
-  integrity sha512-FgewAwVkivtw7mvP3HSxh+dZUfsaHMsgMkS/Sgao4GOuEbWqBPI5DRbMTBO/tgi28frnwfkNVO/1hWwlZPE1Ag==
+create-comit-app@^0.7.0:
+  version "0.7.0"
+  resolved "https://registry.yarnpkg.com/create-comit-app/-/create-comit-app-0.7.0.tgz#56596244edb9dc993328c49a4404ef8063f11d36"
+  integrity sha512-41u6Pt3mnLMYmy3R33dTBCcrHaPYE1xML+G8+vzhRU98I+PlRx24t3FrmnJNG3aybeJ4TWe+yMwLEWOQBlCxdg==
   dependencies:
     axios "^0.19.0"
     targz "^1.0.1"
