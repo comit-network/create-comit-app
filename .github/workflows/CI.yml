@@ -34,9 +34,6 @@ jobs:
         with:
           node-version: '10.x'
 
-      - name: Check lockfiles
-        run: make check_lock_files
-
   build:
     strategy:
       matrix:

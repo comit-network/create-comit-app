@@ -78,9 +78,6 @@ yarn_install_all:
 	(cd ./new_project/examples/erc20_btc; yarn install)
 	(cd ./new_project/examples/separate_apps; yarn install)
 
-check_lock_files: build_debug yarn_install_all
-	(! git status -s | grep -q lock) # If a lock file was changed, this returns 1 otherwise 0
-
 e2e_scripts:
 	./tests/new.sh
 	./tests/start_env.sh
