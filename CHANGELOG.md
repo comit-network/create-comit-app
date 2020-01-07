@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [0.7.0] - 2020-01-06
+
 ### Changed
 - Upgrade all examples and new project to `comit-sdk@0.8.0`.
 - To create new project, `new` is not needed in arguments anymore: `yarn create comit-app foo`.
@@ -85,7 +87,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 First Release 🎉
 
-[Unreleased]: https://github.com/comit-network/create-comit-app/compare/0.6.0...HEAD
+[Unreleased]: https://github.com/comit-network/create-comit-app/compare/0.7.0...HEAD
+[0.7.0]: https://github.com/comit-network/create-comit-app/compare/0.6.0...0.7.0
 [0.6.0]: https://github.com/comit-network/create-comit-app/compare/0.5.2...0.6.0
 [0.5.2]: https://github.com/comit-network/create-comit-app/compare/0.5.1...0.5.2
 [0.5.1]: https://github.com/comit-network/create-comit-app/compare/0.5.0...0.5.1
