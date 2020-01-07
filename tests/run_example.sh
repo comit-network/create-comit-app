@@ -65,7 +65,6 @@ TEST_PASSED=false
 
 cd "${EXAMPLE_DIR}"
 
-yarn remove create-comit-app > /dev/null
 yarn install > /dev/null
 
 yarn run swap > "${LOG_FILE}" 2>&1 &
