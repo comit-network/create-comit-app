@@ -1,7 +1,10 @@
+#!/usr/bin/env node
+
 const packageJson = require("./package");
 const fs = require("fs");
 const download = require("./download");
 const execute = require("./execute");
+const path = require("path");
 
 async function main(dirPath, args) {
   // Sometimes the only way to test is to publish on npmjs.com, In this case,
@@ -26,4 +29,11 @@ async function main(dirPath, args) {
   }
 }
 
-module.exports = main;
+(async () => {
+  let args = process.argv;
+  args.shift(); // Remove arg "node"
+  const dirPath = path.dirname(args[0]);
+  args.shift(); // Remove arg ".../main.js"
+
+  await main(dirPath, args);
+})();
