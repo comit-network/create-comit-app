@@ -4,12 +4,12 @@ set -e
 
 PROJECT_DIR=${0%/tests/*.sh}
 
-CCA="${PROJECT_DIR}/target/debug/create-comit-app"
+BIN="${PROJECT_DIR}/target/debug/comit-scripts"
 
 ## Start tests
 echo "Running $0"
 
-$CCA start-env > /dev/null &
+$BIN start-env > /dev/null &
 PID=$!
 
 TIMEOUT=300
