@@ -120,9 +120,15 @@ jobs:
         uses: actions/setup-node@v1
         with:
           node-version: 10.x
-      - name: yarn install and test
+      - name: "create: yarn install and test"
         run: |
-          cd .npm
+          cd create/npm
+          yarn install
+          yarn list
+          yarn test
+      - name: "scripts: yarn install and test"
+        run: |
+          cd scripts/npm
           yarn install
           yarn list
           yarn test
