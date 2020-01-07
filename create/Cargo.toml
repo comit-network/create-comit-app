@@ -9,7 +9,7 @@ anyhow = "1.0.26"
 flate2 = "1.0.13"
 structopt = "0.3"
 tar = "0.4"
-tokio = { version = "0.2", features = ["rt-core", "time", "tcp", "signal", "fs", "io-util"] }
+tokio = "0.2"
 tokio-compat = "0.1"
 
 [build-dependencies]

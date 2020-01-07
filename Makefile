@@ -50,6 +50,8 @@ all: format build_debug clippy test doc e2e_scripts
 format: install_rustfmt install_tomlfmt
 	$(CARGO_NIGHTLY) fmt
 	$(CARGO) tomlfmt -p Cargo.toml
+	$(CARGO) tomlfmt -p create/Cargo.toml
+	$(CARGO) tomlfmt -p scripts/Cargo.toml
 
 build: build_debug
 
@@ -71,12 +73,14 @@ doc:
 check_format: install_rustfmt install_tomlfmt
 	$(CARGO_NIGHTLY) fmt -- --check
 	$(CARGO) tomlfmt -d -p Cargo.toml
+	$(CARGO) tomlfmt -d -p create/Cargo.toml
+	$(CARGO) tomlfmt -d -p scripts/Cargo.toml
 
 yarn_install_all:
 	(cd ./.npm; yarn install)
-	(cd ./new_project/examples/btc_eth; yarn install)
-	(cd ./new_project/examples/erc20_btc; yarn install)
-	(cd ./new_project/examples/separate_apps; yarn install)
+	(cd ./create/new_project/examples/btc_eth; yarn install)
+	(cd ./create/new_project/examples/erc20_btc; yarn install)
+	(cd ./create/new_project/examples/separate_apps; yarn install)
 
 e2e_scripts:
 	./tests/new.sh

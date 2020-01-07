@@ -1,6 +1,6 @@
 use structopt::StructOpt;
 
-use create_comit_app::{new::new};
+use create_comit_app::new::new;
 
 fn main() -> std::io::Result<()> {
     let mut runtime = tokio_compat::runtime::Runtime::new()?;
