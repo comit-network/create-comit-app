@@ -38,7 +38,8 @@ install_tomlfmt: install_rust
 ## User install
 
 install:
-	$(CARGO) install --force --path . $(INSTALL_ARGS)
+	$(CARGO) install --force --path create-comit-app $(INSTALL_ARGS)
+	$(CARGO) install --force --path comit-scripts $(INSTALL_ARGS)
 
 clean:
 	$(CARGO) clean
@@ -56,16 +57,19 @@ format: install_rustfmt install_tomlfmt
 build: build_debug
 
 build_debug:
-	$(CARGO) build --all --all-targets $(BUILD_ARGS)
+	$(CARGO) build -p create-comit-app --all-targets $(BUILD_ARGS)
+	$(CARGO) build -p comit-scripts --all-targets $(BUILD_ARGS)
 
 release:
-	$(CARGO) build --all --all-targets --release $(BUILD_ARGS)
+	$(CARGO) build -p create-comit-app --all-targets --release $(BUILD_ARGS)
+	$(CARGO) build -p comit-scripts --all-targets --release $(BUILD_ARGS)
 
 clippy: install_clippy
 	$(CARGO) clippy --all-targets -- -D warnings
 
 test:
-	$(CARGO) test --all $(TEST_ARGS)
+	$(CARGO) test -p create-comit-app $(TEST_ARGS)
+	$(CARGO) test -p comit-scripts $(TEST_ARGS)
 
 doc:
 	$(CARGO) doc
