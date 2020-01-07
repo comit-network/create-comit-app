@@ -23,6 +23,12 @@ jobs:
           toolchain: ${{ env.RUST_TOOLCHAIN }}
           override: true
 
+      - name: Cache ~/.cargo/bin directory
+        uses: actions/cache@v1
+        with:
+          path: ~/.cargo/bin
+          key: ubuntu-rust-${{ env.RUST_TOOLCHAIN }}-cargo-bin-directory
+
       - name: Check formatting
         run: make check_format
 
@@ -63,6 +69,18 @@ jobs:
       - name: Add strawperryperl to the PATH to override the existing Perl installation so we can compile OpenSSL locally
         run: echo "##[add-path]C:\strawberry\c\bin;C:\strawberry\perl\site\bin;C:\strawberry\perl\bin"
         if: matrix.os == 'windows'
+
+      - name: Cache target directory
+        uses: actions/cache@v1
+        with:
+          path: target
+          key: ${{ matrix.os }}-rust-${{ env.RUST_TOOLCHAIN }}-target-directory-${{ hashFiles('Cargo.lock') }}
+
+      - name: Cache ~/.cargo/registry directory
+        uses: actions/cache@v1
+        with:
+          path: ~/.cargo/registry
+          key: ${{ matrix.os }}-rust-${{ env.RUST_TOOLCHAIN }}-cargo-registry-directory-${{ hashFiles('Cargo.lock') }}
 
       - name: Build ${{ matrix.os }} binary
         run: make build

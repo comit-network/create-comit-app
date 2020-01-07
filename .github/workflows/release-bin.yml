@@ -37,6 +37,12 @@ jobs:
         run: echo "##[add-path]C:\strawberry\c\bin;C:\strawberry\perl\site\bin;C:\strawberry\perl\bin"
         if: matrix.os == 'windows'
 
+      - name: Cache .cargo/registry directory
+        uses: actions/cache@v1
+        with:
+          path: ~/.cargo/registry
+          key: ${{ matrix.os }}-rust-${{ env.RUST_TOOLCHAIN }}-cargo-registry-directory-${{ hashFiles('Cargo.lock') }}
+
       - name: Build ${{ matrix.os }} release binary
         run: make release
 
