@@ -14,8 +14,8 @@ use web3::{
 use lazy_static::lazy_static;
 
 use crate::docker::{
-    self, docker_daemon_ip, DOCKER_NETWORK, DockerImage, free_local_port::free_local_port,
-    LogMessage,
+    self, docker_daemon_ip, free_local_port::free_local_port, DockerImage, LogMessage,
+    DOCKER_NETWORK,
 };
 
 pub const TOKEN_CONTRACT: &str = include_str!("../../erc20_token/build/contract.hex");

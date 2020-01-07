@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use futures::{
-    future::{Either, try_select},
+    future::{try_select, Either},
     pin_mut,
 };
 use tokio::time::delay_for;

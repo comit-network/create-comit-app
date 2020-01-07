@@ -1,7 +1,7 @@
 use std::{env, fs::File, path::Path};
 
 use anyhow::Context;
-use flate2::{Compression, write::GzEncoder};
+use flate2::{write::GzEncoder, Compression};
 use ignore::WalkBuilder;
 
 fn main() -> anyhow::Result<()> {

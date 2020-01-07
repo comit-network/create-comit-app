@@ -3,19 +3,19 @@ use std::net::Ipv4Addr;
 use anyhow::Context;
 use rust_bitcoin::{
     self,
-    Address,
-    Amount,
-    hashes::sha256d, Network, util::bip32::{ChildNumber, ExtendedPrivKey},
+    hashes::sha256d,
+    util::bip32::{ChildNumber, ExtendedPrivKey},
+    Address, Amount, Network,
 };
 use secp256k1::{
-    rand::{Rng, thread_rng},
+    rand::{thread_rng, Rng},
     Secp256k1,
 };
 use shiplift::ContainerOptions;
 
 use crate::docker::{
-    self, docker_daemon_ip, DOCKER_NETWORK, DockerImage, free_local_port::free_local_port,
-    LogMessage,
+    self, docker_daemon_ip, free_local_port::free_local_port, DockerImage, LogMessage,
+    DOCKER_NETWORK,
 };
 
 const IMAGE: &str = "coblox/bitcoin-core:0.17.0";

@@ -7,8 +7,8 @@ use anyhow::Context;
 use shiplift::ContainerOptions;
 
 use crate::docker::{
-    self, docker_daemon_ip, DOCKER_NETWORK, DockerImage, File, free_local_port::free_local_port,
-    LogMessage,
+    self, docker_daemon_ip, free_local_port::free_local_port, DockerImage, File, LogMessage,
+    DOCKER_NETWORK,
 };
 
 const IMAGE: &str = "comitnetwork/cnd:0.4.0";
