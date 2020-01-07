@@ -35,11 +35,6 @@ jobs:
       - name: Run linter
         run: make clippy
 
-      - name: Install NodeJS 10.x
-        uses: actions/setup-node@v1
-        with:
-          node-version: '10.x'
-
   build:
     strategy:
       matrix:
