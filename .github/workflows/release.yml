@@ -13,11 +13,11 @@ jobs:
         os: [macos, windows, ubuntu]
         include:
           - os: windows
-            binary: create-comit-app.exe
+            binary-suffix: .exe
           - os: ubuntu
-            binary: create-comit-app
+            binary-suffix: ""
           - os: macos
-            binary: create-comit-app
+            binary-suffix: ""
     runs-on: ${{ matrix.os }}-latest
     steps:
       - name: Checkout sources
@@ -51,23 +51,45 @@ jobs:
         with:
           node-version: 10.x
 
-      - name: Create archive
-        if: startsWith(github.ref, 'refs/tags/')
+      - name: Create create-comit-app archive
+        if: startsWith(github.ref, 'refs/tags/create-comit-app')
         shell: bash
         run: |
-          VERSION=$(git describe --tags)
+          TAG=$(git describe --tags) # 'create-comit-app-X.Y.Z'
+          VERSION=${TAG##create-comit-app-} # Remove 'create-comit-app-'
 
           # We need to do bash -c to make sure this also works on GitBash for Windows.
           # GitHub actions uses GitBash for Windows if we say 'shell: bash' on a Windows executor.
-          ARCHIVE=$(bash -c "node .npm/printArchiveName.js ${VERSION}")
+          ARCHIVE=$(bash -c "node create/npm/printArchiveName.js ${VERSION}")
 
-          tar czvf ${ARCHIVE} -C target/release ${{ matrix.binary }}
+          tar czvf ${ARCHIVE} -C target/release create-comit-app${{ matrix.binary-suffix }}
 
-      - name: Upload asset to GitHub release
+      - name: Upload create-comit-app asset to GitHub release
+        if: startsWith(github.ref, 'refs/tags/create-comit-app')
         uses: softprops/action-gh-release@v1
-        if: startsWith(github.ref, 'refs/tags/')
         with:
           files: create-comit-app_*.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create comit-scripts archive
+        if: startsWith(github.ref, 'refs/tags/comit-scripts')
+        shell: bash
+        run: |
+          TAG=$(git describe --tags) # 'comit-scripts-X.Y.Z'
+          VERSION=${TAG##comit-scripts-} # Remove 'comit-scripts-'
+
+          # We need to do bash -c to make sure this also works on GitBash for Windows.
+          # GitHub actions uses GitBash for Windows if we say 'shell: bash' on a Windows executor.
+          ARCHIVE=$(bash -c "node scripts/npm/printArchiveName.js ${VERSION}")
+
+          tar czvf ${ARCHIVE} -C target/release comit-scripts${{ matrix.binary-suffix }}
+
+      - name: Upload comit-scripts asset to GitHub release
+        if: startsWith(github.ref, 'refs/tags/comit-scripts')
+        uses: softprops/action-gh-release@v1
+        with:
+          files: comit-scripts_*.tar.gz
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
