@@ -8,7 +8,7 @@ edition = "2018"
 flate2 = "1.0.13"
 structopt = "0.3"
 tar = "0.4"
-tokio = "0.2"
+tokio = { version = "0.2", features = ["fs", "io-util"] }
 tokio-compat = "0.1"
 
 [build-dependencies]
