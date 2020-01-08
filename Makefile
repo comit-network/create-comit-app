@@ -57,19 +57,23 @@ format: install_rustfmt install_tomlfmt
 build: build_debug
 
 build_debug:
-	$(CARGO) build -p create-comit-app --all-targets $(BUILD_ARGS)
-	$(CARGO) build -p comit-scripts --all-targets $(BUILD_ARGS)
+	cd ./create; $(CARGO) build --all-targets $(BUILD_ARGS)
+	cd ./scripts; $(CARGO) build --all-targets $(BUILD_ARGS)
 
-release:
-	$(CARGO) build -p create-comit-app --all-targets --release $(BUILD_ARGS)
-	$(CARGO) build -p comit-scripts --all-targets --release $(BUILD_ARGS)
+release: release_create release_scripts
+
+release_create:
+	cd ./create; $(CARGO) build --all-targets --release $(BUILD_ARGS)
+
+release_scripts:
+	cd ./scripts; $(CARGO) build --all-targets --release $(BUILD_ARGS)
 
 clippy: install_clippy
 	$(CARGO) clippy --all-targets -- -D warnings
 
 test:
-	$(CARGO) test -p create-comit-app $(TEST_ARGS)
-	$(CARGO) test -p comit-scripts $(TEST_ARGS)
+	cd ./create; $(CARGO) test $(TEST_ARGS)
+	cd ./scripts; $(CARGO) test $(TEST_ARGS)
 
 doc:
 	$(CARGO) doc
