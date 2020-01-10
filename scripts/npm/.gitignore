@@ -1,4 +1,4 @@
 *.tar.gz
 node_modules/
-create-comit-app*
+comit-scripts*
 yarn-error.log
