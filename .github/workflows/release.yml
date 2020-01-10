@@ -35,8 +35,8 @@ jobs:
           override: true
 
       - name: Add strawperryperl to the PATH to override the existing Perl installation so we can compile OpenSSL locally
-        run: echo "##[add-path]C:\strawberry\c\bin;C:\strawberry\perl\site\bin;C:\strawberry\perl\bin"
         if: matrix.os == 'windows'
+        run: cp C:/strawberry/perl/bin/perl.exe C:/Users/runneradmin/.cargo/bin
 
       - name: Cache .cargo/registry directory
         uses: actions/cache@v1
