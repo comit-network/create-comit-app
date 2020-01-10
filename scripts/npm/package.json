@@ -1,0 +1,37 @@
+{
+  "name": "comit-scripts",
+  "version": "0.7.0",
+  "description": "Set up a local development environment for COMIT apps with one command.",
+  "main": "main.js",
+  "scripts": {
+    "fix": "prettier --write '**/*.{ts,js,json,yml}'",
+    "test": "prettier --check '**/*.{ts,js,json,yml}'",
+    "start": "./main.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/comit-network/create-comit-app.git"
+  },
+  "keywords": [
+    "comit",
+    "cross-blockchain",
+    "decentralised",
+    "xdapps"
+  ],
+  "author": "CoBloX developers <team@coblox.tech>",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/comit-network/create-comit-app/issues"
+  },
+  "homepage": "https://github.com/comit-network/create-comit-app#readme",
+  "bin": {
+    "comit-scripts": "main.js"
+  },
+  "devDependencies": {
+    "prettier": "^1.18.2"
+  },
+  "dependencies": {
+    "axios": "^0.19.0",
+    "targz": "^1.0.1"
+  }
+}

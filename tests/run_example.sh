@@ -10,20 +10,20 @@ fi
 EXAMPLE_NAME=$1;
 
 PROJECT_DIR=${0%/tests/*.sh}
-EXAMPLE_DIR="${PROJECT_DIR}/new_project/examples/${EXAMPLE_NAME}"
+EXAMPLE_DIR="${PROJECT_DIR}/create/new_project/examples/${EXAMPLE_NAME}"
 
 if ! [ -d "$EXAMPLE_DIR" ]; then
   echo "Example dir does not exit: $EXAMPLE_DIR";
   exit 2;
 fi
 
-CCA="${PROJECT_DIR}/target/debug/create-comit-app"
+BIN="${PROJECT_DIR}/target/debug/comit-scripts"
 
 LOG_FILE=$(mktemp)
 
 ## Start tests
 
-$CCA start-env > /dev/null &
+$BIN start-env > /dev/null &
 CCA_PID=$!
 ENV_READY=false
 
@@ -65,7 +65,7 @@ TEST_PASSED=false
 
 cd "${EXAMPLE_DIR}"
 
-yarn remove create-comit-app > /dev/null
+yarn remove comit-scripts > /dev/null
 yarn install > /dev/null
 
 yarn run swap > "${LOG_FILE}" 2>&1 &

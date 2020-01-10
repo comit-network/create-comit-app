@@ -14,7 +14,7 @@ function clean () {
 ## Start tests
 echo "Running $0"
 
-$CCA new "${PROJECT_NAME}" > /dev/null || (echo "FAIL: Non-zero exit code returned."; clean ; exit 1;)
+$CCA "${PROJECT_NAME}" > /dev/null || (echo "FAIL: Non-zero exit code returned."; clean ; exit 1;)
 
 test -d "${PROJECT_NAME}" > /dev/null || (echo "FAIL: Project directory ${PROJECT_NAME} was not created."; clean; exit 1;)
 

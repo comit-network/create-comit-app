@@ -38,7 +38,8 @@ install_tomlfmt: install_rust
 ## User install
 
 install:
-	$(CARGO) install --force --path . $(INSTALL_ARGS)
+	$(CARGO) install --force --path create-comit-app $(INSTALL_ARGS)
+	$(CARGO) install --force --path comit-scripts $(INSTALL_ARGS)
 
 clean:
 	$(CARGO) clean
@@ -50,20 +51,29 @@ all: format build_debug clippy test doc e2e_scripts
 format: install_rustfmt install_tomlfmt
 	$(CARGO_NIGHTLY) fmt
 	$(CARGO) tomlfmt -p Cargo.toml
+	$(CARGO) tomlfmt -p create/Cargo.toml
+	$(CARGO) tomlfmt -p scripts/Cargo.toml
 
 build: build_debug
 
 build_debug:
-	$(CARGO) build --all --all-targets $(BUILD_ARGS)
+	cd ./create; $(CARGO) build --all-targets $(BUILD_ARGS)
+	cd ./scripts; $(CARGO) build --all-targets $(BUILD_ARGS)
 
-release:
-	$(CARGO) build --all --all-targets --release $(BUILD_ARGS)
+release: release_create release_scripts
+
+release_create:
+	cd ./create; $(CARGO) build --all-targets --release $(BUILD_ARGS)
+
+release_scripts:
+	cd ./scripts; $(CARGO) build --all-targets --release $(BUILD_ARGS)
 
 clippy: install_clippy
 	$(CARGO) clippy --all-targets -- -D warnings
 
 test:
-	$(CARGO) test --all $(TEST_ARGS)
+	cd ./create; $(CARGO) test $(TEST_ARGS)
+	cd ./scripts; $(CARGO) test $(TEST_ARGS)
 
 doc:
 	$(CARGO) doc
@@ -71,12 +81,14 @@ doc:
 check_format: install_rustfmt install_tomlfmt
 	$(CARGO_NIGHTLY) fmt -- --check
 	$(CARGO) tomlfmt -d -p Cargo.toml
+	$(CARGO) tomlfmt -d -p create/Cargo.toml
+	$(CARGO) tomlfmt -d -p scripts/Cargo.toml
 
 yarn_install_all:
 	(cd ./.npm; yarn install)
-	(cd ./new_project/examples/btc_eth; yarn install)
-	(cd ./new_project/examples/erc20_btc; yarn install)
-	(cd ./new_project/examples/separate_apps; yarn install)
+	(cd ./create/new_project/examples/btc_eth; yarn install)
+	(cd ./create/new_project/examples/erc20_btc; yarn install)
+	(cd ./create/new_project/examples/separate_apps; yarn install)
 
 e2e_scripts:
 	./tests/new.sh

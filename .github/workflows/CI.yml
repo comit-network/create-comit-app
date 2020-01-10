@@ -38,14 +38,14 @@ jobs:
   build:
     strategy:
       matrix:
-        os: [macos, windows, ubuntu]
+        os: [macos, ubuntu, windows]
         include:
           - os: windows
-            binary: create-comit-app.exe
+            binary-suffix: .exe
           - os: ubuntu
-            binary: create-comit-app
+            binary-suffix: ""
           - os: macos
-            binary: create-comit-app
+            binary-suffix: ""
     runs-on: ${{ matrix.os }}-latest
     steps:
       - name: Checkout sources
@@ -62,8 +62,8 @@ jobs:
           override: true
 
       - name: Add strawperryperl to the PATH to override the existing Perl installation so we can compile OpenSSL locally
-        run: echo "##[add-path]C:\strawberry\c\bin;C:\strawberry\perl\site\bin;C:\strawberry\perl\bin"
         if: matrix.os == 'windows'
+        run: cp C:/strawberry/perl/bin/perl.exe C:/Users/runneradmin/.cargo/bin
 
       - name: Cache target directory
         uses: actions/cache@v1
@@ -83,11 +83,17 @@ jobs:
       - name: Run unit tests
         run: make test
 
-      - name: Upload ${{ matrix.os }} binary
+      - name: Upload create-comit-app ${{ matrix.os }} binary
         uses: actions/upload-artifact@v1
         with:
           name: create-comit-app-${{ matrix.os }}-debug
-          path: target/debug/${{ matrix.binary }}
+          path: target/debug/create-comit-app${{ matrix.binary-suffix }}
+
+      - name: Upload comit-scripts ${{ matrix.os }} binary
+        uses: actions/upload-artifact@v1
+        with:
+          name: comit-scripts-${{ matrix.os }}-debug
+          path: target/debug/comit-scripts${{ matrix.binary-suffix }}
 
   e2e_test:
     runs-on: ubuntu-latest
@@ -96,14 +102,22 @@ jobs:
       - name: Checkout sources
         uses: actions/checkout@v1
 
-      - name: Download binary
+      - name: Download create-comit-app binary
         uses: actions/download-artifact@v1
         with:
           name: create-comit-app-ubuntu-debug
           path: target/debug
 
+      - name: Download comit-scripts binary
+        uses: actions/download-artifact@v1
+        with:
+          name: comit-scripts-ubuntu-debug
+          path: target/debug
+
       - name: Fix missing executable permission
-        run: chmod +x target/debug/create-comit-app
+        run: |
+            chmod +x target/debug/create-comit-app
+            chmod +x target/debug/comit-scripts
 
       - name: Install NodeJS 10.x
         uses: actions/setup-node@v1
@@ -120,9 +134,15 @@ jobs:
         uses: actions/setup-node@v1
         with:
           node-version: 10.x
-      - name: yarn install and test
+      - name: "create: yarn install and test"
         run: |
-          cd .npm
+          cd create/npm
+          yarn install
+          yarn list
+          yarn test
+      - name: "scripts: yarn install and test"
+        run: |
+          cd scripts/npm
           yarn install
           yarn list
           yarn test
