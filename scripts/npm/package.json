@@ -1,6 +1,6 @@
 {
   "name": "comit-scripts",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "description": "Set up a local development environment for COMIT apps with one command.",
   "main": "main.js",
   "scripts": {
