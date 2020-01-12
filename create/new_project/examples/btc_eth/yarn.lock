@@ -1141,6 +1141,14 @@ combined-stream@^1.0.6, combined-stream@~1.0.6:
   dependencies:
     delayed-stream "~1.0.0"
 
+comit-scripts@^0.8.0:
+  version "0.8.0"
+  resolved "https://registry.yarnpkg.com/comit-scripts/-/comit-scripts-0.8.0.tgz#678b574ebcfc543799f95c4467c5a53a6d978741"
+  integrity sha512-JCR917IBQ0lnWgJCQsdCw7GZKnOMKRwkRsT7t0FQyQHgvOFxtrHy6tkWMnXJxzBPCmGu3jdSiBBmXyl5dqHhVQ==
+  dependencies:
+    axios "^0.19.0"
+    targz "^1.0.1"
+
 comit-sdk@^0.8.0:
   version "0.8.0"
   resolved "https://registry.yarnpkg.com/comit-sdk/-/comit-sdk-0.8.0.tgz#ac4b64dd69e58f8057d7d96ca52983520011fcf0"
@@ -1214,14 +1222,6 @@ core-util-is@1.0.2, core-util-is@~1.0.0:
   version "1.0.2"
   resolved "https://registry.yarnpkg.com/core-util-is/-/core-util-is-1.0.2.tgz#b5fd54220aa2bc5ab57aab7140c940754503c1a7"
   integrity sha1-tf1UIgqivFq1eqtxQMlAdUUDwac=
-
-create-comit-app@^0.7.0:
-  version "0.7.0"
-  resolved "https://registry.yarnpkg.com/create-comit-app/-/create-comit-app-0.7.0.tgz#56596244edb9dc993328c49a4404ef8063f11d36"
-  integrity sha512-41u6Pt3mnLMYmy3R33dTBCcrHaPYE1xML+G8+vzhRU98I+PlRx24t3FrmnJNG3aybeJ4TWe+yMwLEWOQBlCxdg==
-  dependencies:
-    axios "^0.19.0"
-    targz "^1.0.1"
 
 cross-spawn@^6.0.0:
   version "6.0.5"
