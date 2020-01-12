@@ -91,6 +91,13 @@ yarn_install_all:
 	cd ./create/new_project/examples/erc20_btc; yarn install
 	cd ./create/new_project/examples/separate_apps; yarn install
 
+yarn_upgrade_all:
+	cd ./scripts/npm; yarn upgrade
+	cd ./create/npm; yarn upgrade
+	cd ./create/new_project/examples/btc_eth; yarn upgrade
+	cd ./create/new_project/examples/erc20_btc; yarn upgrade
+	cd ./create/new_project/examples/separate_apps; yarn upgrade
+
 e2e_scripts:
 	./tests/new.sh
 	./tests/start_env.sh
