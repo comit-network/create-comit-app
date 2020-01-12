@@ -85,10 +85,11 @@ check_format: install_rustfmt install_tomlfmt
 	$(CARGO) tomlfmt -d -p scripts/Cargo.toml
 
 yarn_install_all:
-	(cd ./.npm; yarn install)
-	(cd ./create/new_project/examples/btc_eth; yarn install)
-	(cd ./create/new_project/examples/erc20_btc; yarn install)
-	(cd ./create/new_project/examples/separate_apps; yarn install)
+	cd ./scripts/npm; yarn install
+	cd ./create/npm; yarn install
+	cd ./create/new_project/examples/btc_eth; yarn install
+	cd ./create/new_project/examples/erc20_btc; yarn install
+	cd ./create/new_project/examples/separate_apps; yarn install
 
 e2e_scripts:
 	./tests/new.sh
