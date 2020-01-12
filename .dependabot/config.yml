@@ -20,7 +20,7 @@ update_configs:
       - match:
           dependency_name: "http"
   - package_manager: "javascript"
-    directory: "/new_project"
+    directory: "/create/new_project"
     update_schedule: "daily"
     default_labels:
       - "dependencies"
@@ -29,7 +29,7 @@ update_configs:
           update_type: "all"
           dependency_type: "direct"
   - package_manager: "javascript"
-    directory: "/new_project/examples/btc_eth"
+    directory: "/create/new_project/examples/btc_eth"
     update_schedule: "daily"
     default_labels:
       - "dependencies"
@@ -38,7 +38,7 @@ update_configs:
           update_type: "all"
           dependency_type: "direct"
   - package_manager: "javascript"
-    directory: "/new_project/examples/erc20_btc"
+    directory: "/create/new_project/examples/erc20_btc"
     update_schedule: "daily"
     default_labels:
       - "dependencies"
@@ -47,7 +47,25 @@ update_configs:
           update_type: "all"
           dependency_type: "direct"
   - package_manager: "javascript"
-    directory: "/new_project/examples/separate_apps"
+    directory: "/create/new_project/examples/separate_apps"
+    update_schedule: "daily"
+    default_labels:
+      - "dependencies"
+    allowed_updates:
+      - match:
+          update_type: "all"
+          dependency_type: "direct"
+  - package_manager: "javascript"
+    directory: "/create/npm"
+    update_schedule: "daily"
+    default_labels:
+      - "dependencies"
+    allowed_updates:
+      - match:
+          update_type: "all"
+          dependency_type: "direct"
+  - package_manager: "javascript"
+    directory: "/scripts/npm"
     update_schedule: "daily"
     default_labels:
       - "dependencies"
