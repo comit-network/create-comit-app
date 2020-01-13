@@ -98,6 +98,13 @@ yarn_upgrade_all:
 	cd ./create/new_project/examples/erc20_btc; yarn upgrade
 	cd ./create/new_project/examples/separate_apps; yarn upgrade
 
+yarn_fix_all:
+	cd ./scripts/npm; yarn run fix
+	cd ./create/npm; yarn run fix
+	cd ./create/new_project/examples/btc_eth; yarn run fix
+	cd ./create/new_project/examples/erc20_btc; yarn run fix
+	cd ./create/new_project/examples/separate_apps; yarn run fix
+
 e2e_scripts:
 	./tests/new.sh
 	./tests/start_env.sh
