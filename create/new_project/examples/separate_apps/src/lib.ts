@@ -1,4 +1,9 @@
-import { Actor, createActor as createActorSdk, EthereumWallet, InMemoryBitcoinWallet } from "comit-sdk";
+import {
+    Actor,
+    createActor as createActorSdk,
+    EthereumWallet,
+    InMemoryBitcoinWallet,
+} from "comit-sdk";
 import dotenv from "dotenv";
 import fs from "fs";
 import * as os from "os";
