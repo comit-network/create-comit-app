@@ -2,7 +2,7 @@
     "name": "erc20-btc",
     "version": "1.0.0",
     "description": "A Hello World COMIT example app that does a ERC20-Bitcoin swap",
-    "main": "index.js",
+    "main": "./src/index.ts",
     "scripts": {
         "check": "tsc && tslint -p . && prettier --check '**/*.{ts,json,yml}'",
         "swap": "ts-node ./src/index.ts",
@@ -13,6 +13,7 @@
     "author": "",
     "license": "ISC",
     "devDependencies": {
+        "@types/node": "^13.1.6",
         "@types/readline-sync": "^1.4.3",
         "comit-scripts": "^0.8.0",
         "prettier": "^1.19.1",

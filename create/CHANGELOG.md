@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - **BREAKING API CHANGE**: Separate `create` and `start-env` features in 2 binaries and crates.
 Meaning that now COMIT Apps must depends on `comit-scripts` package instead of `create-comit-app`.
+- Upgraded all examples and new project template to `comit-sdk@0.9.0`
 
 ## [0.7.0] - 2020-01-06
 

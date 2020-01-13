@@ -134,15 +134,7 @@ jobs:
         uses: actions/setup-node@v1
         with:
           node-version: 10.x
-      - name: "create: yarn install and test"
-        run: |
-          cd create/npm
-          yarn install
-          yarn list
-          yarn test
-      - name: "scripts: yarn install and test"
-        run: |
-          cd scripts/npm
-          yarn install
-          yarn list
-          yarn test
+      - name: "Yarn install all"
+        run: make yarn_install_all
+      - name: "Yarn check all"
+        run: make yarn_check_all

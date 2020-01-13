@@ -1,18 +1,18 @@
 import {
     Actor,
     BigNumber,
-    BitcoinWallet,
     createActor as createActorSdk,
     EthereumWallet,
+    InMemoryBitcoinWallet,
     SwapRequest,
 } from "comit-sdk";
+import dotenv from "dotenv";
 import fs from "fs";
 import moment from "moment";
+import * as os from "os";
+import * as path from "path";
 import readLineSync from "readline-sync";
 import { toBitcoin, toSatoshi } from "satoshi-bitcoin-ts";
-import * as path from "path";
-import dotenv from "dotenv";
-import * as os from "os";
 
 (async function main() {
     loadEnvironment();
@@ -88,7 +88,7 @@ import * as os from "os";
 })();
 
 async function createActor(index: number, name: string): Promise<Actor> {
-    const bitcoinWallet = await BitcoinWallet.newInstance(
+    const bitcoinWallet = await InMemoryBitcoinWallet.newInstance(
         "regtest",
         process.env.BITCOIN_P2P_URI!,
         process.env[`BITCOIN_HD_KEY_${index}`]!
@@ -141,7 +141,7 @@ function createSwap(maker: Actor, taker: Actor): SwapRequest {
 }
 
 function loadEnvironment() {
-    let envFilePath = path.join(os.homedir(), ".create-comit-app", "env");
+    const envFilePath = path.join(os.homedir(), ".create-comit-app", "env");
 
     if (!fs.existsSync(envFilePath)) {
         console.log(
@@ -151,7 +151,7 @@ function loadEnvironment() {
         process.exit(1);
     }
 
-    dotenv.config({path: envFilePath});
+    dotenv.config({ path: envFilePath });
 }
 
 async function printBalances(actor: Actor) {
@@ -161,7 +161,7 @@ async function printBalances(actor: Actor) {
     console.log(
         "%s Bitcoin balance: %d. Erc20 Token balance: %d",
         actor.name,
-        parseFloat(await actor.bitcoinWallet.getBalance()).toFixed(2),
+        (await actor.bitcoinWallet.getBalance()).toFixed(2),
         await actor.ethereumWallet.getErc20Balance(
             process.env.ERC20_CONTRACT_ADDRESS!
         )

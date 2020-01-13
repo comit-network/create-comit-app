@@ -86,13 +86,12 @@ while [ $RUN_TIMEOUT -gt 0 ]; do
   fi
 done
 
-rm -f "${LOG_FILE}"
-
 if $TEST_PASSED; then
   echo "SUCCESS: It swapped.";
   EXIT_CODE=0;
 else
   echo "FAIL: It did not swap.";
+  cat "$LOG_FILE";
   EXIT_CODE=1;
 fi
 
@@ -101,4 +100,5 @@ wait $RUN_PID;
 kill -s SIGINT $CCA_PID;
 wait $CCA_PID;
 
+rm -f "${LOG_FILE}"
 exit $EXIT_CODE;

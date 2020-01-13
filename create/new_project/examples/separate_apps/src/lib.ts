@@ -1,4 +1,9 @@
-import { Actor, BitcoinWallet, createActor as createActorSdk, EthereumWallet } from "comit-sdk";
+import {
+    Actor,
+    createActor as createActorSdk,
+    EthereumWallet,
+    InMemoryBitcoinWallet,
+} from "comit-sdk";
 import dotenv from "dotenv";
 import fs from "fs";
 import * as os from "os";
@@ -7,7 +12,7 @@ import * as path from "path";
 export async function createActor(index: number): Promise<Actor> {
     loadEnvironment();
 
-    const bitcoinWallet = await BitcoinWallet.newInstance(
+    const bitcoinWallet = await InMemoryBitcoinWallet.newInstance(
         "regtest",
         process.env.BITCOIN_P2P_URI!,
         process.env[`BITCOIN_HD_KEY_${index}`]!
