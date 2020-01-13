@@ -93,6 +93,7 @@ if $TEST_PASSED; then
   EXIT_CODE=0;
 else
   echo "FAIL: It did not swap.";
+  cat "$LOG_FILE";
   EXIT_CODE=1;
 fi
 
