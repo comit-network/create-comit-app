@@ -6,12 +6,12 @@ import {
     EthereumWallet,
     SwapRequest,
 } from "comit-sdk";
+import dotenv from "dotenv";
 import fs from "fs";
 import moment from "moment";
-import { toBitcoin, toSatoshi } from "satoshi-bitcoin-ts";
-import * as path from "path";
-import dotenv from "dotenv";
 import * as os from "os";
+import * as path from "path";
+import { toBitcoin, toSatoshi } from "satoshi-bitcoin-ts";
 
 (async function main() {
     loadEnvironment();
@@ -124,7 +124,7 @@ function createSwap(maker: Actor, taker: Actor): SwapRequest {
 }
 
 function loadEnvironment() {
-    let envFilePath = path.join(os.homedir(), ".create-comit-app", "env");
+    const envFilePath = path.join(os.homedir(), ".create-comit-app", "env");
 
     if (!fs.existsSync(envFilePath)) {
         console.log(
@@ -134,7 +134,7 @@ function loadEnvironment() {
         process.exit(1);
     }
 
-    dotenv.config({path: envFilePath});
+    dotenv.config({ path: envFilePath });
 }
 
 async function printBalances(actor: Actor) {
