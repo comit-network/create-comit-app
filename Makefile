@@ -105,6 +105,13 @@ yarn_fix_all:
 	cd ./create/new_project/examples/erc20_btc; yarn run fix
 	cd ./create/new_project/examples/separate_apps; yarn run fix
 
+yarn_check_all:
+	cd ./scripts/npm; yarn run check
+	cd ./create/npm; yarn run check
+	cd ./create/new_project/examples/btc_eth; yarn run check
+	cd ./create/new_project/examples/erc20_btc; yarn run check
+	cd ./create/new_project/examples/separate_apps; yarn run check
+
 e2e_scripts:
 	./tests/new.sh
 	./tests/start_env.sh

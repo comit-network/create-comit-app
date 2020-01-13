@@ -2,7 +2,7 @@
     "name": "btc_eth",
     "version": "1.0.0",
     "description": "A Hello World COMIT example app that does a Bitcoin-Ether swap",
-    "main": "index.js",
+    "main": "./src/index.ts",
     "scripts": {
         "check": "tsc && tslint -p . && prettier --check '**/*.{ts,json,yml}'",
         "swap": "ts-node ./src/index.ts",

@@ -1,4 +1,4 @@
-import { MakerClient, Order, TakerNegotiator, TryParams } from "comit-sdk";
+import { MakerClient, TakerNegotiator, TryParams } from "comit-sdk";
 import { formatEther } from "ethers/utils";
 import readLineSync from "readline-sync";
 import { toBitcoin } from "satoshi-bitcoin-ts";
@@ -24,7 +24,7 @@ import { createActor, sleep } from "./lib";
     // print balances before swapping
     console.log(
         "[Taker] Bitcoin balance: %f, Ether balance: %f",
-        parseFloat(await taker.bitcoinWallet.getBalance()).toFixed(2),
+        (await taker.bitcoinWallet.getBalance()).toFixed(2),
         parseFloat(
             formatEther(await taker.ethereumWallet.getBalance())
         ).toFixed(2)
@@ -37,39 +37,45 @@ import { createActor, sleep } from "./lib";
     // The taker negotiator manages retrieving orders from the maker and deciding if they are acceptable for the taker.
     // Once an order was taken by a taker the negotiator hands over the order and execution parameters to the
     // execution phase.
-    const takerNegotiator = new TakerNegotiator(taker.comitClient);
+
     const makerClient = new MakerClient("http://localhost:2318/");
+    const takerNegotiator = new TakerNegotiator(taker.comitClient, makerClient);
 
-    // Decide if an order is acceptable for the taker and take it.
-    const isOrderAcceptable = (order: Order) => {
-        // Check if the returned order matches the requested asset-pair
-        if (order.ask.asset !== "ether" || order.bid.asset !== "bitcoin") {
-            // These aren't the droids you're looking for
-            return false;
-        }
-
-        const ether = parseFloat(order.ask.nominalAmount);
-        const bitcoin = parseFloat(order.bid.nominalAmount);
-
-        if (ether === 0 || bitcoin === 0) {
-            // Let's do safe maths
-            return false;
-        }
-        // Only accept orders that are at least 1 bitcoin for 10 Ether
-        const minRate = 0.001;
-        const orderRate = bitcoin / ether;
-        console.log("Rate offered: ", orderRate);
-        return orderRate > minRate;
-    };
-    const { order, swap } = await takerNegotiator.negotiateAndInitiateSwap(
-        makerClient,
+    const order = await takerNegotiator.getOrderByTradingPair(
         // Define the trading pair to request and order for.
-        "ETH-BTC",
-        isOrderAcceptable
+        "ETH-BTC"
     );
 
+    // Check if the returned order matches the requested asset-pair
+    if (order.ask.asset !== "ether" || order.bid.asset !== "bitcoin") {
+        // These aren't the droids you're looking for
+        throw new Error("Maker returned an order with incorrect assets.");
+    }
+
+    const ether = parseFloat(order.ask.nominalAmount);
+    const bitcoin = parseFloat(order.bid.nominalAmount);
+
+    if (ether === 0 || bitcoin === 0) {
+        // Let's do safe maths
+        throw new Error("Maker returned an order with a null assets.");
+    }
+
+    // Only accept orders that are at least 1 bitcoin for 10 Ether
+    const minRate = 0.001;
+    const orderRate = bitcoin / ether;
+    console.log("Rate offered: ", orderRate);
+    if (orderRate < minRate) {
+        throw new Error(
+            "Maker returned an order which is not good enough, aborting."
+        );
+    }
+
+    const swap = await takerNegotiator.takeOrder(order);
+
     if (!swap) {
-        throw new Error("Could not find an order or something else went wrong");
+        throw new Error(
+            "Could not find an order or something else went wrong."
+        );
     }
 
     console.log(
@@ -148,7 +154,7 @@ import { createActor, sleep } from "./lib";
     // print balances after swapping
     console.log(
         "[Taker] Bitcoin balance: %f, Ether balance: %f",
-        parseFloat(await taker.bitcoinWallet.getBalance()).toFixed(2),
+        (await taker.bitcoinWallet.getBalance()).toFixed(2),
         parseFloat(
             formatEther(await taker.ethereumWallet.getBalance())
         ).toFixed(2)

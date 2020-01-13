@@ -2,10 +2,10 @@
   "name": "comit-scripts",
   "version": "0.8.0",
   "description": "Set up a local development environment for COMIT apps with one command.",
-  "main": "main.js",
+  "main": "./main.js",
   "scripts": {
     "fix": "prettier --write '**/*.{ts,js,json,yml}'",
-    "test": "prettier --check '**/*.{ts,js,json,yml}'",
+    "check": "prettier --check '**/*.{ts,js,json,yml}'",
     "start": "./main.js"
   },
   "repository": {

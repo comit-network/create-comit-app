@@ -2,7 +2,7 @@
     "name": "separate_apps",
     "version": "1.0.0",
     "description": "A COMIT example app that does an Ether-Bitcoin swap with actors started in separate terminals",
-    "main": "index.js",
+    "main": "./src/maker.ts",
     "scripts": {
         "check": "tsc && tslint -p . && prettier --check '**/*.{ts,json,yml}'",
         "maker": "ts-node ./src/maker.ts",

@@ -24,7 +24,7 @@ import { createActor, sleep } from "./lib";
     // print balances before swapping
     console.log(
         "[Maker] Bitcoin balance: %f, Ether balance: %f",
-        parseFloat(await maker.bitcoinWallet.getBalance()).toFixed(2),
+        (await maker.bitcoinWallet.getBalance()).toFixed(2),
         parseFloat(
             formatEther(await maker.ethereumWallet.getBalance())
         ).toFixed(2)
@@ -173,7 +173,7 @@ import { createActor, sleep } from "./lib";
     // print balances after swapping
     console.log(
         "[Maker] Bitcoin balance: %f, Ether balance: %f",
-        parseFloat(await maker.bitcoinWallet.getBalance()).toFixed(2),
+        (await maker.bitcoinWallet.getBalance()).toFixed(2),
         parseFloat(
             formatEther(await maker.ethereumWallet.getBalance())
         ).toFixed(2)

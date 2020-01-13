@@ -2,10 +2,10 @@
   "name": "create-comit-app",
   "version": "0.7.0",
   "description": "Create a new COMIT app with one command.",
-  "main": "cca.js",
+  "main": "./main.js",
   "scripts": {
     "fix": "prettier --write '**/*.{ts,js,json,yml}'",
-    "test": "prettier --check '**/*.{ts,js,json,yml}'",
+    "check": "prettier --check '**/*.{ts,js,json,yml}'",
     "start": "./main.js"
   },
   "repository": {
