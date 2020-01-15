@@ -13,7 +13,7 @@ ifeq ($(OS),Windows_NT)
     INSTALL_ARGS = --no-default-features --features windows
 endif
 
-.PHONY: install_rust install_rust_nightly install_clippy install_rustfmt install_tomlfmt install clean all format build build_debug release clippy test doc check_format e2e_scripts e2e yarn_install_all yarn_check_all yarn_fix_all
+.PHONY: install_rust install_rust_nightly install_clippy install_rustfmt install_tomlfmt install clean all format build build_debug release clippy test doc check_format e2e_scenarios e2e yarn_install_all yarn_check_all yarn_fix_all
 
 default: build
 
@@ -46,7 +46,7 @@ clean:
 
 ## Development tasks
 
-all: format build_debug clippy test doc e2e_scripts
+all: format build_debug clippy test doc e2e_scenarios
 
 format: install_rustfmt install_tomlfmt
 	$(CARGO_NIGHTLY) fmt
@@ -112,10 +112,10 @@ yarn_check_all: yarn_install_all
 	cd ./create/new_project/examples/erc20_btc; yarn run check
 	cd ./create/new_project/examples/separate_apps; yarn run check
 
-e2e_scripts:
-	./tests/new.sh
-	./tests/start_env.sh
-	./tests/force_clean_env.sh
-	./tests/btc_eth.sh
+e2e_scenarios:
+	./scripts/tests/start_env.sh
+	./scripts/tests/force_clean_env.sh
+	./create/tests/new.sh
+	./create/tests/btc_eth.sh
 
-e2e: build_debug e2e_scripts
+e2e: build_debug e2e_scenarios
