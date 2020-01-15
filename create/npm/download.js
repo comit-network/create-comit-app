@@ -19,7 +19,7 @@ module.exports = async function download(version, binTarget) {
     fs.unlinkSync(archivePath);
   }
 
-  const url = `https://github.com/comit-network/create-comit-app/releases/download/${version}/${archiveName}`;
+  const url = `https://github.com/comit-network/create-comit-app/releases/download/create-comit-app-${version}/${archiveName}`;
 
   let response = await axios({
     url,
