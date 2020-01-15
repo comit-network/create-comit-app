@@ -37,7 +37,8 @@ pull_request_rules:
   - name: nag if changelog is not updated
     conditions:
       - "author!=dependabot-preview[bot]"
-      - "files!=CHANGELOG.md"
+      - "files!=create/CHANGELOG.md"
+      - "files!=scripts/CHANGELOG.md"
       - review-requested!=''
     actions:
       comment:
