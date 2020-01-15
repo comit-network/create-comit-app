@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [0.8.1] - 2020-01-15
+
 ### Fixed
 - Fix 404 error during start-env.
 
@@ -16,5 +18,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Which means that COMIT App should import dev dependency `comit-scripts` instead of `create-comit-app`.
 See `../create/CHANGELOG.md` for historical changes. 
 
-[Unreleased]: https://github.com/comit-network/create-comit-app/compare/comit-scripts-0.8.0...HEAD
+[Unreleased]: https://github.com/comit-network/create-comit-app/compare/comit-scripts-0.8.1...HEAD
+[0.8.1]: https://github.com/comit-network/create-comit-app/compare/0.8.0...comit-scripts-0.8.1
 [0.8.0]: https://github.com/comit-network/create-comit-app/compare/0.7.0...comit-scripts-0.8.0
