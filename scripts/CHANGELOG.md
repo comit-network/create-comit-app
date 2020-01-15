@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 
 ### Fixed
-- Rename error during start-env.
+- `cannot rename` error during start-env has been fixed.
 
 ## [0.8.1] - 2020-01-15
 
