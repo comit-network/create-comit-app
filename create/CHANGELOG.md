@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Fixed
+- Fix 404 error during first `yarn create comit-app`.
+
 ## [0.8.0] - 2020-01-15
 
 ### Changed
