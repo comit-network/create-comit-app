@@ -17,14 +17,14 @@ if ! [ -d "$EXAMPLE_DIR" ]; then
   exit 2;
 fi
 
-BIN="${PROJECT_DIR}/target/debug/comit-scripts"
-
 LOG_FILE=$(mktemp)
 
 ## Start tests
 
-$BIN start-env > /dev/null &
-CCA_PID=$!
+cd "${EXAMPLE_DIR}"
+yarn install > /dev/null
+yarn run start-env > /dev/null &
+STARTENV_PID=$!
 ENV_READY=false
 
 # Start the environment
@@ -54,18 +54,14 @@ done
 
 if ! $ENV_READY; then
   echo "FAIL: ${CONTAINER} docker container was not started."
-  kill $CCA_PID;
-  wait $CCA_PID;
+  kill $STARTENV_PID;
+  wait $STARTENV_PID;
   exit 1;
 fi
 
 # Run the example
 RUN_TIMEOUT=60
 TEST_PASSED=false
-
-cd "${EXAMPLE_DIR}"
-
-yarn install > /dev/null
 
 yarn run swap > "${LOG_FILE}" 2>&1 &
 RUN_PID=$!
@@ -97,8 +93,8 @@ fi
 
 wait $RUN_PID;
 
-kill -s SIGINT $CCA_PID;
-wait $CCA_PID;
+kill -s SIGINT $STARTENV_PID;
+wait $STARTENV_PID;
 
 rm -f "${LOG_FILE}"
 exit $EXIT_CODE;
