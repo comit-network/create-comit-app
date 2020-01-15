@@ -53,6 +53,6 @@ module.exports = async function download(version, binTarget) {
     dest: targetDir
   });
   fs.unlinkSync(archivePath);
-  fs.renameSync(targetDir + "/create-comit-app", binTarget);
+  fs.renameSync(targetDir + "/comit-scripts", binTarget);
   fs.chmodSync(binTarget, 755);
 };
