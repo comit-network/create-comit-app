@@ -14,7 +14,7 @@ function clean () {
 ## Start tests
 echo "Running $0"
 
-$CCA "${PROJECT_NAME}" > /dev/null || (echo "FAIL: Non-zero exit code returned."; clean ; exit 1;)
+$CCA "${PROJECT_NAME}" > /dev/null || (echo "FAIL: Non-zero exit code returned."; clean; exit 1;)
 
 test -d "${PROJECT_NAME}" > /dev/null || (echo "FAIL: Project directory ${PROJECT_NAME} was not created."; clean; exit 1;)
 
@@ -24,6 +24,8 @@ PACKAGE_JSON_PROJECT_NAME=$(cat "${PROJECT_NAME}/package.json" | jq .name)
 if [ "$PACKAGE_JSON_PROJECT_NAME" != "\"$PROJECT_NAME\"" ]
 then
   echo "FAIL: Project was not properly initialized with ${PROJECT_NAME} in package.json."
+  ls
+  cat "${PROJECT_NAME}/package.json"
   clean
   exit 1
 fi
