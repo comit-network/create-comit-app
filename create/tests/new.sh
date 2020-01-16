@@ -2,7 +2,7 @@
 
 set -e
 
-PROJECT_DIR=${0%/tests/*.sh}
+PROJECT_DIR=$(git rev-parse --show-toplevel)
 
 CCA="${PROJECT_DIR}/target/debug/create-comit-app"
 PROJECT_NAME="example-test-project"

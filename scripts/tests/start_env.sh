@@ -2,7 +2,7 @@
 
 set -e
 
-PROJECT_DIR=${0%/tests/*.sh}
+PROJECT_DIR=$(git rev-parse --show-toplevel)
 
 BIN="${PROJECT_DIR}/target/debug/comit-scripts"
 

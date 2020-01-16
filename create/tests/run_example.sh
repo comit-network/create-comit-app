@@ -9,7 +9,7 @@ fi
 
 EXAMPLE_NAME=$1;
 
-PROJECT_DIR=${0%/tests/*.sh}
+PROJECT_DIR=$(git rev-parse --show-toplevel)
 EXAMPLE_DIR="${PROJECT_DIR}/create/new_project/examples/${EXAMPLE_NAME}"
 
 if ! [ -d "$EXAMPLE_DIR" ]; then
