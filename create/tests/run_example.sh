@@ -9,7 +9,7 @@ fi
 
 EXAMPLE_NAME=$1;
 
-PROJECT_DIR=${0%/tests/*.sh}
+PROJECT_DIR=$(git rev-parse --show-toplevel)
 EXAMPLE_DIR="${PROJECT_DIR}/create/new_project/examples/${EXAMPLE_NAME}"
 
 if ! [ -d "$EXAMPLE_DIR" ]; then
@@ -17,14 +17,14 @@ if ! [ -d "$EXAMPLE_DIR" ]; then
   exit 2;
 fi
 
-BIN="${PROJECT_DIR}/target/debug/comit-scripts"
-
 LOG_FILE=$(mktemp)
 
 ## Start tests
 
-$BIN start-env > /dev/null &
-CCA_PID=$!
+cd "${EXAMPLE_DIR}"
+yarn install > /dev/null
+yarn run start-env > /dev/null &
+STARTENV_PID=$!
 ENV_READY=false
 
 # Start the environment
@@ -54,8 +54,8 @@ done
 
 if ! $ENV_READY; then
   echo "FAIL: ${CONTAINER} docker container was not started."
-  kill $CCA_PID;
-  wait $CCA_PID;
+  kill $STARTENV_PID;
+  wait $STARTENV_PID;
   exit 1;
 fi
 
@@ -63,16 +63,12 @@ fi
 RUN_TIMEOUT=60
 TEST_PASSED=false
 
-cd "${EXAMPLE_DIR}"
-
-yarn install > /dev/null
-
 yarn run swap > "${LOG_FILE}" 2>&1 &
 RUN_PID=$!
 
 function check_swap() {
   local LOG_FILE=$1;
-  grep -q "Bitcoin HTLC redeemed! TXID" "$LOG_FILE" && grep -q "Ethereum HTLC redeemed! TXID" "$LOG_FILE";
+  grep -q "Swapped!" "$LOG_FILE";
   echo $?;
 }
 
@@ -95,10 +91,10 @@ else
   EXIT_CODE=1;
 fi
 
-wait $RUN_PID;
+wait $RUN_PID || true;
 
-kill -s SIGINT $CCA_PID;
-wait $CCA_PID;
+kill -s SIGINT $STARTENV_PID;
+wait $STARTENV_PID || true;
 
 rm -f "${LOG_FILE}"
 exit $EXIT_CODE;
