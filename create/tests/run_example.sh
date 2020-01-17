@@ -68,7 +68,7 @@ RUN_PID=$!
 
 function check_swap() {
   local LOG_FILE=$1;
-  grep -q "Bitcoin HTLC redeemed! TXID" "$LOG_FILE" && grep -q "Ethereum HTLC redeemed! TXID" "$LOG_FILE";
+  grep -q "Swapped!" "$LOG_FILE";
   echo $?;
 }
 
@@ -91,7 +91,7 @@ else
   EXIT_CODE=1;
 fi
 
-wait $RUN_PID;
+wait $RUN_PID || true;
 
 kill -s SIGINT $STARTENV_PID;
 wait $STARTENV_PID;
