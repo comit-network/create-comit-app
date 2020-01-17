@@ -73,3 +73,12 @@ update_configs:
       - match:
           update_type: "all"
           dependency_type: "direct"
+  - package_manager: "javascript"
+    directory: "/create/new_project"
+    update_schedule: "daily"
+    default_labels:
+      - "dependencies"
+    allowed_updates:
+      - match:
+          update_type: "all"
+          dependency_type: "direct"
