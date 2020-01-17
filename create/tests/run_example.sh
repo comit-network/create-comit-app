@@ -94,7 +94,7 @@ fi
 wait $RUN_PID || true;
 
 kill -s SIGINT $STARTENV_PID;
-wait $STARTENV_PID;
+wait $STARTENV_PID || true;
 
 rm -f "${LOG_FILE}"
 exit $EXIT_CODE;
