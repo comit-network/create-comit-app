@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [0.8.2] - 2020-01-17
+
+### Fixed
+- Fix `rename fail` issue during `yarn run start-env` by upgrading to comit-scripts@0.8.2.
+
 ## [0.8.1] - 2020-01-15
 
 ### Fixed
@@ -99,7 +104,8 @@ Meaning that now COMIT Apps must depends on `comit-scripts` package instead of `
 
 First Release 🎉
 
-[Unreleased]: https://github.com/comit-network/create-comit-app/compare/0.8.1...HEAD
+[Unreleased]: https://github.com/comit-network/create-comit-app/compare/0.8.2...HEAD
+[0.8.2]: https://github.com/comit-network/create-comit-app/compare/0.8.1...0.8.2
 [0.8.1]: https://github.com/comit-network/create-comit-app/compare/0.8.0...0.8.1
 [0.8.0]: https://github.com/comit-network/create-comit-app/compare/0.7.0...0.8.0
 [0.7.0]: https://github.com/comit-network/create-comit-app/compare/0.6.0...0.7.0
