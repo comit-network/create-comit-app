@@ -1,11 +1,12 @@
 {
-    "name": "btc_eth",
+    "name": "separate_apps",
     "version": "1.0.0",
-    "description": "A Hello World COMIT example app that does a Bitcoin-Ether swap",
-    "main": "./src/index.ts",
+    "description": "A COMIT example app that does an Ether-Bitcoin swap with actors started in separate terminals",
+    "main": "./src/maker.ts",
     "scripts": {
         "check": "tsc && tslint -p . && prettier --check '**/*.{ts,json,yml}'",
-        "swap": "ts-node ./src/index.ts",
+        "maker": "ts-node ./src/maker.ts",
+        "taker": "ts-node ./src/taker.ts",
         "fix": "tslint -p . --fix && prettier --write '**/*.{ts,js,json,yml}'",
         "start-env": "comit-scripts start-env"
     },
@@ -13,10 +14,8 @@
     "author": "",
     "license": "ISC",
     "devDependencies": {
-        "@types/node": "^13.1.8",
         "@types/readline-sync": "^1.4.3",
         "comit-scripts": "^0.8.2",
-        "jest": "^24.9.0",
         "prettier": "^1.19.1",
         "ts-node": "^8.6.2",
         "tslint": "^5.20.1",
@@ -24,9 +23,13 @@
         "typescript": "^3.7.5"
     },
     "dependencies": {
-        "comit-sdk": "^0.8.0",
-        "dotenv": "^8.2.0",
+        "@types/express": "^4.17.2",
+        "axios": "^0.19.1",
+        "comit-sdk": "^0.9.0",
+        "dotenv": "^8.1.0",
+        "express": "^4.17.1",
         "moment": "^2.24.0",
+        "readline-sync": "^1.4.10",
         "satoshi-bitcoin-ts": "^0.2.4"
     },
     "prettier": {
