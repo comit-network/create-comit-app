@@ -87,35 +87,35 @@ check_format: install_rustfmt install_tomlfmt
 yarn_install_all:
 	cd ./scripts/npm; yarn install
 	cd ./create/npm; yarn install
+	cd ./create/new_project/demos/btc_eth; yarn install
+	cd ./create/new_project/demos/erc20_btc; yarn install
 	cd ./create/new_project/examples/btc_eth; yarn install
-	cd ./create/new_project/examples/erc20_btc; yarn install
-	cd ./create/new_project/examples/separate_apps; yarn install
 
 yarn_upgrade_all:
 	cd ./scripts/npm; yarn upgrade
 	cd ./create/npm; yarn upgrade
+	cd ./create/new_project/demos/btc_eth; yarn upgrade
+	cd ./create/new_project/demos/erc20_btc; yarn upgrade
 	cd ./create/new_project/examples/btc_eth; yarn upgrade
-	cd ./create/new_project/examples/erc20_btc; yarn upgrade
-	cd ./create/new_project/examples/separate_apps; yarn upgrade
 
 yarn_fix_all:
 	cd ./scripts/npm; yarn run fix
 	cd ./create/npm; yarn run fix
+	cd ./create/new_project/demos/btc_eth; yarn run fix
+	cd ./create/new_project/demos/erc20_btc; yarn run fix
 	cd ./create/new_project/examples/btc_eth; yarn run fix
-	cd ./create/new_project/examples/erc20_btc; yarn run fix
-	cd ./create/new_project/examples/separate_apps; yarn run fix
 
 yarn_check_all: yarn_install_all
 	cd ./scripts/npm; yarn run check
 	cd ./create/npm; yarn run check
+	cd ./create/new_project/demos/btc_eth; yarn run check
+	cd ./create/new_project/demos/erc20_btc; yarn run check
 	cd ./create/new_project/examples/btc_eth; yarn run check
-	cd ./create/new_project/examples/erc20_btc; yarn run check
-	cd ./create/new_project/examples/separate_apps; yarn run check
 
 e2e_scenarios:
 	./scripts/tests/start_env.sh
 	./scripts/tests/force_clean_env.sh
 	./create/tests/new.sh
-	./create/tests/btc_eth.sh
+	./create/tests/demos/btc_eth.sh
 
 e2e: build_debug e2e_scenarios

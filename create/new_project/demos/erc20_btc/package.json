@@ -1,5 +1,5 @@
 {
-    "name": "erc20-btc",
+    "name": "erc20-btc-demo",
     "version": "1.0.0",
     "description": "A Hello World COMIT example app that does a ERC20-Bitcoin swap",
     "main": "./src/index.ts",

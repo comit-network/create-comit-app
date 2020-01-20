@@ -1,5 +1,5 @@
 {
-    "name": "btc_eth",
+    "name": "btc-eth-demo",
     "version": "1.0.0",
     "description": "A Hello World COMIT example app that does a Bitcoin-Ether swap",
     "main": "./src/index.ts",

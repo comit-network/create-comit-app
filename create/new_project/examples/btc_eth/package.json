@@ -1,5 +1,5 @@
 {
-    "name": "separate_apps",
+    "name": "btc-eth-example",
     "version": "1.0.0",
     "description": "A COMIT example app that does an Ether-Bitcoin swap with actors started in separate terminals",
     "main": "./src/maker.ts",

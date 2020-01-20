@@ -1,4 +1,4 @@
-# Example for swapping Bitcoin for Ether (separate processes)
+# Example for swapping Bitcoin for Ether
 
 An example project that shows how to swap Bitcoin for Ether with COMIT.
 
