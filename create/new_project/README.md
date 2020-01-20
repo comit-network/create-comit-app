@@ -19,6 +19,6 @@ Displays the environment variables created during environment set-up.
 
 There are 3 example projects included in the `examples` directory which may guide you when developing your COMIT application:
 
-- [Simple Bitcoin for Ether atomic swap using COMIT](./examples/btc_eth/README.md).
-- [Simple ERC20 token for Bitcoin atomic swap using COMIT](./examples/erc20_btc/README.md).
-- [Two applications interacting to negotiate and execute an atomic swap](./examples/separate_apps/README.md).
+- [Simple Bitcoin for Ether atomic swap using COMIT](./demos/btc_eth/README.md).
+- [Simple ERC20 token for Bitcoin atomic swap using COMIT](./demos/erc20_btc/README.md).
+- [Two applications interacting to negotiate and execute an atomic swap](./examples/btc_eth/README.md).

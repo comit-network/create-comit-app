@@ -38,8 +38,8 @@ Install them either from the website or through your package manager.
 
 1. `yarn create comit-app <your-app-name>`,
 2. `cd <your-app-name>`, `yarn install` and `yarn start-env` to start blockchain and COMIT nodes,
-3. Run the [separate-apps](https://github.com/comit-network/create-comit-app/tree/master/new_project/examples/separate_apps) example (in separate terminals for the taker and maker):
-    1. Navigate to the separate-apps example app directory `cd ./examples/separate_apps`,
+3. Run the [btc-eth](https://github.com/comit-network/create-comit-app/tree/master/new_project/examples/btc_eth) example (in separate terminals for the taker and maker):
+    1. Navigate to the separate-apps example app directory `cd ./examples/btc_eth`,
     2. `yarn install` to install dependencies,
     3. `yarn run maker` to run the maker app,
     4. `yarn run taker` to run the taker app,

@@ -29,25 +29,25 @@ update_configs:
           update_type: "all"
           dependency_type: "direct"
   - package_manager: "javascript"
+    directory: "/create/new_project/demos/btc_eth"
+    update_schedule: "daily"
+    default_labels:
+      - "dependencies"
+    allowed_updates:
+      - match:
+          update_type: "all"
+          dependency_type: "direct"
+  - package_manager: "javascript"
+    directory: "/create/new_project/demos/erc20_btc"
+    update_schedule: "daily"
+    default_labels:
+      - "dependencies"
+    allowed_updates:
+      - match:
+          update_type: "all"
+          dependency_type: "direct"
+  - package_manager: "javascript"
     directory: "/create/new_project/examples/btc_eth"
-    update_schedule: "daily"
-    default_labels:
-      - "dependencies"
-    allowed_updates:
-      - match:
-          update_type: "all"
-          dependency_type: "direct"
-  - package_manager: "javascript"
-    directory: "/create/new_project/examples/erc20_btc"
-    update_schedule: "daily"
-    default_labels:
-      - "dependencies"
-    allowed_updates:
-      - match:
-          update_type: "all"
-          dependency_type: "direct"
-  - package_manager: "javascript"
-    directory: "/create/new_project/examples/separate_apps"
     update_schedule: "daily"
     default_labels:
       - "dependencies"
