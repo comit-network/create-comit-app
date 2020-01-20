@@ -76,7 +76,6 @@ pub async fn execute() -> anyhow::Result<Environment> {
         "BITCOIN_HD_KEY_1",
         &format!("{}", bitcoind.account_1.master),
     );
-    envfile.update("BITCOIN_NODE_RPC_URL", &bitcoind.http_endpoint.to_string());
     envfile.update("BITCOIN_P2P_URI", &bitcoind.p2p_uri.to_string());
 
     envfile.update("HTTP_URL_CND_0", &cnd_0.http_endpoint.to_string());
