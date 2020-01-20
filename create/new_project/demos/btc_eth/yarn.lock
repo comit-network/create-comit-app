@@ -1123,10 +1123,10 @@ comit-scripts@^0.8.2:
     axios "^0.19.0"
     targz "^1.0.1"
 
-comit-sdk@^0.8.0:
-  version "0.8.0"
-  resolved "https://registry.yarnpkg.com/comit-sdk/-/comit-sdk-0.8.0.tgz#ac4b64dd69e58f8057d7d96ca52983520011fcf0"
-  integrity sha512-5zn+WZw91I8sShtqeMVKANLu9g4hnWdKndWCdrlnWc6Q+eyx3EWFZ2e1xAxP+WfefxmQ4Ut2t2cgGby7ksSlGA==
+comit-sdk@^0.9.0:
+  version "0.9.0"
+  resolved "https://registry.yarnpkg.com/comit-sdk/-/comit-sdk-0.9.0.tgz#1a8ffceec4a925af99ee4b41fb9fa0943fb5c69c"
+  integrity sha512-Hu0R9lS4aWAZpFm/ScY1LznXnz2cGW0qBPRjDjh0GjEgJu9dTbPdNhxFpqgX5rBppNQyPeM1MNLs8uwbyUgpGg==
   dependencies:
     axios "^0.19.0"
     bcoin "https://github.com/bcoin-org/bcoin#2496acc7a98a43f00a7b5728eb256877c1bbf001"
