@@ -8,7 +8,7 @@
     "start-env": "comit-scripts start-env"
   },
   "dependencies": {
-    "comit-sdk": "^0.9.0",
+    "comit-sdk": "^0.9.1",
     "dotenv": "^8.2.0",
     "readline-sync": "^1.4.10"
   },
