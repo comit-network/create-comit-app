@@ -1,9 +1,9 @@
 import {
     Actor,
     BigNumber,
-    BitcoinWallet,
     createActor as createActorSdk,
     EthereumWallet,
+    InMemoryBitcoinWallet,
     SwapRequest,
 } from "comit-sdk";
 import dotenv from "dotenv";
@@ -72,7 +72,7 @@ import { toBitcoin, toSatoshi } from "satoshi-bitcoin-ts";
 })();
 
 async function createActor(index: number, name: string): Promise<Actor> {
-    const bitcoinWallet = await BitcoinWallet.newInstance(
+    const bitcoinWallet = await InMemoryBitcoinWallet.newInstance(
         "regtest",
         process.env.BITCOIN_P2P_URI!,
         process.env[`BITCOIN_HD_KEY_${index}`]!
@@ -103,7 +103,7 @@ function createSwap(maker: Actor, taker: Actor): SwapRequest {
         },
         beta_ledger: {
             name: "ethereum",
-            network: "regtest",
+            chain_id: 17,
         },
         alpha_asset: {
             name: "bitcoin",
@@ -139,10 +139,11 @@ function loadEnvironment() {
 
 async function printBalances(actor: Actor) {
     const tokenWei = await actor.ethereumWallet.getBalance();
+    const bitcoinBalance = await actor.bitcoinWallet.getBalance();
     console.log(
         "%s Bitcoin balance: %d. Ether balance: %d",
         actor.name,
-        parseFloat(await actor.bitcoinWallet.getBalance()).toFixed(2),
+        bitcoinBalance.toFixed(2),
         toNominal(tokenWei.toString(), 18)
     );
 }

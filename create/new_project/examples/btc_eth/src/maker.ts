@@ -52,7 +52,7 @@ import { createActor, sleep } from "./lib";
             // The network the swap will be executed on.
             ledgers: {
                 bitcoin: { network: "regtest" },
-                ethereum: { network: "regtest" },
+                ethereum: { chain_id: 17 },
             },
         },
         { maxTimeoutSecs: 1000, tryIntervalSecs: 0.1 }

@@ -115,7 +115,7 @@ function createSwap(maker: Actor, taker: Actor): SwapRequest {
     return {
         alpha_ledger: {
             name: "ethereum",
-            network: "regtest",
+            chain_id: 17,
         },
         beta_ledger: {
             name: "bitcoin",
@@ -158,13 +158,15 @@ async function printBalances(actor: Actor) {
     // Wait a second to let the Ethereum wallet catch up
     await new Promise(r => setTimeout(r, 1000));
 
+    const bitcoinBalance = await actor.bitcoinWallet.getBalance();
+    const tokenAmount = await actor.ethereumWallet.getErc20Balance(
+        process.env.ERC20_CONTRACT_ADDRESS!
+    );
     console.log(
         "%s Bitcoin balance: %d. Erc20 Token balance: %d",
         actor.name,
-        (await actor.bitcoinWallet.getBalance()).toFixed(2),
-        await actor.ethereumWallet.getErc20Balance(
-            process.env.ERC20_CONTRACT_ADDRESS!
-        )
+        bitcoinBalance.toFixed(2),
+        tokenAmount
     );
 }
 

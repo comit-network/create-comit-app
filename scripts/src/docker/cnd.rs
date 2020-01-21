@@ -31,7 +31,7 @@ pub async fn new_instance(index: u32) -> anyhow::Result<CndInstance> {
             node_url: "http://bitcoin:18443".to_string(),
         },
         ethereum: Ethereum {
-            network: String::from("regtest"),
+            chain_id: 17,
             node_url: "http://ethereum:8545".to_string(),
         },
         ..Default::default()
@@ -112,7 +112,7 @@ struct Bitcoin {
 
 #[derive(Clone, Debug, serde::Serialize)]
 struct Ethereum {
-    network: String,
+    chain_id: i8,
     node_url: String,
 }
 
@@ -171,7 +171,7 @@ impl Default for Bitcoin {
 impl Default for Ethereum {
     fn default() -> Self {
         Ethereum {
-            network: "regtest".to_string(),
+            chain_id: 17,
             node_url: "http://localhost:8545".to_string(),
         }
     }
