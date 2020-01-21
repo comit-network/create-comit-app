@@ -2,7 +2,8 @@ import {
     Actor,
     BigNumber,
     createActor as createActorSdk,
-    EthereumWallet, InMemoryBitcoinWallet,
+    EthereumWallet,
+    InMemoryBitcoinWallet,
     SwapRequest,
 } from "comit-sdk";
 import dotenv from "dotenv";
