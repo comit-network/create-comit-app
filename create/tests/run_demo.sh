@@ -24,9 +24,6 @@ LOG_FILE=$(mktemp)
 cd "${DEMO_DIR}"
 yarn install > /dev/null
 
-## Clean-up environment
-yarn run clean-env > /dev/null &
-
 ## Start-up environment
 yarn run start-env > /dev/null &
 STARTENV_PID=$!
