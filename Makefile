@@ -116,6 +116,7 @@ e2e_scenarios:
 	./scripts/tests/start_env.sh
 	./scripts/tests/force_clean_env.sh
 	./create/tests/new.sh
-	./create/tests/demos/btc_eth.sh
+	./create/tests/run_demo.sh btc_eth
+	./create/tests/run_demo.sh erc20_btc
 
 e2e: build_debug e2e_scenarios

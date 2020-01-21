@@ -2,13 +2,18 @@
 
 set -e
 
-echo "Running $0"
+if [ "$#" -ne 1 ]; then
+  echo "Usage: $0 <demo name>"
+  exit 2;
+fi
+
+DEMO_NAME=$1;
 
 PROJECT_DIR=$(git rev-parse --show-toplevel)
-EXAMPLE_DIR="${PROJECT_DIR}/create/new_project/demos/btc_eth"
+DEMO_DIR="${PROJECT_DIR}/create/new_project/demos/${DEMO_NAME}"
 
-if ! [ -d "$EXAMPLE_DIR" ]; then
-  echo "Example dir does not exit: $EXAMPLE_DIR";
+if ! [ -d "$DEMO_DIR" ]; then
+  echo "Demo dir does not exit: $DEMO_DIR";
   exit 2;
 fi
 
@@ -16,13 +21,17 @@ LOG_FILE=$(mktemp)
 
 ## Start tests
 
-cd "${EXAMPLE_DIR}"
+cd "${DEMO_DIR}"
 yarn install > /dev/null
+
+## Clean-up environment
+yarn run clean-env > /dev/null &
+
+## Start-up environment
 yarn run start-env > /dev/null &
 STARTENV_PID=$!
 ENV_READY=false
 
-# Start the environment
 CCA_TIMEOUT=60
 
 function check_containers() {
@@ -58,7 +67,7 @@ fi
 RUN_TIMEOUT=60
 TEST_PASSED=false
 
-yarn run swap > "${LOG_FILE}" 2>&1 &
+NON_INTERACTIVE=true yarn run swap > "${LOG_FILE}" 2>&1 &
 RUN_PID=$!
 
 function check_swap() {
@@ -92,5 +101,5 @@ kill -s SIGINT $STARTENV_PID;
 wait $STARTENV_PID || true;
 
 rm -f "${LOG_FILE}"
-exit $EXIT_CODE;
 
+exit $EXIT_CODE;

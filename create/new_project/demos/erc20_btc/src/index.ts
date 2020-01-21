@@ -46,35 +46,35 @@ import { toBitcoin, toSatoshi } from "satoshi-bitcoin-ts";
         swapMessage.beta_asset.name
     );
 
-    readLineSync.question("Continue?");
+    wait_for_confirmation("Continue?");
 
     console.log(
         "Ethereum HTLC deployed! TXID: ",
         await takerSwapHandle.deploy(tryParams)
     );
 
-    readLineSync.question("Continue?");
+    wait_for_confirmation("Continue?");
 
     console.log(
         "Ethereum HTLC funded! TXID: ",
         await takerSwapHandle.fund(tryParams)
     );
 
-    readLineSync.question("Continue?");
+    wait_for_confirmation("Continue?");
 
     console.log(
         "Bitcoin HTLC funded! TXID: ",
         await makerSwapHandle.fund(tryParams)
     );
 
-    readLineSync.question("Continue?");
+    wait_for_confirmation("Continue?");
 
     console.log(
         "Bitcoin HTLC redeemed! TXID: ",
         await takerSwapHandle.redeem(tryParams)
     );
 
-    readLineSync.question("Continue?");
+    wait_for_confirmation("Continue?");
 
     console.log(
         "Ethereum HTLC redeemed! TXID: ",
@@ -172,4 +172,10 @@ async function printBalances(actor: Actor) {
 
 function toNominal(tokenWei: string, decimals: number) {
     return new BigNumber(tokenWei).div(new BigNumber(10).pow(decimals));
+}
+
+function wait_for_confirmation(text: string) {
+    if (process.env.NON_INTERACTIVE !== "true") {
+        readLineSync.question(text);
+    }
 }
