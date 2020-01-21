@@ -175,7 +175,8 @@ function toNominal(tokenWei: string, decimals: number) {
 }
 
 function wait_for_confirmation(text: string) {
-    if (process.env.NON_INTERACTIVE !== "true") {
-        readLineSync.question(text);
+    if (process.env.NON_INTERACTIVE && process.env.NON_INTERACTIVE === "true") {
+        return;
     }
+    readLineSync.question(text);
 }

@@ -7,8 +7,7 @@
         "check": "tsc && tslint -p . && prettier --check '**/*.{ts,json,yml}'",
         "swap": "ts-node ./src/index.ts",
         "fix": "tslint -p . --fix && prettier --write '**/*.{ts,js,json,yml}'",
-        "start-env": "comit-scripts start-env",
-        "clean-env": "comit-scripts force-clean-env"
+        "start-env": "comit-scripts start-env"
     },
     "keywords": [],
     "author": "",
