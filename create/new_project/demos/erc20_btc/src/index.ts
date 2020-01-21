@@ -115,7 +115,7 @@ function createSwap(maker: Actor, taker: Actor): SwapRequest {
     return {
         alpha_ledger: {
             name: "ethereum",
-            chain_id: 17
+            chain_id: 17,
         },
         beta_ledger: {
             name: "bitcoin",
