@@ -97,6 +97,35 @@ wait $RUN_PID || true;
 kill -s SIGINT $STARTENV_PID;
 wait $STARTENV_PID || true;
 
+# Ensure clean up
+yarn run clean-env > /dev/null &
+
+# Count the number of containers still running
+function check_containers() {
+  ERROR=false
+  for CONTAINER in ethereum bitcoin cnd_0 cnd_1; do
+    NUM=$(docker ps -qf name=${CONTAINER} |wc -l)
+    if test "$NUM" -eq 1; then
+      ERROR=true;
+      break;
+    fi
+  done
+  $ERROR && echo 1 || echo 0
+}
+
+# Wait for cleaning up environment
+TIMEOUT=10
+while [ $TIMEOUT -gt 0 ]; do
+    if [ "$(check_containers)" -eq 0 ]; then
+      TEST_PASSED=true;
+      TIMEOUT=0
+    else
+      echo "Waiting for containers to die";
+      sleep 1;
+      TIMEOUT=$((TIMEOUT-1));
+    fi
+done
+
 rm -f "${LOG_FILE}"
 
 exit $EXIT_CODE;
