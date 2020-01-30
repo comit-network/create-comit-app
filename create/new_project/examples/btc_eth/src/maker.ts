@@ -1,4 +1,4 @@
-import { MakerHttpApi, MakerNegotiator, Order, TryParams } from "comit-sdk";
+import { MakerNegotiator, Order, TryParams } from "comit-sdk";
 import { formatEther } from "ethers/utils";
 import moment from "moment";
 import readLineSync from "readline-sync";
@@ -59,9 +59,8 @@ import { createActor, sleep } from "./lib";
     );
 
     // Start the HTTP service used to publish orders.
-    const makerHttpApi = new MakerHttpApi(makerNegotiator);
     // The maker's HTTP service will be served at port 2318.
-    makerHttpApi.listen(2318);
+    await makerNegotiator.listen(2318, "localhost");
     // Create an order to be published.
     const order: Order = {
         id: "123",
@@ -82,10 +81,10 @@ import { createActor, sleep } from "./lib";
     // Publish the order so the taker can take it.
     makerNegotiator.addOrder(order);
 
-    // Let the world know that there is an order available.
-    // In a real-world application this information could be shared publicly, e.g. on social medias.
-    const invitationDetails = `http://localhost:2318/orders/ETH-BTC`;
-    console.log(`Waiting for someone taking my order at: ${invitationDetails}`);
+    // Let the world know that you are a maker.
+    // Your app could publish this link on forum or social medias for takers to connect to.
+    const link = makerNegotiator.getUrl();
+    console.log(`Waiting for someone to take my order at: ${link}`);
 
     // Wait for a taker to accept the order and send a swap request through the comit network daemon (cnd).
     let swapHandle;
