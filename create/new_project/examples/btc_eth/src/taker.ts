@@ -1,4 +1,4 @@
-import { MakerClient, TakerNegotiator, TryParams } from "comit-sdk";
+import { TakerNegotiator, TryParams } from "comit-sdk";
 import { formatEther } from "ethers/utils";
 import readLineSync from "readline-sync";
 import { toBitcoin } from "satoshi-bitcoin-ts";
@@ -33,13 +33,19 @@ import { createActor, sleep } from "./lib";
     // Wait for commandline input for demo purposes
     readLineSync.question("1. Ready to accept and order from the maker?");
 
+    // This URL needs to be provided by the other party, the maker.
+    // `MakerNegotiator.getUrl()` on the Maker side returns this url
+    const makerNegotiatorUrl = "http://localhost:2318/";
+
     // Initialize the taker negotiator that defines the negotiation phase of the trade.
     // The taker negotiator manages retrieving orders from the maker and deciding if they are acceptable for the taker.
     // Once an order was taken by a taker the negotiator hands over the order and execution parameters to the
     // execution phase.
 
-    const makerClient = new MakerClient("http://localhost:2318/");
-    const takerNegotiator = new TakerNegotiator(taker.comitClient, makerClient);
+    const takerNegotiator = new TakerNegotiator(
+        taker.comitClient,
+        makerNegotiatorUrl
+    );
 
     const order = await takerNegotiator.getOrderByTradingPair(
         // Define the trading pair to request and order for.
