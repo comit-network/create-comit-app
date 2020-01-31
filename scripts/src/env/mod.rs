@@ -18,7 +18,7 @@ mod start;
 
 pub async fn start() {
     if crate::temp_fs::dir_exist().await {
-        eprintln!("It seems that `create-comit-app start-env` is already running.\nIf it is not the case, run `create-comit-app force-clean-env` and try again.");
+        eprintln!("It seems that `start-env` is already running.\nIf it is not the case, run `yarn comit-scripts force-clean-env` and try again.");
         ::std::process::exit(1);
     }
 
