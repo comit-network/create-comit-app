@@ -59,7 +59,7 @@ import { createActor, sleep } from "./lib";
     );
 
     // Start the HTTP service used to publish orders.
-    // The maker's HTTP service will be served at port 2318.
+    // The maker's HTTP service will be served at http://localhost:2318/
     await makerNegotiator.listen(2318, "localhost");
     // Create an order to be published.
     const order: Order = {
@@ -82,7 +82,7 @@ import { createActor, sleep } from "./lib";
     makerNegotiator.addOrder(order);
 
     // Let the world know that you are a maker.
-    // Your app could publish this link on forum or social medias for takers to connect to.
+    // Your app could publish this link on forum or social media for takers to connect to.
     const link = makerNegotiator.getUrl();
     console.log(`Waiting for someone to take my order at: ${link}`);
 

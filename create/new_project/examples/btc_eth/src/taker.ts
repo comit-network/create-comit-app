@@ -34,7 +34,8 @@ import { createActor, sleep } from "./lib";
     readLineSync.question("1. Ready to accept and order from the maker?");
 
     // This URL needs to be provided by the other party, the maker.
-    // `MakerNegotiator.getUrl()` on the Maker side returns this url
+    // `MakerNegotiator.getUrl()` on the Maker side returns this url.
+    // It is only hardcoded here for simplicity.
     const makerNegotiatorUrl = "http://localhost:2318/";
 
     // Initialize the taker negotiator that defines the negotiation phase of the trade.
