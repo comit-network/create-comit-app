@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [0.8.3] - 2020-01-31
+
 ### Fixed
 - `chain_id`: for Ethereum we now use `chain_id` instead of a string naming the network. 
 
@@ -26,6 +28,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Which means that COMIT App should import dev dependency `comit-scripts` instead of `create-comit-app`.
 See `../create/CHANGELOG.md` for historical changes. 
 
-[Unreleased]: https://github.com/comit-network/create-comit-app/compare/comit-scripts-0.8.1...HEAD
+[Unreleased]: https://github.com/comit-network/create-comit-app/compare/comit-scripts-0.8.3...HEAD
+[0.8.3]: https://github.com/comit-network/create-comit-app/compare/0.8.2...comit-scripts-0.8.3
+[0.8.2]: https://github.com/comit-network/create-comit-app/compare/0.8.1...comit-scripts-0.8.2
 [0.8.1]: https://github.com/comit-network/create-comit-app/compare/0.8.0...comit-scripts-0.8.1
 [0.8.0]: https://github.com/comit-network/create-comit-app/compare/0.7.0...comit-scripts-0.8.0
