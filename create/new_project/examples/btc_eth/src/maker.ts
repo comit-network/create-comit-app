@@ -82,7 +82,7 @@ import { createActor, sleep } from "./lib";
     makerNegotiator.addOrder(order);
 
     // Let the world know that you are a maker.
-    // Your app could publish this link on forum or social media for takers to connect to.
+    // Your app could publish this link on a forum or social media so takers can connect to you.
     const link = makerNegotiator.getUrl();
     console.log(`Waiting for someone to take my order at: ${link}`);
 
