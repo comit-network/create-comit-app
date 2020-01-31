@@ -5,12 +5,11 @@
   "main": "index.js",
   "scripts": {
     "start": "node ./src/index.js",
-    "start-env": "comit-scripts start-env"
+    "start-env": "comit-scripts start-env",
+    "force-clean-env": "comit-scripts force-clean-env"
   },
   "dependencies": {
-    "comit-sdk": "^0.9.1",
-    "dotenv": "^8.2.0",
-    "readline-sync": "^1.4.10"
+    "comit-sdk": "^0.10.0"
   },
   "devDependencies": {
     "comit-scripts": "^0.8.2"
