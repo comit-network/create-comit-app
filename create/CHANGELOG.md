@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## Changed
+- Upgrade `examples/btc_eth` to `comit-sdk@0.10.0`
+
 ## [0.8.2] - 2020-01-17
 
 ### Fixed
