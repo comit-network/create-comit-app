@@ -12,6 +12,6 @@
     "comit-sdk": "^0.10.0"
   },
   "devDependencies": {
-    "comit-scripts": "^0.8.2"
+    "comit-scripts": "^0.8.3"
   }
 }
