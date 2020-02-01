@@ -1,6 +1,6 @@
 [package]
 name = "comit-scripts"
-version = "0.8.2"
+version = "0.8.3"
 authors = ["CoBloX developers <team@coblox.tech>"]
 edition = "2018"
 
