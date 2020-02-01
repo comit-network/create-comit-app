@@ -568,10 +568,10 @@ combined-stream@^1.0.6, combined-stream@~1.0.6:
   dependencies:
     delayed-stream "~1.0.0"
 
-comit-scripts@^0.8.2:
-  version "0.8.2"
-  resolved "https://registry.yarnpkg.com/comit-scripts/-/comit-scripts-0.8.2.tgz#2d64f76a065494c699d43131a0b720c3ab41306f"
-  integrity sha512-M04dvT/seoHA2BYCuOYfY8CLooMe9P/lLiwaJLs2tKF0BvYBnLVJr22d7xBkUl8yWt2a8CiyCUTXXnws/qlwqQ==
+comit-scripts@^0.8.3:
+  version "0.8.3"
+  resolved "https://registry.yarnpkg.com/comit-scripts/-/comit-scripts-0.8.3.tgz#309f9d9ca40b0875a164ecaa8eb246e4f21864b5"
+  integrity sha512-IJDuIeXnrwZWL8c9Nba+ERYbrMwWAOXDHwngOPWeBQ4czjW/dHcdBd8cH0JWGanYK7Ad99hLvW92zlwcnIVJaQ==
   dependencies:
     axios "^0.19.0"
     targz "^1.0.1"
