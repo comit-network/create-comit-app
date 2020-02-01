@@ -24,7 +24,7 @@ pub async fn new(name: String) -> io::Result<()> {
 
     replace_project_name_in_file(package_json_path.as_path(), name.as_ref()).await?;
 
-    println!("Your project `{}` has been created!\nNow, start your development environment by running `create-comit-app start-env`", name);
+    println!("Your project `{}` has been created!", name);
 
     Ok(())
 }
