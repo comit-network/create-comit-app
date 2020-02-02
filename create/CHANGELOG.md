@@ -6,8 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [0.8.3] - 2020-02-02
+
 ## Changed
-- Upgrade `examples/btc_eth` to `comit-sdk@0.10.0`
+- Upgrade all examples to `comit-sdk@0.10.0`.
+- Upgrade all examples to `comit-scripts@0.8.3`
 
 ## [0.8.2] - 2020-01-17
 
@@ -107,7 +110,8 @@ Meaning that now COMIT Apps must depends on `comit-scripts` package instead of `
 
 First Release 🎉
 
-[Unreleased]: https://github.com/comit-network/create-comit-app/compare/0.8.2...HEAD
+[Unreleased]: https://github.com/comit-network/create-comit-app/compare/0.8.3...HEAD
+[0.8.3]: https://github.com/comit-network/create-comit-app/compare/0.8.2...0.8.3
 [0.8.2]: https://github.com/comit-network/create-comit-app/compare/0.8.1...0.8.2
 [0.8.1]: https://github.com/comit-network/create-comit-app/compare/0.8.0...0.8.1
 [0.8.0]: https://github.com/comit-network/create-comit-app/compare/0.7.0...0.8.0
