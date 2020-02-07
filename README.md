@@ -1,8 +1,27 @@
+<a href="https://comit.network/docs/getting-started/create-comit-app">
+<img src="logo.svg" height="120px">
+</a>
+
+---
+
+[COMIT](https://comit.network) is an open protocol facilitating cross-blockchain applications.
+With [COMIT](https://comit.network) you can for examples exchange Bitcoin for any Erc20 token directly with another person.
+
+This repository contains everything needed to do an atomic swap (locally) on your machine.
+
+If you wish to do an atomic swap on your machine or to integrate COMIT into an application (e.g. a DEX) please take a look at the [Getting Started section](https://comit.network/docs/getting-started/create-comit-app/) of the COMIT documentation.
+If you have any question please [reach out to the team in our Gitter chat](https://gitter.im/comit-network/community)!
+
+
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Gitter chat](https://badges.gitter.im/gitterHQ/gitter.png)](https://gitter.im/comit-network/community)
 
 # Create Comit App
 
-Set up a local development environment for COMIT apps with one command.
+`create-comit-app` enables you to setup a local development environment for running and developing Javascript apps on top of COMIT.
+`create-comit-app` comes with demos and examples to demonstrate how to use the [comit-js-sdk](https://github.com/comit-network/comit-js-sdk).
+
+[![asciicast](https://asciinema.org/a/298948.png)](https://asciinema.org/a/298948)
 
 If you have any question please [reach out to the team in our Gitter chat](https://gitter.im/comit-network/community)!
 
