@@ -1,5 +1,5 @@
 <a href="https://comit.network/docs/getting-started/create-comit-app">
-<img src="logo.svg" height="120px">
+<img src="logo.svg" height="120px" alt="COMIT logo" />
 </a>
 
 ---
