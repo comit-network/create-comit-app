@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [0.9.0] - 2020-02-20
+
 ## Changed
 - Upgrade to `comit-sdk@0.11.1` to use the new and improved `TakerNegotiator` interface.
 
@@ -113,7 +115,8 @@ Meaning that now COMIT Apps must depends on `comit-scripts` package instead of `
 
 First Release 🎉
 
-[Unreleased]: https://github.com/comit-network/create-comit-app/compare/0.8.3...HEAD
+[Unreleased]: https://github.com/comit-network/create-comit-app/compare/0.9.0...HEAD
+[0.9.0]: https://github.com/comit-network/create-comit-app/compare/0.8.3...0.9.0
 [0.8.3]: https://github.com/comit-network/create-comit-app/compare/0.8.2...0.8.3
 [0.8.2]: https://github.com/comit-network/create-comit-app/compare/0.8.1...0.8.2
 [0.8.1]: https://github.com/comit-network/create-comit-app/compare/0.8.0...0.8.1

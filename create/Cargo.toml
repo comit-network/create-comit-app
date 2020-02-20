@@ -1,6 +1,6 @@
 [package]
 name = "create-comit-app"
-version = "0.8.3"
+version = "0.9.0"
 authors = ["CoBloX developers <team@coblox.tech>"]
 edition = "2018"
 
