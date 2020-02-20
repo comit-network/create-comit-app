@@ -1,4 +1,4 @@
-import { MakerNegotiator, Order, TryParams } from "comit-sdk";
+import { MakerNegotiator, TryParams } from "comit-sdk";
 import { formatEther } from "ethers/utils";
 import moment from "moment";
 import readLineSync from "readline-sync";
@@ -62,9 +62,8 @@ import { createActor, sleep } from "./lib";
     // The maker's HTTP service will be served at http://localhost:2318/
     await makerNegotiator.listen(2318, "localhost");
     // Create an order to be published.
-    const order: Order = {
+    const order = {
         id: "123",
-        tradingPair: "ETH-BTC",
         validUntil: moment().unix() + 300,
         ask: {
             nominalAmount: "50",

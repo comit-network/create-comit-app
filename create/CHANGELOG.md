@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## Changed
+- Upgrade to `comit-sdk@0.11.1` to use the new and improved `TakerNegotiator` interface.
+
 ## [0.8.3] - 2020-02-02
 
 ## Changed

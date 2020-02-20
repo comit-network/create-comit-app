@@ -48,36 +48,24 @@ import { createActor, sleep } from "./lib";
         makerNegotiatorUrl
     );
 
-    const order = await takerNegotiator.getOrderByTradingPair(
-        // Define the trading pair to request and order for.
-        "ETH-BTC"
-    );
+    const criteria = {
+        buy: {
+            ledger: "bitcoin",
+            asset: "bitcoin",
+            minNominalAmount: "1",
+        },
+        sell: {
+            ledger: "ethereum",
+            asset: "ether",
+        },
+        minRate: 0.001,
+    };
 
-    // Check if the returned order matches the requested asset-pair
-    if (order.ask.asset !== "ether" || order.bid.asset !== "bitcoin") {
-        // These aren't the droids you're looking for
-        throw new Error("Maker returned an order with incorrect assets.");
-    }
+    const order = await takerNegotiator.getOrder(criteria);
 
-    const ether = parseFloat(order.ask.nominalAmount);
-    const bitcoin = parseFloat(order.bid.nominalAmount);
+    console.log("Rate offered: ", order.getOfferedRate().toString());
 
-    if (ether === 0 || bitcoin === 0) {
-        // Let's do safe maths
-        throw new Error("Maker returned an order with a null assets.");
-    }
-
-    // Only accept orders that are at least 1 bitcoin for 10 Ether
-    const minRate = 0.001;
-    const orderRate = bitcoin / ether;
-    console.log("Rate offered: ", orderRate);
-    if (orderRate < minRate) {
-        throw new Error(
-            "Maker returned an order which is not good enough, aborting."
-        );
-    }
-
-    const swap = await takerNegotiator.takeOrder(order);
+    const swap = await order.take();
 
     if (!swap) {
         throw new Error(
@@ -86,11 +74,11 @@ import { createActor, sleep } from "./lib";
     }
 
     console.log(
-        `Received latest order details: %s:%s for a rate of %d:%d`,
-        order.ask.asset,
-        order.bid.asset,
-        order.ask.nominalAmount,
-        order.bid.nominalAmount
+        `Took the following order: %s:%s for a rate of %d:%d`,
+        order.rawOrder.ask.asset,
+        order.rawOrder.bid.asset,
+        order.rawOrder.ask.nominalAmount,
+        order.rawOrder.bid.nominalAmount
     );
 
     // Retrieve the details (properties) of the swap
