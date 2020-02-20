@@ -512,10 +512,10 @@
     "@types/istanbul-lib-coverage" "*"
     "@types/istanbul-lib-report" "*"
 
-"@types/node@^13.7.2":
-  version "13.7.2"
-  resolved "https://registry.yarnpkg.com/@types/node/-/node-13.7.2.tgz#50375b95b5845a34efda2ffb3a087c7becbc46c6"
-  integrity sha512-uvilvAQbdJvnSBFcKJ2td4016urcGvsiR+N4dHGU87ml8O2Vl6l+ErOi9w0kXSPiwJ1AYlIW+0pDXDWWMOiWbw==
+"@types/node@^13.7.4":
+  version "13.7.4"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-13.7.4.tgz#76c3cb3a12909510f52e5dc04a6298cdf9504ffd"
+  integrity sha512-oVeL12C6gQS/GAExndigSaLxTrKpQPxewx9bOcwfvJiJge4rr7wNaph4J+ns5hrmIV2as5qxqN8YKthn9qh0jw==
 
 "@types/readline-sync@^1.4.3":
   version "1.4.3"
@@ -1330,10 +1330,10 @@ comit-scripts@^0.8.3:
     axios "^0.19.0"
     targz "^1.0.1"
 
-comit-sdk@^0.10.1:
-  version "0.10.1"
-  resolved "https://registry.yarnpkg.com/comit-sdk/-/comit-sdk-0.10.1.tgz#22a88a697e943342d5b6e6e3e72d4d3974cabaad"
-  integrity sha512-xhJu68EO+lu1KL4AmK+Chc+f6UKcLtryk5zYg6/GhE7NPRTwclYQ4BWrH2/cNcbau2zbUsnQP/+FkCwTW+j4rQ==
+comit-sdk@^0.11.1:
+  version "0.11.1"
+  resolved "https://registry.yarnpkg.com/comit-sdk/-/comit-sdk-0.11.1.tgz#ceb73dd6c47a388a1294738d34432f00cce44c40"
+  integrity sha512-bYcMdfdkHjgYmuhV67nXQlyhgRhRxrw6mGRdEdn3OFrPMD7gVMAmLBFmcKJJdnxv+ld8aIbMZwmrpDGhl98tBQ==
   dependencies:
     axios "^0.19.0"
     bcoin "https://github.com/bcoin-org/bcoin#2496acc7a98a43f00a7b5728eb256877c1bbf001"
