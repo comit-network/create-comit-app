@@ -28,7 +28,7 @@
     "comit-scripts": "main.js"
   },
   "devDependencies": {
-    "prettier": "^1.18.2"
+    "prettier": "^2.0.1"
   },
   "dependencies": {
     "axios": "^0.19.0",
