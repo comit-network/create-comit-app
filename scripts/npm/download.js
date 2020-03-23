@@ -24,14 +24,14 @@ module.exports = async function download(version, binTarget) {
   let response = await axios({
     url,
     method: "GET",
-    responseType: "stream"
+    responseType: "stream",
   });
 
   if (response.status === 302) {
     response = await axios({
       url: response.headers.location,
       method: "GET",
-      responseType: "stream"
+      responseType: "stream",
     });
   }
 
@@ -43,14 +43,14 @@ module.exports = async function download(version, binTarget) {
       resolve();
     });
 
-    response.data.on("error", err => {
+    response.data.on("error", (err) => {
       reject(err);
     });
   }).catch();
 
   await extract({
     src: archivePath,
-    dest: targetDir
+    dest: targetDir,
   });
   fs.unlinkSync(archivePath);
   fs.renameSync(targetDir + "/comit-scripts", binTarget);

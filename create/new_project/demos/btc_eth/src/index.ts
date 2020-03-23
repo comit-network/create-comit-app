@@ -29,10 +29,10 @@ import { toBitcoin, toSatoshi } from "satoshi-bitcoin-ts";
     const swapMessage = createSwap(maker, taker);
 
     const takerSwapHandle = await taker.comitClient.sendSwap(swapMessage);
-    await new Promise(r => setTimeout(r, 1000));
+    await new Promise((r) => setTimeout(r, 1000));
     const makerSwapHandle = await maker.comitClient
         .getNewSwaps()
-        .then(swaps => swaps[0]);
+        .then((swaps) => swaps[0]);
 
     const tryParams = { maxTimeoutSecs: 10, tryIntervalSecs: 1 };
     await makerSwapHandle.accept(tryParams);
@@ -77,7 +77,7 @@ async function createActor(index: number, name: string): Promise<Actor> {
         process.env.BITCOIN_P2P_URI!,
         process.env[`BITCOIN_HD_KEY_${index}`]!
     );
-    await new Promise(r => setTimeout(r, 1000));
+    await new Promise((r) => setTimeout(r, 1000));
 
     const ethereumWallet = new EthereumWallet(
         process.env.ETHEREUM_NODE_HTTP_URL!,
