@@ -79,10 +79,10 @@
   resolved "https://registry.yarnpkg.com/@protobufjs/utf8/-/utf8-1.1.0.tgz#a777360b5b39a1a2e5106f8e858f2fd2d060c570"
   integrity sha1-p3c2C1s5oaLlEG+OhY8v0tBgxXA=
 
-"@radar/lnrpc@^0.9.0-beta":
-  version "0.9.0-beta"
-  resolved "https://registry.yarnpkg.com/@radar/lnrpc/-/lnrpc-0.9.0-beta.tgz#870e9eea4f9659516c46888dc7db31dd3cdd7062"
-  integrity sha512-ZsHOUHdtjEwwdRzO/lsn398Zxu7eAkfLr5uOBHb9aeSrP14CgW6EUGGzmQIWcDPQAJzcsLVLt048Y76iHSz7Sw==
+"@radar/lnrpc@^0.9.1-beta":
+  version "0.9.1-beta"
+  resolved "https://registry.yarnpkg.com/@radar/lnrpc/-/lnrpc-0.9.1-beta.tgz#96283000a737a70fdf893e029d664e9845363585"
+  integrity sha512-W81HcTUAc1MyO96oiUscIXJpDH+CTHPZLr3WObte/fPuCDbre3NkIo3njfD7WTzo2hkLy9LgqcYx6aYD1ex/yQ==
   dependencies:
     "@grpc/proto-loader" "^0.4.0"
     "@types/google-protobuf" "^3.2.7"
@@ -743,12 +743,12 @@ comit-scripts@^0.8.3:
     axios "^0.19.0"
     targz "^1.0.1"
 
-comit-sdk@^0.14.0:
-  version "0.14.0"
-  resolved "https://registry.yarnpkg.com/comit-sdk/-/comit-sdk-0.14.0.tgz#8183e92ab6543b32a19883372bee61ece3faf741"
-  integrity sha512-cyGw0yvDIQJUntuV5h4+XckInZ6iu6NqS8dnw3QIiQjXz7AskFfF5WotTeRt7LnqYtbZWz2fnRTEChvf2/R3Bg==
+comit-sdk@^0.14.1:
+  version "0.14.1"
+  resolved "https://registry.yarnpkg.com/comit-sdk/-/comit-sdk-0.14.1.tgz#a07f7f9d365a59b3e720dee805ed70b09227e223"
+  integrity sha512-hwfQAPfmplePckicMfe3AoprYKnBMiSsbY2WeauVnF5FPoTek92yc0ToDGC0sGNVVAIj/3l297gRrd51gUrWPA==
   dependencies:
-    "@radar/lnrpc" "^0.9.0-beta"
+    "@radar/lnrpc" "^0.9.1-beta"
     axios "^0.19.0"
     bcoin "https://github.com/bcoin-org/bcoin#2496acc7a98a43f00a7b5728eb256877c1bbf001"
     bignumber.js "^9.0.0"
