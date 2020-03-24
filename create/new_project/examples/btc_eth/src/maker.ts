@@ -90,9 +90,9 @@ import { createActor, sleep } from "./lib";
     // This loop runs until a swap request was sent from the taker to the maker
     // and a swap is waiting to be processed on the maker's side.
     while (!swapHandle) {
-        await new Promise(r => setTimeout(r, 1000));
+        await new Promise((r) => setTimeout(r, 1000));
         // Check for incoming swaps in the comit node daemon (cnd) of the maker.
-        swapHandle = await maker.comitClient.getOngoingSwaps().then(swaps => {
+        swapHandle = await maker.comitClient.getOngoingSwaps().then((swaps) => {
             if (swaps) {
                 return swaps[0];
             } else {

@@ -18,7 +18,7 @@ export async function createActor(index: number): Promise<Actor> {
         process.env[`BITCOIN_HD_KEY_${index}`]!
     );
     // Waiting for the Bitcoin wallet to read the balance
-    await new Promise(r => setTimeout(r, 1000));
+    await new Promise((r) => setTimeout(r, 1000));
 
     const ethereumWallet = new EthereumWallet(
         process.env.ETHEREUM_NODE_HTTP_URL!,
@@ -47,5 +47,5 @@ function loadEnvironment() {
 }
 
 export async function sleep(ms: number) {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
 }
