@@ -38,8 +38,8 @@ install_tomlfmt: install_rust
 ## User install
 
 install:
-	$(CARGO) install --force --path create-comit-app $(INSTALL_ARGS)
-	$(CARGO) install --force --path comit-scripts $(INSTALL_ARGS)
+	$(CARGO) install --force --path create $(INSTALL_ARGS)
+	$(CARGO) install --force --path scripts $(INSTALL_ARGS)
 
 clean:
 	$(CARGO) clean
