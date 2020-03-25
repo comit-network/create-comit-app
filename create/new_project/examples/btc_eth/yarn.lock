@@ -743,10 +743,10 @@ comit-scripts@^0.8.3:
     axios "^0.19.0"
     targz "^1.0.1"
 
-comit-sdk@^0.14.1:
-  version "0.14.1"
-  resolved "https://registry.yarnpkg.com/comit-sdk/-/comit-sdk-0.14.1.tgz#a07f7f9d365a59b3e720dee805ed70b09227e223"
-  integrity sha512-hwfQAPfmplePckicMfe3AoprYKnBMiSsbY2WeauVnF5FPoTek92yc0ToDGC0sGNVVAIj/3l297gRrd51gUrWPA==
+comit-sdk@^0.15.0:
+  version "0.15.0"
+  resolved "https://registry.yarnpkg.com/comit-sdk/-/comit-sdk-0.15.0.tgz#d825b19e89bd5920bb5c7f1b0907259d6b9f93af"
+  integrity sha512-JsBkboA2gI4HT/2zCKqU9vV4rBKxX9PkJsM8RmH2EPXIgpeSZ4S7+jRha88k0Kiu7RvdHp84HvkqrVjmDbWfFw==
   dependencies:
     "@radar/lnrpc" "^0.9.1-beta"
     axios "^0.19.0"
