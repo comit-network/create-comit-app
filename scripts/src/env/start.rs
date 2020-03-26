@@ -49,11 +49,10 @@ pub async fn execute() -> anyhow::Result<Environment> {
 
     println!("✓");
 
-    print_progress!("Writing configuration in env file");
-
     let env_file_str = temp_fs::create_env_file().await?;
-    let mut envfile = EnvFile::new(env_file_str)?;
+    print_progress!("Writing configuration to {}", env_file_str);
 
+    let mut envfile = EnvFile::new(env_file_str)?;
     envfile.update(
         "ETHEREUM_KEY_0",
         &format!("{}", parity.account_0.private_key),
