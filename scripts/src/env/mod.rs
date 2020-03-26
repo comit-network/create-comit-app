@@ -33,7 +33,6 @@ pub async fn start() {
     match result {
         Ok(Either::Left((self::start::Environment { bitcoind, .. }, ctrl_c))) => {
             tokio::spawn(new_miner(bitcoind.http_endpoint));
-            println!("✓");
 
             let _ = ctrl_c.await;
         }
