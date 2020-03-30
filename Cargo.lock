@@ -324,7 +324,7 @@ version = "0.9.0"
 dependencies = [
  "anyhow 1.0.27 (registry+https://github.com/rust-lang/crates.io-index)",
  "flate2 1.0.14 (registry+https://github.com/rust-lang/crates.io-index)",
- "ignore 0.4.13 (registry+https://github.com/rust-lang/crates.io-index)",
+ "ignore 0.4.14 (registry+https://github.com/rust-lang/crates.io-index)",
  "structopt 0.3.12 (registry+https://github.com/rust-lang/crates.io-index)",
  "tar 0.4.26 (registry+https://github.com/rust-lang/crates.io-index)",
  "tokio 0.2.13 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -947,7 +947,7 @@ dependencies = [
 
 [[package]]
 name = "ignore"
-version = "0.4.13"
+version = "0.4.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "crossbeam-channel 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -2798,7 +2798,7 @@ dependencies = [
 "checksum hyper-openssl 0.7.1 (registry+https://github.com/rust-lang/crates.io-index)" = "f52657b5cdb2a8067efd29a02e011b7cf656b473ec8a5c34e86645e85d763006"
 "checksum hyperlocal 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)" = "d063d6d5658623c6ef16f452e11437c0e7e23a6d327470573fe78892dafbc4fb"
 "checksum idna 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)" = "02e2673c30ee86b5b96a9cb52ad15718aa1f966f5ab9ad54a8b95d5ca33120a9"
-"checksum ignore 0.4.13 (registry+https://github.com/rust-lang/crates.io-index)" = "d692f1fdb7a67fad17cb4d3dbe3fc9c4d50d3113349251678db987b225ccabba"
+"checksum ignore 0.4.14 (registry+https://github.com/rust-lang/crates.io-index)" = "ddf60d063dbe6b75388eec66cfc07781167ae3d34a09e0c433e6c5de0511f7fb"
 "checksum impl-codec 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)" = "1be51a921b067b0eaca2fad532d9400041561aa922221cc65f95a85641c6bf53"
 "checksum impl-rlp 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)" = "f39b9963cf5f12fcc4ae4b30a6927ed67d6b4ea4cbe7d17a41131163b401303b"
 "checksum impl-serde 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)" = "bbb1ea6188aca47a0eaeeb330d8a82f16cd500f30b897062d23922568727333a"
