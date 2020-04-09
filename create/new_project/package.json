@@ -9,9 +9,10 @@
     "force-clean-env": "comit-scripts force-clean-env"
   },
   "dependencies": {
-    "comit-sdk": "^0.15.0"
+    "comit-sdk": "^0.15.2"
   },
   "devDependencies": {
-    "comit-scripts": "^0.8.3"
+    "comit-scripts": "^0.8.3",
+    "dotenv": "^8.1.0"
   }
 }
