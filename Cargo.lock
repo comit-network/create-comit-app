@@ -320,7 +320,7 @@ dependencies = [
 
 [[package]]
 name = "create-comit-app"
-version = "0.9.0"
+version = "0.9.1"
 dependencies = [
  "anyhow 1.0.28 (registry+https://github.com/rust-lang/crates.io-index)",
  "flate2 1.0.14 (registry+https://github.com/rust-lang/crates.io-index)",
