@@ -907,10 +907,10 @@ aws4@^1.8.0:
   resolved "https://registry.yarnpkg.com/aws4/-/aws4-1.9.0.tgz#24390e6ad61386b0a747265754d2a17219de862c"
   integrity sha512-Uvq6hVe90D0B2WEnUqtdgY1bATGz3mw33nH9Y+dmA+w5DHvUmBgkr5rM/KCHpCsiFNRUfokW/szpPPgMK2hm4A==
 
-axios@^0.19.0:
-  version "0.19.1"
-  resolved "https://registry.yarnpkg.com/axios/-/axios-0.19.1.tgz#8a6a04eed23dfe72747e1dd43c604b8f1677b5aa"
-  integrity sha512-Yl+7nfreYKaLRvAvjNPkvfjnQHJM1yLBY3zhqAwcJSwR/6ETkanUgylgtIvkvz0xJ+p/vZuNw8X7Hnb7Whsbpw==
+axios@^0.19.0, axios@^0.19.2:
+  version "0.19.2"
+  resolved "https://registry.yarnpkg.com/axios/-/axios-0.19.2.tgz#3ea36c5d8818d0d5f8a8a97a6d36b86cdc00cb27"
+  integrity sha512-fjgm5MvRHLhx+osE2xoekY70AhARk3a6hkN+3Io1jc00jtquGvxYlKlsFUhmUET0V5te6CcZI7lcv2Ym61mjHA==
   dependencies:
     follow-redirects "1.5.10"
 
@@ -1094,6 +1094,11 @@ bheep@~0.1.5:
   integrity sha512-0KR5Zi8hgJBKL35+aYzndCTtgSGakOMxrYw2uszd5UmXTIfx3+drPGoETlVbQ6arTdAzSoQYA1j35vbaWpQXBg==
   dependencies:
     bsert "~0.0.10"
+
+big.js@^3.1.3:
+  version "3.2.0"
+  resolved "https://registry.yarnpkg.com/big.js/-/big.js-3.2.0.tgz#a5fc298b81b9e0dca2e458824784b65c52ba588e"
+  integrity sha512-+hN/Zh2D08Mx65pZ/4g5bsmNiZUuChDiQfTUQ7qJr4/kuopCr88xZsAXv6mBoZEsUI4OuGHlX59qE94K2mMW8Q==
 
 big.js@^5.2.2:
   version "5.2.2"
@@ -1559,13 +1564,13 @@ comit-scripts@^0.8.3:
     axios "^0.19.0"
     targz "^1.0.1"
 
-comit-sdk@^0.15.2:
-  version "0.15.2"
-  resolved "https://registry.yarnpkg.com/comit-sdk/-/comit-sdk-0.15.2.tgz#affca33aed1cc18e7a3d39109a47041e3f0864e0"
-  integrity sha512-5HTRYRTR2Qpeiq29sTuTtPVkIF2CxEA7cku/8G3hHNp+EK2qicaV6bvJ9rhRitKY5EWSmWzBLOg+NzpCqvyyPg==
+comit-sdk@^0.15.3:
+  version "0.15.3"
+  resolved "https://registry.yarnpkg.com/comit-sdk/-/comit-sdk-0.15.3.tgz#5004a619741b4bf562cde999a458fb10f1333f6f"
+  integrity sha512-QJEn4Nb/+KNUS3bXDKi0Fu/ry1DGGtk7qEi87i6eHiAPoJzaornJfRVSiptyCG2gHyvFVyArQLciQ9xyjr/vfQ==
   dependencies:
     "@radar/lnrpc" "^0.9.1-beta"
-    axios "^0.19.0"
+    axios "^0.19.2"
     bcoin "https://github.com/bcoin-org/bcoin#2496acc7a98a43f00a7b5728eb256877c1bbf001"
     bignumber.js "^9.0.0"
     bitcoin-core "^2.2.0"
@@ -1574,6 +1579,8 @@ comit-sdk@^0.15.2:
     express "^4.17.1"
     moment "^2.24.0"
     p-event "^4.1.0"
+    p-timeout "^3.2.0"
+    satoshi-bitcoin "^1.0.4"
     urijs "^1.19.2"
 
 commander@^2.12.1:
@@ -3788,6 +3795,13 @@ p-timeout@^2.0.1:
   dependencies:
     p-finally "^1.0.0"
 
+p-timeout@^3.2.0:
+  version "3.2.0"
+  resolved "https://registry.yarnpkg.com/p-timeout/-/p-timeout-3.2.0.tgz#c7e17abc971d2a7962ef83626b35d635acf23dfe"
+  integrity sha512-rhIwUycgwwKcP9yTOOFK/AKsAopjjCakVqLHePO3CC6Mir1Z99xT+R63jZxAT5lFZLa2inS5h+ZS2GvR99/FBg==
+  dependencies:
+    p-finally "^1.0.0"
+
 p-try@^1.0.0:
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/p-try/-/p-try-1.0.0.tgz#cbc79cdbaf8fd4228e13f621f2b1a237c1b207b3"
@@ -4232,6 +4246,13 @@ satoshi-bitcoin-ts@^0.2.4:
   dependencies:
     "@types/big.js" "^4.0.5"
     big.js "^5.2.2"
+
+satoshi-bitcoin@^1.0.4:
+  version "1.0.4"
+  resolved "https://registry.yarnpkg.com/satoshi-bitcoin/-/satoshi-bitcoin-1.0.4.tgz#d002b677075d5cbbf2c211a8df3254bcdf50b1e4"
+  integrity sha1-0AK2dwddXLvywhGo3zJUvN9QseQ=
+  dependencies:
+    big.js "^3.1.3"
 
 sax@^1.2.4:
   version "1.2.4"
