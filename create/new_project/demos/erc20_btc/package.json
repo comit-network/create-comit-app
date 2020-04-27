@@ -14,12 +14,12 @@
     "author": "",
     "license": "ISC",
     "devDependencies": {
-        "@types/node": "^13.13.2",
+        "@types/node": "^13.13.4",
         "@types/readline-sync": "^1.4.3",
         "comit-scripts": "^0.8.3",
         "prettier": "^2.0.5",
         "ts-node": "^8.9.1",
-        "tslint": "^6.1.1",
+        "tslint": "^6.1.2",
         "tslint-config-prettier": "^1.18.0",
         "typescript": "^3.8.3"
     },
