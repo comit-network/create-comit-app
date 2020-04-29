@@ -86,13 +86,13 @@ import { createActor, sleep } from "./lib";
     console.log(`Waiting for someone to take my order at: ${link}`);
 
     // Wait for a taker to accept the order and send a swap request through the comit network daemon (cnd).
-    let swapHandle;
+    let swap;
     // This loop runs until a swap request was sent from the taker to the maker
     // and a swap is waiting to be processed on the maker's side.
-    while (!swapHandle) {
+    while (!swap) {
         await new Promise((r) => setTimeout(r, 1000));
         // Check for incoming swaps in the comit node daemon (cnd) of the maker.
-        swapHandle = await maker.comitClient.getOngoingSwaps().then((swaps) => {
+        swap = await maker.comitClient.getOngoingSwaps().then((swaps) => {
             if (swaps) {
                 return swaps[0];
             } else {
@@ -102,8 +102,8 @@ import { createActor, sleep } from "./lib";
     }
 
     // Retrieve the details (properties) of the swap
-    const swap = await swapHandle.fetchDetails();
-    const swapParams = swap.properties!.parameters;
+    const swapDetails = await swap.fetchDetails();
+    const swapParams = swapDetails.properties!.parameters;
 
     console.log(
         "Swap started! Swapping %d Ether for %d %s",
@@ -133,7 +133,7 @@ import { createActor, sleep } from "./lib";
         // - The maker has sent the fund transaction.
         //
         // The transaction ID will be returned by the wallet after sending the transaction.
-        await swapHandle.fund(tryParams)
+        await swap.fund(tryParams)
     );
 
     // Wait for commandline input for demo purposes
@@ -157,7 +157,7 @@ import { createActor, sleep } from "./lib";
         // - The taker has sent the redeem transaction.
         //
         // The transaction ID will be returned by the wallet after sending the transaction.
-        await swapHandle.redeem(tryParams)
+        await swap.redeem(tryParams)
     );
 
     console.log("Swapped!");
