@@ -27,7 +27,7 @@
     "dependencies": {
         "comit-sdk": "^0.15.6",
         "dotenv": "^8.2.0",
-        "moment": "^2.25.1",
+        "moment": "^2.25.3",
         "satoshi-bitcoin-ts": "^0.2.4"
     },
     "prettier": {
