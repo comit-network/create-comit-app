@@ -696,10 +696,10 @@
   resolved "https://registry.yarnpkg.com/@types/long/-/long-4.0.1.tgz#459c65fa1867dafe6a8f322c4c51695663cc55e9"
   integrity sha512-5tXH6Bx/kNGd3MgffdmP4dy2Z+G4eaXw0SE81Tq3BNadtnMR5/ySMzX4SLEzHJzSmPNn4HIdpQsBvXMUykr58w==
 
-"@types/node@*", "@types/node@^13.13.4":
-  version "13.13.4"
-  resolved "https://registry.yarnpkg.com/@types/node/-/node-13.13.4.tgz#1581d6c16e3d4803eb079c87d4ac893ee7501c2c"
-  integrity sha512-x26ur3dSXgv5AwKS0lNfbjpCakGIduWU1DU91Zz58ONRWrIKGunmZBNv4P7N+e27sJkiGDsw/3fT4AtsqQBrBA==
+"@types/node@*", "@types/node@^13.13.5":
+  version "13.13.5"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-13.13.5.tgz#96ec3b0afafd64a4ccea9107b75bf8489f0e5765"
+  integrity sha512-3ySmiBYJPqgjiHA7oEaIo2Rzz0HrOZ7yrNO5HWyaE5q0lQ3BppDZ3N53Miz8bw2I7gh1/zir2MGVZBvpb1zq9g==
 
 "@types/node@^10.1.0":
   version "10.17.17"
@@ -1607,10 +1607,10 @@ comit-scripts@^0.8.3:
     axios "^0.19.0"
     targz "^1.0.1"
 
-comit-sdk@^0.15.6:
-  version "0.15.6"
-  resolved "https://registry.yarnpkg.com/comit-sdk/-/comit-sdk-0.15.6.tgz#263276aa4a4b4137e1e6112c96611e34d595e06d"
-  integrity sha512-BfpfbExsrC4LpokJICyMMu40H1LXJNe+r+pxDpE/CTEOyC2MDULAMXXwfCD0HrOH+Sg7ALSAWhp0eaBkmdH6Kw==
+comit-sdk@^0.16.0:
+  version "0.16.0"
+  resolved "https://registry.yarnpkg.com/comit-sdk/-/comit-sdk-0.16.0.tgz#850c74db3101de337f66700eb4d545e03addc9bf"
+  integrity sha512-quwlGLenAoWWtmTgj8jhqF5q2Wi6+SffkbGoV43FPC9qXPw6Wo9xcWhiW8MBwy9BESqCpt3kKH8tI55C2C3x0A==
   dependencies:
     "@radar/lnrpc" "^0.9.1-beta"
     axios "^0.19.2"
