@@ -7,7 +7,7 @@ edition = "2018"
 [dependencies]
 anyhow = "1.0.30"
 clarity = "0.1"
-derive_more = "0.99.6"
+derive_more = "0.99.7"
 dirs = "2"
 envfile = "0.2"
 futures = { version = "0.3", features = ["compat"] }
