@@ -7,12 +7,12 @@ export async function execute(binPath: string, args: string[]): Promise<void> {
     console.error("Could not execute create-comit-app:", error);
   });
 
-  function handleSignal(code: string): void {
+  function handleSignal(code: number | NodeJS.Signals): void {
     cca.kill(code);
   }
 
   process.on("beforeExit", (code: number) => {
-    handleSignal(code.toString());
+    handleSignal(code);
   });
 
   process.on("SIGINT", (code: NodeJS.Signals) => {

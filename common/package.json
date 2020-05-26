@@ -10,6 +10,7 @@
   "author": "CoBloX developers <team@coblox.tech>",
   "license": "Apache-2.0",
   "devDependencies": {
+    "@types/node": "^14.0.5",
     "prettier": "^2.0.5",
     "tslint": "^6.1.2",
     "tslint-config-prettier": "^1.18.0",
