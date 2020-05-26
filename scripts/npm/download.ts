@@ -1,9 +1,9 @@
 import axios from "axios";
+import { makeArchiveName } from "common";
 import fs from "fs";
 import path from "path";
 import * as targz from "targz";
 import util from "util";
-import makeArchiveName from "./make_archive_name";
 
 const extract = util.promisify(targz.decompress);
 
@@ -13,7 +13,7 @@ export default async function download(
 ): Promise<void> {
   const targetDir = path.dirname(binTarget);
 
-  const archiveName = makeArchiveName(version);
+  const archiveName = makeArchiveName("comit-scripts", version);
   const archivePath = targetDir + "/" + archiveName;
 
   if (!fs.existsSync(targetDir)) {

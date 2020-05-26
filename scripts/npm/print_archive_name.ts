@@ -1,4 +1,4 @@
-import makeArchiveName from "./make_archive_name";
+import { makeArchiveName } from "common";
 
 const version = process.argv[2];
 
@@ -7,6 +7,6 @@ if (!version) {
   process.exit(1);
 }
 
-const archiveName = makeArchiveName(version);
+const archiveName = makeArchiveName("comit-scripts", version);
 
 console.log(archiveName);

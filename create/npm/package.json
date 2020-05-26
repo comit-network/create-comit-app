@@ -37,6 +37,10 @@
   },
   "dependencies": {
     "axios": "^0.19.1",
+    "common": "../../common",
     "targz": "^1.0.1"
-  }
+  },
+  "bundleDependencies": [
+    "common"
+  ]
 }
