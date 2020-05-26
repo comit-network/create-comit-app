@@ -2,3 +2,4 @@
 node_modules/
 create-comit-app*
 yarn-error.log
+dist
