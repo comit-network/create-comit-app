@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 
+import { execute } from "common";
 import fs from "fs";
 import path from "path";
 import download from "./download";
-import execute from "./execute";
 import packageJson from "./package.json";
 
 async function main(dirPath: string, args: string[]): Promise<void> {
