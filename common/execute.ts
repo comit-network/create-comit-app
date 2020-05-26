@@ -10,7 +10,7 @@ export async function execute(binPath: string, args: string[]): Promise<void> {
   function handleSignal(code: number | NodeJS.Signals): void {
     cca.kill(code);
   }
-
+np
   process.on("beforeExit", (code: number) => {
     handleSignal(code);
   });

@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 
 import { execute } from "common";
+import { download } from "common";
 import fs from "fs";
 import path from "path";
-import download from "./download";
 import packageJson from "./package.json";
 
 async function main(dirPath: string, args: string[]): Promise<void> {
@@ -19,7 +19,7 @@ async function main(dirPath: string, args: string[]): Promise<void> {
       process.stdout.write(
         `First time execution, downloading create-comit-app ${ccaVersion}...`
       );
-      await download(ccaVersion, binPath);
+      await download("create-comit-app", ccaVersion, binPath);
       console.log("✓");
     }
 
