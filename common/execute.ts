@@ -4,13 +4,13 @@ export async function execute(binPath: string, args: string[]): Promise<void> {
   const cca = spawn(binPath, args);
 
   cca.on("error", (error) => {
-    console.error("Could not execute create-comit-app:", error);
+    console.error(`Could not execute ${binPath}:`, error);
   });
 
   function handleSignal(code: number | NodeJS.Signals): void {
     cca.kill(code);
   }
-np
+
   process.on("beforeExit", (code: number) => {
     handleSignal(code);
   });
