@@ -1,8 +1,8 @@
-const os = require("os");
+import os from "os";
 
-module.exports = function makeArchiveName(version) {
+export default function makeArchiveName(version: string): string {
   const kernel = os.type();
   const arch = os.arch();
 
   return `comit-scripts_${version}_${kernel}_${arch}.tar.gz`;
-};
+}

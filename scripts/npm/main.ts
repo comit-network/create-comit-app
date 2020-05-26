@@ -1,17 +1,17 @@
 #!/usr/bin/env node
 
-const packageJson = require("./package");
-const fs = require("fs");
-const download = require("./download");
-const execute = require("./execute");
-const path = require("path");
+import fs from "fs";
+import path from "path";
+import download from "./download";
+import execute from "./execute";
+import packageJson from "./package.json";
 
-async function main(dirPath, args) {
+async function main(dirPath: string, args: string[]): Promise<void> {
   // Sometimes the only way to test is to publish on npmjs.com, In this case,
   // it is easiest to change the version in package.json to X.Y.ZrcN,
   // with X.Y.Z the version of create-comit-app. The regex below removes
   // the "rcN" suffix to download the binary.
-  const ccaVersion = /^\d\.\d\.\d/.exec(packageJson.version)[0];
+  const ccaVersion = /^\d\.\d\.\d/.exec(packageJson.version)![0];
   const binPath = `${dirPath}/comit-scripts_${ccaVersion}/comit-scripts`;
 
   try {
@@ -30,10 +30,10 @@ async function main(dirPath, args) {
 }
 
 (async () => {
-  let args = process.argv;
+  const args = process.argv;
   args.shift(); // Remove arg "node"
   const dirPath = path.dirname(args[0]);
   args.shift(); // Remove arg ".../main.js"
 
   await main(dirPath, args);
-})();
+})().then();

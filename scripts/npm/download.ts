@@ -1,11 +1,16 @@
-const fs = require("fs");
-const util = require("util");
-const extract = util.promisify(require("targz").decompress);
-const axios = require("axios");
-const path = require("path");
-const makeArchiveName = require("./makeArchiveName");
+import axios from "axios";
+import fs from "fs";
+import path from "path";
+import * as targz from "targz";
+import util from "util";
+import makeArchiveName from "./make_archive_name";
 
-module.exports = async function download(version, binTarget) {
+const extract = util.promisify(targz.decompress);
+
+export default async function download(
+  version: string,
+  binTarget: string
+): Promise<void> {
   const targetDir = path.dirname(binTarget);
 
   const archiveName = makeArchiveName(version);
@@ -43,7 +48,7 @@ module.exports = async function download(version, binTarget) {
       resolve();
     });
 
-    response.data.on("error", (err) => {
+    response.data.on("error", (err: Error) => {
       reject(err);
     });
   }).catch();
@@ -55,4 +60,4 @@ module.exports = async function download(version, binTarget) {
   fs.unlinkSync(archivePath);
   fs.renameSync(targetDir + "/comit-scripts", binTarget);
   fs.chmodSync(binTarget, 755);
-};
+}

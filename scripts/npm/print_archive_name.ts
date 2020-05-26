@@ -1,4 +1,4 @@
-const makeArchiveName = require("./makeArchiveName");
+import makeArchiveName from "./make_archive_name";
 
 const version = process.argv[2];
 
