@@ -38,7 +38,6 @@
     "typescript": "^3.9.3"
   },
   "dependencies": {
-    "axios": "^0.19.1",
     "common": "../../common",
     "targz": "^1.0.1"
   },
