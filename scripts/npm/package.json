@@ -5,6 +5,7 @@
   "main": "dist/main.js",
   "scripts": {
     "build": "tsc",
+    "prepublish": "tsc",
     "fix": "tslint -p . --fix && prettier --write '**/*.{ts,json,yml}'",
     "check": "tsc --noEmit && tslint -p . && prettier --check '**/*.{ts,json,yml}'",
     "start": "node dist/main.js"
