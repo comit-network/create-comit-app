@@ -10,6 +10,7 @@
   "author": "CoBloX developers <team@coblox.tech>",
   "license": "Apache-2.0",
   "devDependencies": {
+    "@types/axios": "^0.14.0",
     "@types/node": "^14.0.5",
     "@types/targz": "^1.0.0",
     "prettier": "^2.0.5",
