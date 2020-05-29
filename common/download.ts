@@ -1,15 +1,21 @@
-const fs = require("fs");
-const util = require("util");
-const extract = util.promisify(require("targz").decompress);
-const axios = require("axios");
-const path = require("path");
-const makeArchiveName = require("./makeArchiveName");
+import axios from "axios";
+import * as fs from "fs";
+import path from "path";
+import * as targz from "targz";
+import util from "util";
+import { makeArchiveName } from "./make_archive_name";
 
-module.exports = async function download(version, binTarget) {
+const extract = util.promisify(targz.decompress);
+
+export async function download(
+  binName: string,
+  version: string,
+  binTarget: string
+): Promise<void> {
   const targetDir = path.dirname(binTarget);
 
-  const archiveName = makeArchiveName(version);
-  const archivePath = targetDir + "/" + archiveName;
+  const archiveName = makeArchiveName(binName, version);
+  const archivePath = path.join(targetDir, archiveName);
 
   if (!fs.existsSync(targetDir)) {
     fs.mkdirSync(targetDir, { recursive: true });
@@ -19,7 +25,7 @@ module.exports = async function download(version, binTarget) {
     fs.unlinkSync(archivePath);
   }
 
-  const url = `https://github.com/comit-network/create-comit-app/releases/download/comit-scripts-${version}/${archiveName}`;
+  const url = `https://github.com/comit-network/create-comit-app/releases/download/${binName}-${version}/${archiveName}`;
 
   let response = await axios({
     url,
@@ -43,7 +49,7 @@ module.exports = async function download(version, binTarget) {
       resolve();
     });
 
-    response.data.on("error", (err) => {
+    response.data.on("error", (err: any) => {
       reject(err);
     });
   }).catch();
@@ -53,6 +59,6 @@ module.exports = async function download(version, binTarget) {
     dest: targetDir,
   });
   fs.unlinkSync(archivePath);
-  fs.renameSync(targetDir + "/comit-scripts", binTarget);
+  fs.renameSync(path.join(targetDir, binName), binTarget);
   fs.chmodSync(binTarget, 755);
-};
+}

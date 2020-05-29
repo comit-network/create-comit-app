@@ -1,0 +1,26 @@
+{
+  "defaultSeverity": "error",
+  "extends": ["tslint:recommended", "tslint-config-prettier"],
+  "jsRules": {},
+  "rules": {
+    "interface-name": false,
+    "jsx-no-lambda": false,
+    "max-classes-per-file": false,
+    "no-console": false,
+    "no-shadowed-variable": false,
+    "object-literal-sort-keys": false,
+    "no-reference": false,
+    "file-name-casing": [true, "snake-case"],
+    "promise-function-async": true,
+    "no-floating-promises": true,
+    "await-promise": true,
+    "no-promise-as-boolean": true,
+    "no-return-await": true,
+    "no-string-throw": true,
+    "radix": true,
+    "restrict-plus-operands": true,
+    "ordered-imports": true,
+    "typedef": [true, "call-signature", "property-declaration"]
+  },
+  "rulesDirectory": []
+}

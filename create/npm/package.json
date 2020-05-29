@@ -2,11 +2,13 @@
   "name": "create-comit-app",
   "version": "0.9.1",
   "description": "Create a new COMIT app with one command.",
-  "main": "./main.js",
+  "main": "dist/main.js",
   "scripts": {
-    "fix": "prettier --write '**/*.{ts,js,json,yml}'",
-    "check": "prettier --check '**/*.{ts,js,json,yml}'",
-    "start": "./main.js"
+    "build": "tsc",
+    "prepublish": "tsc",
+    "fix": "tslint -p . --fix && prettier --write '**/*.{ts,json,yml}'",
+    "check": "tsc --noEmit && tslint -p . && prettier --check '**/*.{ts,json,yml}'",
+    "start": "node dist/main.js"
   },
   "repository": {
     "type": "git",
@@ -25,13 +27,21 @@
   },
   "homepage": "https://github.com/comit-network/create-comit-app#readme",
   "bin": {
-    "create-comit-app": "main.js"
+    "create-comit-app": "dist/main.js"
   },
   "devDependencies": {
-    "prettier": "^2.0.1"
+    "@types/node": "^14.0.5",
+    "@types/targz": "^1.0.0",
+    "prettier": "^2.0.5",
+    "tslint": "^6.1.2",
+    "tslint-config-prettier": "^1.18.0",
+    "typescript": "^3.9.3"
   },
   "dependencies": {
-    "axios": "^0.19.1",
+    "common": "../../common",
     "targz": "^1.0.1"
-  }
+  },
+  "bundleDependencies": [
+    "common"
+  ]
 }

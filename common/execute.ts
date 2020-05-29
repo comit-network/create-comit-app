@@ -1,25 +1,25 @@
-const spawn = require("child_process").spawn;
+import { spawn } from "child_process";
 
-module.exports = async function execute(binPath, args) {
+export async function execute(binPath: string, args: string[]): Promise<void> {
   const cca = spawn(binPath, args);
 
   cca.on("error", (error) => {
-    console.error("Could not execute create-comit-app:", error);
+    console.error(`Could not execute ${binPath}:`, error);
   });
 
-  function handleSignal(code) {
+  function handleSignal(code: number | NodeJS.Signals): void {
     cca.kill(code);
   }
 
-  process.on("beforeExit", (code) => {
+  process.on("beforeExit", (code: number) => {
     handleSignal(code);
   });
 
-  process.on("SIGINT", (code) => {
+  process.on("SIGINT", (code: NodeJS.Signals) => {
     handleSignal(code);
   });
 
-  process.on("SIGTERM", (code) => {
+  process.on("SIGTERM", (code: NodeJS.Signals) => {
     handleSignal(code);
   });
 
@@ -34,4 +34,4 @@ module.exports = async function execute(binPath, args) {
   cca.on("close", (code) => {
     process.exit(code);
   });
-};
+}

@@ -59,9 +59,11 @@ jobs:
           TAG=$(git describe --tags) # 'create-comit-app-X.Y.Z'
           VERSION=${TAG##create-comit-app-} # Remove 'create-comit-app-'
 
+          (cd ./create/npm; yarn install; yarn build)
+
           # We need to do bash -c to make sure this also works on GitBash for Windows.
           # GitHub actions uses GitBash for Windows if we say 'shell: bash' on a Windows executor.
-          ARCHIVE=$(bash -c "node create/npm/printArchiveName.js ${VERSION}")
+          ARCHIVE=$(bash -c "node create/npm/dist/print_archive_name.js ${VERSION}")
 
           tar czvf ${ARCHIVE} -C target/release create-comit-app${{ matrix.binary-suffix }}
 
@@ -80,9 +82,11 @@ jobs:
           TAG=$(git describe --tags) # 'comit-scripts-X.Y.Z'
           VERSION=${TAG##comit-scripts-} # Remove 'comit-scripts-'
 
+          (cd ./scripts/npm; yarn install; yarn build)
+
           # We need to do bash -c to make sure this also works on GitBash for Windows.
           # GitHub actions uses GitBash for Windows if we say 'shell: bash' on a Windows executor.
-          ARCHIVE=$(bash -c "node scripts/npm/printArchiveName.js ${VERSION}")
+          ARCHIVE=$(bash -c "node scripts/npm/dist/print_archive_name.js ${VERSION}")
 
           tar czvf ${ARCHIVE} -C target/release comit-scripts${{ matrix.binary-suffix }}
 

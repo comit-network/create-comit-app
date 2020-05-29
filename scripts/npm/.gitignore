@@ -2,3 +2,4 @@
 node_modules/
 comit-scripts*
 yarn-error.log
+dist
