@@ -1,0 +1,82 @@
+version: 2
+updates:
+- package-ecosystem: npm
+  directory: "/create/new_project/demos/erc20_btc"
+  schedule:
+    interval: daily
+    time: "00:00"
+    timezone: Australia/Brisbane
+  labels:
+  - dependencies
+  allow:
+  - dependency-type: direct
+- package-ecosystem: npm
+  directory: "/create/new_project/demos/btc_eth"
+  schedule:
+    interval: daily
+    time: "00:00"
+    timezone: Australia/Brisbane
+  labels:
+  - dependencies
+  allow:
+  - dependency-type: direct
+- package-ecosystem: npm
+  directory: "/create/new_project"
+  schedule:
+    interval: daily
+    time: "00:00"
+    timezone: Australia/Brisbane
+  labels:
+  - dependencies
+  allow:
+  - dependency-type: direct
+- package-ecosystem: npm
+  directory: "/scripts/npm"
+  schedule:
+    interval: daily
+    time: "00:00"
+    timezone: Australia/Brisbane
+  labels:
+  - dependencies
+  allow:
+  - dependency-type: direct
+- package-ecosystem: npm
+  directory: "/create/npm"
+  schedule:
+    interval: daily
+    time: "00:00"
+    timezone: Australia/Brisbane
+  labels:
+  - dependencies
+  allow:
+  - dependency-type: direct
+- package-ecosystem: npm
+  directory: "/create/new_project/examples/btc_eth"
+  schedule:
+    interval: daily
+    time: "00:00"
+    timezone: Australia/Brisbane
+  labels:
+  - dependencies
+  allow:
+  - dependency-type: direct
+- package-ecosystem: cargo
+  directory: "/"
+  schedule:
+    interval: daily
+    time: "00:00"
+    timezone: Australia/Brisbane
+  labels:
+  - dependencies
+  allow:
+  - dependency-type: direct
+  ignore:
+  - dependency-name: ethabi
+    versions:
+    - ">= 0"
+  - dependency-name: http
+    versions:
+    - ">= 0"
+  - dependency-name: secp256k1
+    versions:
+    - ">= 0"
