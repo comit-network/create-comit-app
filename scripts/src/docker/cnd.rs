@@ -10,8 +10,9 @@ use crate::docker::{
     self, docker_daemon_ip, free_local_port::free_local_port, DockerImage, File, LogMessage,
     DOCKER_NETWORK,
 };
+use serde::Serializer;
 
-const IMAGE: &str = "comitnetwork/cnd:0.4.0";
+const IMAGE: &str = "comitnetwork/cnd:0.8.0";
 
 #[derive(derive_more::Display, Copy, Clone)]
 #[display(fmt = "http://{}:{}", ip, port)]
@@ -25,17 +26,7 @@ pub struct CndInstance {
 }
 
 pub async fn new_instance(index: u32) -> anyhow::Result<CndInstance> {
-    let settings = Settings {
-        bitcoin: Bitcoin {
-            network: String::from("regtest"),
-            node_url: "http://bitcoin:18443".to_string(),
-        },
-        ethereum: Ethereum {
-            chain_id: 17,
-            node_url: "http://ethereum:8545".to_string(),
-        },
-        ..Default::default()
-    };
+    let settings = Settings::default();
 
     let settings = toml::to_string(&settings).context("failed to serialize settings")?;
 
@@ -72,6 +63,7 @@ pub async fn new_instance(index: u32) -> anyhow::Result<CndInstance> {
 struct Settings {
     network: Network,
     http_api: HttpApi,
+    data: Data,
     logging: Logging,
     bitcoin: Bitcoin,
     ethereum: Ethereum,
@@ -87,10 +79,19 @@ struct HttpApi {
     cors: Cors,
 }
 
-#[derive(Clone, Debug, serde::Serialize)]
+#[derive(Clone, Debug)]
 struct Socket {
     address: IpAddr,
     port: u16,
+}
+
+impl serde::Serialize for Socket {
+    fn serialize<S>(&self, serializer: S) -> Result<<S as Serializer>::Ok, <S as Serializer>::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(&format!("{}:{}", self.address.to_string(), self.port))
+    }
 }
 
 #[derive(Clone, Debug, serde::Serialize)]
@@ -99,20 +100,34 @@ struct Cors {
 }
 
 #[derive(Clone, Debug, serde::Serialize)]
+struct Data {
+    dir: String,
+}
+
+#[derive(Clone, Debug, serde::Serialize)]
 struct Logging {
     level: String,
-    structured: bool,
 }
 
 #[derive(Clone, Debug, serde::Serialize)]
 struct Bitcoin {
     network: String,
+    bitcoind: Bitcoind,
+}
+
+#[derive(Clone, Debug, serde::Serialize)]
+struct Bitcoind {
     node_url: String,
 }
 
 #[derive(Clone, Debug, serde::Serialize)]
 struct Ethereum {
-    chain_id: i8,
+    chain_id: i16,
+    geth: Geth,
+}
+
+#[derive(Clone, Debug, serde::Serialize)]
+struct Geth {
     node_url: String,
 }
 
@@ -150,11 +165,18 @@ impl Default for Cors {
     }
 }
 
+impl Default for Data {
+    fn default() -> Self {
+        Data {
+            dir: "/home/cnd/.local/share/comit/".to_string(),
+        }
+    }
+}
+
 impl Default for Logging {
     fn default() -> Self {
         Logging {
-            level: "DEBUG".to_string(),
-            structured: false,
+            level: "Debug".to_string(),
         }
     }
 }
@@ -163,7 +185,9 @@ impl Default for Bitcoin {
     fn default() -> Self {
         Bitcoin {
             network: "regtest".to_string(),
-            node_url: "http://localhost:18443".to_string(),
+            bitcoind: Bitcoind {
+                node_url: "http://bitcoin:18443".to_string(),
+            },
         }
     }
 }
@@ -172,7 +196,9 @@ impl Default for Ethereum {
     fn default() -> Self {
         Ethereum {
             chain_id: 17,
-            node_url: "http://localhost:8545".to_string(),
+            geth: Geth {
+                node_url: "http://ethereum:8545".to_string(),
+            },
         }
     }
 }
