@@ -6,6 +6,7 @@ pull_request_rules:
       - "status-success=build (windows)"
       - "status-success=build (ubuntu)"
       - "status-success=e2e_test"
+      - "status-success=npm_build"
       - "status-success=license/cla"
       - "author:dependabot-preview[bot]"
     actions:
@@ -20,6 +21,7 @@ pull_request_rules:
       - "status-success=build (windows)"
       - "status-success=build (ubuntu)"
       - "status-success=e2e_test"
+      - "status-success=npm_build"
       - "status-success=license/cla"
       - -conflict
       - label!=work-in-progress

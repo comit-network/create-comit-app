@@ -4,5 +4,6 @@ status = [
     "build (ubuntu)",
     "build (windows)",
     "e2e_test",
+    "npm_build",
 ]
 pr_status = ["license/cla"]
