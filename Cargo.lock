@@ -287,7 +287,7 @@ dependencies = [
  "anyhow 1.0.31 (registry+https://github.com/rust-lang/crates.io-index)",
  "bitcoin 0.19.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "clarity 0.1.24 (registry+https://github.com/rust-lang/crates.io-index)",
- "derive_more 0.99.8 (registry+https://github.com/rust-lang/crates.io-index)",
+ "derive_more 0.99.9 (registry+https://github.com/rust-lang/crates.io-index)",
  "dirs 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "envfile 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "futures 0.1.29 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -392,7 +392,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "derive_more"
-version = "0.99.8"
+version = "0.99.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "proc-macro2 1.0.18 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -2537,7 +2537,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "arrayvec 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "base64 0.12.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "derive_more 0.99.8 (registry+https://github.com/rust-lang/crates.io-index)",
+ "derive_more 0.99.9 (registry+https://github.com/rust-lang/crates.io-index)",
  "ethabi 12.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "ethereum-types 0.9.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "futures 0.1.29 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -2679,7 +2679,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum crossbeam-utils 0.6.6 (registry+https://github.com/rust-lang/crates.io-index)" = "04973fa96e96579258a5091af6003abde64af786b860f18622b82e026cca60e6"
 "checksum crossbeam-utils 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)" = "ce446db02cdc3165b94ae73111e570793400d0794e46125cc4056c81cbb039f4"
 "checksum crunchy 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)" = "7a81dae078cea95a014a339291cec439d2f232ebe854a9d672b796c6afafa9b7"
-"checksum derive_more 0.99.8 (registry+https://github.com/rust-lang/crates.io-index)" = "bc655351f820d774679da6cdc23355a93de496867d8203496675162e17b1d671"
+"checksum derive_more 0.99.9 (registry+https://github.com/rust-lang/crates.io-index)" = "298998b1cf6b5b2c8a7b023dfd45821825ce3ba8a8af55c921a0e734e4653f76"
 "checksum digest 0.8.1 (registry+https://github.com/rust-lang/crates.io-index)" = "f3d0c8c8752312f9713efd397ff63acb9f85585afbf179282e720e7704954dd5"
 "checksum dirs 3.0.0 (registry+https://github.com/rust-lang/crates.io-index)" = "2fddc3610d8f9552384e06ebc87f714e1d0b2b64a99194d2faf36d7ae5f48549"
 "checksum dirs-sys 0.3.5 (registry+https://github.com/rust-lang/crates.io-index)" = "8e93d7f5705de3e49895a2b5e0b8855a1c27f080192ae9c32a6432d50741a57a"
