@@ -14,7 +14,7 @@
     "author": "",
     "license": "ISC",
     "devDependencies": {
-        "@types/node": "^14.0.14",
+        "@types/node": "^14.0.22",
         "@types/readline-sync": "^1.4.3",
         "comit-scripts": "^0.8.3",
         "prettier": "^2.0.5",
