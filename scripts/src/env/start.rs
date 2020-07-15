@@ -4,7 +4,7 @@ use envfile::EnvFile;
 use crate::{
     docker::{
         self,
-        bitcoin::{self, BitcoindInstance},
+        bitcoin::{self, BitcoindInstance, PASSWORD, USERNAME},
         cnd::{self, CndInstance},
         ethereum::{self, ParityInstance},
     },
@@ -67,15 +67,12 @@ pub async fn execute() -> anyhow::Result<Environment> {
     );
     envfile.update("ETHEREUM_NODE_HTTP_URL", &parity.http_endpoint.to_string());
 
-    envfile.update(
-        "BITCOIN_HD_KEY_0",
-        &format!("{}", bitcoind.account_0.master),
-    );
-    envfile.update(
-        "BITCOIN_HD_KEY_1",
-        &format!("{}", bitcoind.account_1.master),
-    );
+    envfile.update("BITCOIN_WALLET_0", &bitcoind.account_0.to_string());
+    envfile.update("BITCOIN_WALLET_1", &bitcoind.account_1.to_string());
     envfile.update("BITCOIN_P2P_URI", &bitcoind.p2p_uri.to_string());
+    envfile.update("BITCOIN_HTTP_URI", &bitcoind.http_endpoint.to_string());
+    envfile.update("BITCOIN_USERNAME", USERNAME);
+    envfile.update("BITCOIN_PASSWORD", PASSWORD);
 
     envfile.update("HTTP_URL_CND_0", &cnd_0.http_endpoint.to_string());
     envfile.update("HTTP_URL_CND_1", &cnd_1.http_endpoint.to_string());
