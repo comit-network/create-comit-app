@@ -126,21 +126,12 @@ async fn fund_new_account(endpoint: BitcoindHttpEndpoint) -> anyhow::Result<Acco
 pub async fn mine_a_block(endpoint: BitcoindHttpEndpoint) -> anyhow::Result<()> {
     let client = reqwest::Client::new();
 
-    let new_address: NewAddressResponse = client
-        .post(&endpoint.to_string())
-        .basic_auth(USERNAME, Some(PASSWORD))
-        .json(&NewAddressRequest::new("bech32"))
-        .send()
-        .await
-        .context("failed to create new address")?
-        .json::<NewAddressResponse>()
-        .await?;
-    assert!(new_address.error.is_none());
+    let new_address = new_address(&endpoint.to_string()).await?;
 
     let _ = client
         .post(&endpoint.to_string())
         .basic_auth(USERNAME, Some(PASSWORD))
-        .json(&GenerateToAddressRequest::new(1, new_address.result))
+        .json(&GenerateToAddressRequest::new(1, new_address))
         .send()
         .await?;
 
@@ -248,6 +239,13 @@ impl NewAddressRequest {
     }
 }
 
+#[derive(Debug, serde::Deserialize)]
+struct NewAddressResponse {
+    result: Option<Address>,
+    error: Option<JsonRpcError>,
+    id: String,
+}
+
 #[derive(Debug, serde::Serialize)]
 pub struct GenerateToAddressRequest {
     jsonrpc: String,
@@ -304,13 +302,6 @@ struct FundResponse {
     id: String,
 }
 
-#[derive(Debug, serde::Deserialize)]
-struct NewAddressResponse {
-    result: Address,
-    error: Option<JsonRpcError>,
-    id: String,
-}
-
 #[derive(Debug, serde::Deserialize, thiserror::Error)]
 #[error("JSON-RPC request failed with code {code}: {message}")]
 pub struct JsonRpcError {
@@ -321,21 +312,12 @@ pub struct JsonRpcError {
 async fn fund(endpoint: &str, address: Address, amount: Amount) -> anyhow::Result<sha256d::Hash> {
     let client = reqwest::Client::new();
 
-    let new_address = client
-        .post(endpoint)
-        .basic_auth(USERNAME, Some(PASSWORD))
-        .json(&NewAddressRequest::new("bech32"))
-        .send()
-        .await
-        .context("failed to create new address")?
-        .json::<NewAddressResponse>()
-        .await?;
-    assert!(new_address.error.is_none());
+    let new_address = new_address(endpoint).await?;
 
     let _ = client
         .post(endpoint)
         .basic_auth(USERNAME, Some(PASSWORD))
-        .json(&GenerateToAddressRequest::new(101, new_address.result))
+        .json(&GenerateToAddressRequest::new(101, new_address))
         .send()
         .await
         .context("failed to generate blocks")?;
@@ -355,6 +337,30 @@ async fn fund(endpoint: &str, address: Address, amount: Amount) -> anyhow::Resul
                 "no transaction hash returned without yielding error",
             )),
             Some(tx_hash) => Ok(tx_hash),
+        },
+        Some(error) => Err(anyhow::Error::new(error)),
+    }
+}
+
+async fn new_address(endpoint: &str) -> anyhow::Result<Address> {
+    let client = reqwest::Client::new();
+
+    let response = client
+        .post(endpoint)
+        .basic_auth(USERNAME, Some(PASSWORD))
+        .json(&NewAddressRequest::new("bech32"))
+        .send()
+        .await
+        .context("failed to create new address")?
+        .json::<NewAddressResponse>()
+        .await?;
+
+    match response.error {
+        None => match response.result {
+            None => Err(anyhow::Error::msg(
+                "no address returned without yielding error",
+            )),
+            Some(address) => Ok(address),
         },
         Some(error) => Err(anyhow::Error::new(error)),
     }
