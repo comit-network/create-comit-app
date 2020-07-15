@@ -1,11 +1,10 @@
 use anyhow::Context;
 use envfile::EnvFile;
 
-use crate::docker::bitcoin::{PASSWORD, USERNAME};
 use crate::{
     docker::{
         self,
-        bitcoin::{self, BitcoindInstance},
+        bitcoin::{self, BitcoindInstance, PASSWORD, USERNAME},
         cnd::{self, CndInstance},
         ethereum::{self, ParityInstance},
     },

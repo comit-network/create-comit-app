@@ -17,9 +17,8 @@ use crate::docker::{
     self, docker_daemon_ip, free_local_port::free_local_port, DockerImage, LogMessage,
     DOCKER_NETWORK,
 };
-use serde::export::{Formatter, TryFrom};
-use std::fmt;
-use std::fmt::Display;
+use serde::export::Formatter;
+use std::fmt::{self, Display};
 
 const IMAGE: &str = "coblox/bitcoin-core:0.20.0";
 
@@ -220,21 +219,16 @@ pub struct NewAddressRequest {
     jsonrpc: String,
     id: String,
     method: String,
-    params: Vec<String>,
+    params: serde_json::Value,
 }
 
 impl NewAddressRequest {
     pub fn new(address_format: &str) -> Self {
-        let mut params = Vec::new();
-        let label = "";
-        params.push(label.to_owned());
-        params.push(address_format.to_owned());
-
         NewAddressRequest {
             jsonrpc: "1.0".to_string(),
             id: "getnewaddress".to_string(),
             method: "getnewaddress".to_string(),
-            params,
+            params: serde_json::json!(["", address_format]),
         }
     }
 }
@@ -251,27 +245,16 @@ pub struct GenerateToAddressRequest {
     jsonrpc: String,
     id: String,
     method: String,
-    params: Vec<serde_json::Value>,
+    params: serde_json::Value,
 }
 
 impl GenerateToAddressRequest {
     pub fn new(number: u32, address: Address) -> Self {
-        let mut params = Vec::new();
-
-        let number = serde_json::Value::Number(
-            serde_json::Number::try_from(number).expect("can convert to number"),
-        );
-        assert!(number.is_u64());
-        params.push(number);
-
-        let address = serde_json::Value::String(address.to_string());
-        params.push(address);
-
         GenerateToAddressRequest {
             jsonrpc: "1.0".to_string(),
             id: "generatetoaddress".to_string(),
             method: "generatetoaddress".to_string(),
-            params,
+            params: serde_json::json!([number, address]),
         }
     }
 }
@@ -281,16 +264,16 @@ struct FundRequest {
     jsonrpc: String,
     id: String,
     method: String,
-    params: Vec<String>,
+    params: serde_json::Value,
 }
 
 impl FundRequest {
     fn new(address: Address, amount: Amount) -> Self {
         FundRequest {
             jsonrpc: "1.0".to_string(),
-            id: "fund".to_string(),
+            id: "sendtoaddress".to_string(),
             method: "sendtoaddress".to_string(),
-            params: vec![address.to_string(), amount.as_btc().to_string()],
+            params: serde_json::json!([address, amount.as_btc().to_string()]),
         }
     }
 }
@@ -412,17 +395,37 @@ mod tests {
     }
 
     #[test]
-    fn generate_to_address_request_does_not_panic() {
+    fn generate_to_address_request_does_serialize() {
+        let expected = r#"{"jsonrpc":"1.0","id":"generatetoaddress","method":"generatetoaddress","params":[101,"2MubReUTptB6isbuFmsRiN3BPHaeHpiAjQM"]}"#;
+
         let number = 101;
         let address = Address::from_str("2MubReUTptB6isbuFmsRiN3BPHaeHpiAjQM").unwrap();
 
-        let _ = GenerateToAddressRequest::new(number, address);
+        let request = GenerateToAddressRequest::new(number, address);
+        let json = serde_json::to_string(&request).unwrap();
+
+        assert_eq!(json, expected)
     }
 
     #[test]
-    fn new_address_request_does_not_panic() {
+    fn new_address_request_does_serialize() {
+        let expected = r#"{"jsonrpc":"1.0","id":"getnewaddress","method":"getnewaddress","params":["","bech32"]}"#;
         let format = "bech32";
 
-        let _ = NewAddressRequest::new(format);
+        let request = NewAddressRequest::new(format);
+        let json = serde_json::to_string(&request).unwrap();
+
+        assert_eq!(json, expected)
+    }
+
+    #[test]
+    fn fund_request_does_serialize() {
+        let expected = r#"{"jsonrpc":"1.0","id":"sendtoaddress","method":"sendtoaddress","params":["2MubReUTptB6isbuFmsRiN3BPHaeHpiAjQM","1"]}"#;
+        let address = Address::from_str("2MubReUTptB6isbuFmsRiN3BPHaeHpiAjQM").unwrap();
+
+        let request = FundRequest::new(address, Amount::ONE_BTC);
+        let json = serde_json::to_string(&request).unwrap();
+
+        assert_eq!(json, expected)
     }
 }
