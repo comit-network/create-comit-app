@@ -147,25 +147,14 @@ pub async fn mine_a_block(endpoint: BitcoindHttpEndpoint) -> anyhow::Result<()> 
     Ok(())
 }
 
-pub struct DerivationPath {
-    path: Vec<ChildNumber>,
-}
+#[derive(Debug, Clone)]
+pub struct DerivationPath(Vec<ChildNumber>);
 
 impl Display for DerivationPath {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        for i in 0..self.path.len() {
-            let elem = self.path.get(i).unwrap();
-
-            let separator = if i == self.path.len() - 1 { "" } else { "/" };
-
-            match elem {
-                ChildNumber::Normal { index } => {
-                    write!(f, "{:?}{:0}", index, separator)?;
-                }
-                ChildNumber::Hardened { index } => {
-                    write!(f, "{:?}h{:0}", index, separator)?;
-                }
-            }
+        for i in &self.0 {
+            write!(f, "/")?;
+            fmt::Display::fmt(i, f)?;
         }
 
         Ok(())
@@ -174,22 +163,21 @@ impl Display for DerivationPath {
 
 impl DerivationPath {
     pub fn bip44_bitcoin_testnet() -> anyhow::Result<Self> {
-        Ok(Self {
-            path: vec![
-                ChildNumber::from_hardened_idx(44)?,
-                ChildNumber::from_hardened_idx(1)?,
-                ChildNumber::from_hardened_idx(0)?,
-                ChildNumber::from_normal_idx(0)?,
-                ChildNumber::from_normal_idx(0)?,
-            ],
-        })
+        Ok(Self(vec![
+            ChildNumber::from_hardened_idx(44)?,
+            ChildNumber::from_hardened_idx(1)?,
+            ChildNumber::from_hardened_idx(0)?,
+            ChildNumber::from_normal_idx(0)?,
+            ChildNumber::from_normal_idx(0)?,
+        ]))
     }
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct Account {
     pub master: ExtendedPrivKey,
     first_account: rust_bitcoin::util::key::PrivateKey,
+    derivation_path: DerivationPath,
 }
 
 impl Account {
@@ -206,13 +194,14 @@ impl Account {
 
         // derive a private key from the master key
         let priv_key = master
-            .derive_priv(&Secp256k1::new(), &derivation_path.path)
+            .derive_priv(&Secp256k1::new(), &derivation_path.0)
             .map(|secret_key| secret_key.private_key)?;
 
         // it is not great to store derived data in here but since the derivation can fail, it is better to fail early instead of later
         Ok(Self {
             master,
             first_account: priv_key,
+            derivation_path,
         })
     }
 
@@ -221,6 +210,17 @@ impl Account {
         let address = derive_address(self.first_account.key);
 
         (self.first_account, address)
+    }
+}
+
+impl Display for Account {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "wpkh(")?;
+        fmt::Display::fmt(&self.master, f)?;
+        fmt::Display::fmt(&self.derivation_path, f)?;
+        write!(f, ")")?;
+
+        Ok(())
     }
 }
 
@@ -386,7 +386,23 @@ mod tests {
         let derivation_path = DerivationPath::bip44_bitcoin_testnet().unwrap();
 
         let to_string = derivation_path.to_string();
-        assert_eq!(to_string, "44h/1h/0h/0/0")
+        assert_eq!(to_string, "/44'/1'/0'/0/0")
+    }
+
+    #[test]
+    fn format_account() {
+        let account = Account::new_random().unwrap();
+        let master = account.master;
+
+        let to_string = account.to_string();
+        assert_eq!(
+            to_string,
+            format!(
+                "wpkh({}{})",
+                master,
+                DerivationPath::bip44_bitcoin_testnet().unwrap()
+            )
+        )
     }
 
     #[test]
