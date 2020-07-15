@@ -17,11 +17,14 @@ use crate::docker::{
     self, docker_daemon_ip, free_local_port::free_local_port, DockerImage, LogMessage,
     DOCKER_NETWORK,
 };
+use serde::export::{Formatter, TryFrom};
+use std::fmt;
+use std::fmt::Display;
 
-const IMAGE: &str = "coblox/bitcoin-core:0.17.0";
+const IMAGE: &str = "coblox/bitcoin-core:0.20.0";
 
-const USERNAME: &str = "bitcoin";
-const PASSWORD: &str = "t68ej4UX2pB0cLlGwSwHFBLKxXYgomkXyFyxuBmm2U8=";
+pub const USERNAME: &str = "bitcoin";
+pub const PASSWORD: &str = "t68ej4UX2pB0cLlGwSwHFBLKxXYgomkXyFyxuBmm2U8=";
 
 #[derive(derive_more::Display, Copy, Clone)]
 #[display(fmt = "{}:{}", ip, port)]
@@ -60,6 +63,7 @@ pub async fn new_bitcoind_instance() -> anyhow::Result<BitcoindInstance> {
         "-debug=1",
         "-acceptnonstdtxn=0",
         "-txindex",
+        "-fallbackfee=0.0002",
     ]);
 
     let p2p_port = free_local_port().await?;
@@ -86,10 +90,15 @@ pub async fn new_bitcoind_instance() -> anyhow::Result<BitcoindInstance> {
         LogMessage("Flushed wallet.dat"),
         vec![],
     )
-    .await?;
+    .await
+    .context("unable to start bitcoind docker image")?;
 
-    let account_0 = fund_new_account(http_endpoint).await?;
-    let account_1 = fund_new_account(http_endpoint).await?;
+    let account_0 = fund_new_account(http_endpoint)
+        .await
+        .context("failed to fund first account")?;
+    let account_1 = fund_new_account(http_endpoint)
+        .await
+        .context("failed to fund second account")?;
 
     Ok(BitcoindInstance {
         p2p_uri,
@@ -115,14 +124,66 @@ async fn fund_new_account(endpoint: BitcoindHttpEndpoint) -> anyhow::Result<Acco
 }
 
 pub async fn mine_a_block(endpoint: BitcoindHttpEndpoint) -> anyhow::Result<()> {
-    reqwest::Client::new()
+    let client = reqwest::Client::new();
+
+    let new_address: NewAddressResponse = client
         .post(&endpoint.to_string())
         .basic_auth(USERNAME, Some(PASSWORD))
-        .json(&GenerateRequest::new(1))
+        .json(&NewAddressRequest::new("bech32"))
+        .send()
+        .await
+        .context("failed to create new address")?
+        .json::<NewAddressResponse>()
+        .await?;
+    assert!(new_address.error.is_none());
+
+    let _ = client
+        .post(&endpoint.to_string())
+        .basic_auth(USERNAME, Some(PASSWORD))
+        .json(&GenerateToAddressRequest::new(1, new_address.result))
         .send()
         .await?;
 
     Ok(())
+}
+
+pub struct DerivationPath {
+    path: Vec<ChildNumber>,
+}
+
+impl Display for DerivationPath {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        for i in 0..self.path.len() {
+            let elem = self.path.get(i).unwrap();
+
+            let separator = if i == self.path.len() - 1 { "" } else { "/" };
+
+            match elem {
+                ChildNumber::Normal { index } => {
+                    write!(f, "{:?}{:0}", index, separator)?;
+                }
+                ChildNumber::Hardened { index } => {
+                    write!(f, "{:?}h{:0}", index, separator)?;
+                }
+            }
+        }
+
+        Ok(())
+    }
+}
+
+impl DerivationPath {
+    pub fn bip44_bitcoin_testnet() -> anyhow::Result<Self> {
+        Ok(Self {
+            path: vec![
+                ChildNumber::from_hardened_idx(44)?,
+                ChildNumber::from_hardened_idx(1)?,
+                ChildNumber::from_hardened_idx(0)?,
+                ChildNumber::from_normal_idx(0)?,
+                ChildNumber::from_normal_idx(0)?,
+            ],
+        })
+    }
 }
 
 #[derive(Clone)]
@@ -140,17 +201,12 @@ impl Account {
             .context("failed to generate new random extended private key from seed")?;
 
         // define derivation path to derive private keys from the master key
-        let derivation_path = vec![
-            ChildNumber::from_hardened_idx(44)?,
-            ChildNumber::from_hardened_idx(1)?,
-            ChildNumber::from_hardened_idx(0)?,
-            ChildNumber::from_normal_idx(0)?,
-            ChildNumber::from_normal_idx(0)?,
-        ];
+        let derivation_path =
+            DerivationPath::bip44_bitcoin_testnet().context("failed to create derivation path")?;
 
         // derive a private key from the master key
         let priv_key = master
-            .derive_priv(&Secp256k1::new(), &derivation_path)
+            .derive_priv(&Secp256k1::new(), &derivation_path.path)
             .map(|secret_key| secret_key.private_key)?;
 
         // it is not great to store derived data in here but since the derivation can fail, it is better to fail early instead of later
@@ -169,20 +225,55 @@ impl Account {
 }
 
 #[derive(Debug, serde::Serialize)]
-pub struct GenerateRequest {
+pub struct NewAddressRequest {
     jsonrpc: String,
     id: String,
     method: String,
-    params: Vec<u32>,
+    params: Vec<String>,
 }
 
-impl GenerateRequest {
-    pub fn new(number: u32) -> Self {
-        GenerateRequest {
+impl NewAddressRequest {
+    pub fn new(address_format: &str) -> Self {
+        let mut params = Vec::new();
+        let label = "";
+        params.push(label.to_owned());
+        params.push(address_format.to_owned());
+
+        NewAddressRequest {
             jsonrpc: "1.0".to_string(),
-            id: "generate".to_string(),
-            method: "generate".to_string(),
-            params: vec![number],
+            id: "getnewaddress".to_string(),
+            method: "getnewaddress".to_string(),
+            params,
+        }
+    }
+}
+
+#[derive(Debug, serde::Serialize)]
+pub struct GenerateToAddressRequest {
+    jsonrpc: String,
+    id: String,
+    method: String,
+    params: Vec<serde_json::Value>,
+}
+
+impl GenerateToAddressRequest {
+    pub fn new(number: u32, address: Address) -> Self {
+        let mut params = Vec::new();
+
+        let number = serde_json::Value::Number(
+            serde_json::Number::try_from(number).expect("can convert to number"),
+        );
+        assert!(number.is_u64());
+        params.push(number);
+
+        let address = serde_json::Value::String(address.to_string());
+        params.push(address);
+
+        GenerateToAddressRequest {
+            jsonrpc: "1.0".to_string(),
+            id: "generatetoaddress".to_string(),
+            method: "generatetoaddress".to_string(),
+            params,
         }
     }
 }
@@ -208,22 +299,48 @@ impl FundRequest {
 
 #[derive(Debug, serde::Deserialize)]
 struct FundResponse {
-    result: sha256d::Hash,
-    error: Option<String>,
+    result: Option<sha256d::Hash>,
+    error: Option<JsonRpcError>,
     id: String,
+}
+
+#[derive(Debug, serde::Deserialize)]
+struct NewAddressResponse {
+    result: Address,
+    error: Option<JsonRpcError>,
+    id: String,
+}
+
+#[derive(Debug, serde::Deserialize, thiserror::Error)]
+#[error("JSON-RPC request failed with code {code}: {message}")]
+pub struct JsonRpcError {
+    code: i64,
+    message: String,
 }
 
 async fn fund(endpoint: &str, address: Address, amount: Amount) -> anyhow::Result<sha256d::Hash> {
     let client = reqwest::Client::new();
 
+    let new_address = client
+        .post(endpoint)
+        .basic_auth(USERNAME, Some(PASSWORD))
+        .json(&NewAddressRequest::new("bech32"))
+        .send()
+        .await
+        .context("failed to create new address")?
+        .json::<NewAddressResponse>()
+        .await?;
+    assert!(new_address.error.is_none());
+
     let _ = client
         .post(endpoint)
         .basic_auth(USERNAME, Some(PASSWORD))
-        .json(&GenerateRequest::new(101))
+        .json(&GenerateToAddressRequest::new(101, new_address.result))
         .send()
-        .await?;
+        .await
+        .context("failed to generate blocks")?;
 
-    let response = client
+    let response: FundResponse = client
         .post(endpoint)
         .basic_auth(USERNAME, Some(PASSWORD))
         .json(&FundRequest::new(address, amount))
@@ -232,7 +349,15 @@ async fn fund(endpoint: &str, address: Address, amount: Amount) -> anyhow::Resul
         .json::<FundResponse>()
         .await?;
 
-    Ok(response.result)
+    match response.error {
+        None => match response.result {
+            None => Err(anyhow::Error::msg(
+                "no transaction hash returned without yielding error",
+            )),
+            Some(tx_hash) => Ok(tx_hash),
+        },
+        Some(error) => Err(anyhow::Error::new(error)),
+    }
 }
 
 fn derive_address(secret_key: secp256k1::SecretKey) -> Address {
@@ -249,4 +374,33 @@ fn derive_p2wpkh_regtest_address(public_key: secp256k1::PublicKey) -> Address {
         },
         Network::Regtest,
     )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::str::FromStr;
+
+    #[test]
+    fn format_derivation_path() {
+        let derivation_path = DerivationPath::bip44_bitcoin_testnet().unwrap();
+
+        let to_string = derivation_path.to_string();
+        assert_eq!(to_string, "44h/1h/0h/0/0")
+    }
+
+    #[test]
+    fn generate_to_address_request_does_not_panic() {
+        let number = 101;
+        let address = Address::from_str("2MubReUTptB6isbuFmsRiN3BPHaeHpiAjQM").unwrap();
+
+        let _ = GenerateToAddressRequest::new(number, address);
+    }
+
+    #[test]
+    fn new_address_request_does_not_panic() {
+        let format = "bech32";
+
+        let _ = NewAddressRequest::new(format);
+    }
 }

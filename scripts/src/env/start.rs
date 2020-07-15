@@ -1,6 +1,7 @@
 use anyhow::Context;
 use envfile::EnvFile;
 
+use crate::docker::bitcoin::{DerivationPath, PASSWORD, USERNAME};
 use crate::{
     docker::{
         self,
@@ -76,6 +77,15 @@ pub async fn execute() -> anyhow::Result<Environment> {
         &format!("{}", bitcoind.account_1.master),
     );
     envfile.update("BITCOIN_P2P_URI", &bitcoind.p2p_uri.to_string());
+    envfile.update("BITCOIN_HTTP_URI", &bitcoind.http_endpoint.to_string());
+    envfile.update("BITCOIN_USERNAME", USERNAME);
+    envfile.update("BITCOIN_PASSWORD", PASSWORD);
+    envfile.update(
+        "BITCOIN_DERIVATION_PATH",
+        &*DerivationPath::bip44_bitcoin_testnet()
+            .expect("can create derivation path")
+            .to_string(),
+    );
 
     envfile.update("HTTP_URL_CND_0", &cnd_0.http_endpoint.to_string());
     envfile.update("HTTP_URL_CND_1", &cnd_1.http_endpoint.to_string());
