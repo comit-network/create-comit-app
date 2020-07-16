@@ -4,7 +4,7 @@
   "description": "Create a new COMIT app with one command.",
   "main": "dist/main.js",
   "scripts": {
-    "build": "tsc",
+    "build": "parcel build print_archive_name.ts --target=node --bundle-node-modules && parcel build main.ts --target=node --bundle-node-modules",
     "prepublish": "tsc",
     "fix": "tslint -p . --fix && prettier --write '**/*.{ts,json,yml}'",
     "check": "tsc --noEmit && tslint -p . && prettier --check '**/*.{ts,json,yml}'",
@@ -32,6 +32,7 @@
   "devDependencies": {
     "@types/node": "^14.0.5",
     "@types/targz": "^1.0.0",
+    "parcel-bundler": "^1.12.4",
     "prettier": "^2.0.5",
     "tslint": "^6.1.2",
     "tslint-config-prettier": "^1.18.0",
