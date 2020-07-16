@@ -12,7 +12,7 @@
     "comit-sdk": "^0.17.0"
   },
   "devDependencies": {
-    "comit-scripts": "^0.8.3",
+    "comit-scripts": "^0.9.0",
     "dotenv": "^8.1.0"
   }
 }
