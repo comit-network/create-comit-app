@@ -13,7 +13,7 @@ envfile = "0.2"
 futures = { version = "0.3", features = ["compat"] }
 futures_01 = { package = "futures", version = "0.1" }
 hex = "0.4.2"
-hex-literal = "0.2.1"
+hex-literal = "0.3.0"
 http = "0.1"
 lazy_static = "1.4"
 num256 = "0.2"
