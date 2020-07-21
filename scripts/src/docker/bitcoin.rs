@@ -178,6 +178,10 @@ impl Account {
         let master = ExtendedPrivKey::new_master(rust_bitcoin::Network::Regtest, &seed)
             .context("failed to generate new random extended private key from seed")?;
 
+        Account::new(master)
+    }
+
+    fn new(master: ExtendedPrivKey) -> anyhow::Result<Self> {
         // define derivation path to derive private keys from the master key
         let derivation_path =
             DerivationPath::bip44_bitcoin_testnet().context("failed to create derivation path")?;
@@ -207,8 +211,12 @@ impl Display for Account {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         write!(f, "wpkh(")?;
         fmt::Display::fmt(&self.master, f)?;
-        fmt::Display::fmt(&self.derivation_path, f)?;
-        write!(f, ")")?;
+
+        let mut derivation_path = self.derivation_path.0.clone();
+        derivation_path.pop();
+
+        fmt::Display::fmt(&DerivationPath(derivation_path), f)?;
+        write!(f, "/*)")?;
 
         Ok(())
     }
@@ -380,17 +388,13 @@ mod tests {
 
     #[test]
     fn format_account() {
-        let account = Account::new_random().unwrap();
-        let master = account.master;
+        let master = ExtendedPrivKey::from_str("tprv8ZgxMBicQKsPdypLixsdqgFVd55cqjtujNNPkHTHq963uLvbZj82cucKb4e3WPMxA2C4vCMZa7stjk2m4yzoMM7hB21bP7sHznToUEA7Qfb").unwrap();
+        let account = Account::new(master).unwrap();
 
         let to_string = account.to_string();
         assert_eq!(
             to_string,
-            format!(
-                "wpkh({}{})",
-                master,
-                DerivationPath::bip44_bitcoin_testnet().unwrap()
-            )
+                "wpkh(tprv8ZgxMBicQKsPdypLixsdqgFVd55cqjtujNNPkHTHq963uLvbZj82cucKb4e3WPMxA2C4vCMZa7stjk2m4yzoMM7hB21bP7sHznToUEA7Qfb/44'/1'/0'/0/*)".to_owned(),
         )
     }
 
