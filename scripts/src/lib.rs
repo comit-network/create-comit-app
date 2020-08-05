@@ -9,6 +9,7 @@
 )]
 #![forbid(unsafe_code)]
 
+pub mod config;
 pub mod create_comit_app;
 pub mod docker;
 pub mod env;

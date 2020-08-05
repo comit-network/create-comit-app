@@ -13,9 +13,12 @@ use secp256k1::{
 };
 use shiplift::ContainerOptions;
 
-use crate::docker::{
-    self, docker_daemon_ip, free_local_port::free_local_port, DockerImage, LogMessage,
-    DOCKER_NETWORK,
+use crate::{
+    config,
+    docker::{
+        self, docker_daemon_ip, free_local_port::free_local_port, DockerImage, LogMessage,
+        DOCKER_NETWORK,
+    },
 };
 use serde::export::Formatter;
 use std::fmt::{self, Display};
@@ -46,7 +49,9 @@ pub struct BitcoindInstance {
     pub account_1: Account,
 }
 
-pub async fn new_bitcoind_instance() -> anyhow::Result<BitcoindInstance> {
+pub async fn new_bitcoind_instance(
+    config: Option<config::Bitcoin>,
+) -> anyhow::Result<BitcoindInstance> {
     let mut options_builder = ContainerOptions::builder(IMAGE);
     options_builder.name("bitcoin");
     options_builder.network_mode(DOCKER_NETWORK);
@@ -99,6 +104,12 @@ pub async fn new_bitcoind_instance() -> anyhow::Result<BitcoindInstance> {
         .await
         .context("failed to fund second account")?;
 
+    if let Some(config) = config {
+        for address in config.addresses_to_fund {
+            fund_address(http_endpoint, address).await?;
+        }
+    }
+
     Ok(BitcoindInstance {
         p2p_uri,
         http_endpoint,
@@ -120,6 +131,17 @@ async fn fund_new_account(endpoint: BitcoindHttpEndpoint) -> anyhow::Result<Acco
     .await?;
 
     Ok(account)
+}
+
+async fn fund_address(endpoint: BitcoindHttpEndpoint, address: Address) -> anyhow::Result<()> {
+    fund(
+        &endpoint.to_string(),
+        address,
+        Amount::from_sat(1_000_000_000),
+    )
+    .await?;
+
+    Ok(())
 }
 
 pub async fn mine_a_block(endpoint: BitcoindHttpEndpoint) -> anyhow::Result<()> {
