@@ -18,12 +18,12 @@ impl Config {
     }
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct Bitcoin {
     pub addresses_to_fund: Vec<BitcoinAddress>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct Ethereum {
     pub addresses_to_fund: Vec<EthereumAddress>,
 }

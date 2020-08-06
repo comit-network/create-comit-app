@@ -83,13 +83,22 @@ pub async fn new_parity_instance(
     let account_1 = fund_new_account(http_endpoint)
         .await
         .context("failed to fund second account")?;
-    let contract_address = new_erc20_contract(http_endpoint, vec![account_0, account_1]).await?;
 
-    if let Some(config) = config {
+    if let Some(config) = config.clone() {
         for address in config.addresses_to_fund {
-            fund_address(http_endpoint, address).await?;
+            fund_address(http_endpoint, address)
+                .await
+                .context("failed to fund config account")?;
         }
     }
+
+    let mut addresses = config
+        .map(|config| config.addresses_to_fund)
+        .unwrap_or_default();
+
+    addresses.push(derive_address(account_0)?);
+    addresses.push(derive_address(account_1)?);
+    let contract_address = new_erc20_contract(http_endpoint, addresses).await?;
 
     Ok(ParityInstance {
         http_endpoint,
@@ -168,16 +177,14 @@ async fn fund_address(
 
 async fn new_erc20_contract(
     endpoint: ParityHttpEndpoint,
-    accounts: Vec<Account>,
+    addresses: Vec<clarity::Address>,
 ) -> anyhow::Result<clarity::Address> {
     let (_event_loop_handle, transport) = Http::new(&endpoint.to_string())?;
     let client = Web3::new(transport);
 
     let contract_address = deploy_erc20_contract(client.clone()).await?;
 
-    for account in accounts {
-        let address = derive_address(account)?;
-
+    for address in addresses {
         let transfer = transfer_fn(
             address,
             Uint256::from(100u128) * Uint256::from(10u128.pow(18)),
