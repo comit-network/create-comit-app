@@ -13,9 +13,12 @@ use web3::{
 
 use lazy_static::lazy_static;
 
-use crate::docker::{
-    self, docker_daemon_ip, free_local_port::free_local_port, DockerImage, LogMessage,
-    DOCKER_NETWORK,
+use crate::{
+    config,
+    docker::{
+        self, docker_daemon_ip, free_local_port::free_local_port, DockerImage, LogMessage,
+        DOCKER_NETWORK,
+    },
 };
 
 pub const TOKEN_CONTRACT: &str = include_str!("../../erc20_token/build/contract.hex");
@@ -46,7 +49,9 @@ pub struct ParityInstance {
     pub erc20_contract_address: clarity::Address,
 }
 
-pub async fn new_parity_instance() -> anyhow::Result<ParityInstance> {
+pub async fn new_parity_instance(
+    config: Option<config::Ethereum>,
+) -> anyhow::Result<ParityInstance> {
     let mut options_builder = ContainerOptions::builder(IMAGE);
     options_builder.name("ethereum");
     options_builder.network_mode(DOCKER_NETWORK);
@@ -78,7 +83,22 @@ pub async fn new_parity_instance() -> anyhow::Result<ParityInstance> {
     let account_1 = fund_new_account(http_endpoint)
         .await
         .context("failed to fund second account")?;
-    let contract_address = new_erc20_contract(http_endpoint, vec![account_0, account_1]).await?;
+
+    if let Some(config) = config.clone() {
+        for address in config.addresses_to_fund {
+            fund_address(http_endpoint, address)
+                .await
+                .context("failed to fund config account")?;
+        }
+    }
+
+    let mut addresses = config
+        .map(|config| config.addresses_to_fund)
+        .unwrap_or_default();
+
+    addresses.push(derive_address(account_0)?);
+    addresses.push(derive_address(account_1)?);
+    let contract_address = new_erc20_contract(http_endpoint, addresses).await?;
 
     Ok(ParityInstance {
         http_endpoint,
@@ -128,18 +148,43 @@ async fn fund_new_account(endpoint: ParityHttpEndpoint) -> anyhow::Result<Accoun
     Ok(account)
 }
 
+async fn fund_address(
+    endpoint: ParityHttpEndpoint,
+    address: clarity::Address,
+) -> anyhow::Result<()> {
+    let (_event_loop_handle, transport) = Http::new(&endpoint.to_string())
+        .context("unable to initialize http transport to ethereum node")?;
+    let client = Web3::new(transport);
+
+    send_transaction(
+        client.clone(),
+        Some(address),
+        30_000,
+        U256::from(1000u128 * 10u128.pow(18)),
+        Vec::new(),
+    )
+    .await
+    .with_context(|| {
+        format!(
+            "failed to send transaction for funding account {:x} with ether to {}",
+            address,
+            endpoint.to_string()
+        )
+    })?;
+
+    Ok(())
+}
+
 async fn new_erc20_contract(
     endpoint: ParityHttpEndpoint,
-    accounts: Vec<Account>,
+    addresses: Vec<clarity::Address>,
 ) -> anyhow::Result<clarity::Address> {
     let (_event_loop_handle, transport) = Http::new(&endpoint.to_string())?;
     let client = Web3::new(transport);
 
     let contract_address = deploy_erc20_contract(client.clone()).await?;
 
-    for account in accounts {
-        let address = derive_address(account)?;
-
+    for address in addresses {
         let transfer = transfer_fn(
             address,
             Uint256::from(100u128) * Uint256::from(10u128.pow(18)),

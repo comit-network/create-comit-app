@@ -21,6 +21,7 @@ reqwest = { version = "0.10", default-features = false, features = ["json"] }
 rust_bitcoin = { version = "0.19.1", package = "bitcoin", features = ["use-serde"] }
 secp256k1 = { version = "0.12", features = ["rand"] }
 serde = "1"
+serde_derive = "1.0"
 serde_json = "1"
 shiplift = { version = "0.6", default-features = false }
 structopt = "0.3"

@@ -2,6 +2,7 @@ use anyhow::Context;
 use envfile::EnvFile;
 
 use crate::{
+    config::{self, Config},
     docker::{
         self,
         bitcoin::{self, BitcoindInstance, PASSWORD, USERNAME},
@@ -10,6 +11,7 @@ use crate::{
     },
     print_progress, temp_fs,
 };
+use std::path::Path;
 
 pub struct Environment {
     pub docker_network_id: String,
@@ -26,15 +28,29 @@ pub async fn execute() -> anyhow::Result<Environment> {
 
     println!("✓");
 
+    print_progress!("Reading config file");
+
+    let path = std::env::current_dir()?.join(Path::new(config::FILE_NAME));
+    let (bitcoin_config, ethereum_config) = match Config::from_file(&path) {
+        Ok(config) => {
+            println!("✓");
+            (config.ethereum, config.bitcoin)
+        }
+        Err(e) => {
+            eprintln!("Could not load config from file: {}", e.to_string());
+            (None, None)
+        }
+    };
+
     print_progress!("Starting Ethereum node");
 
-    let parity = ethereum::new_parity_instance().await?;
+    let parity = ethereum::new_parity_instance(bitcoin_config).await?;
 
     println!("✓");
 
     print_progress!("Starting Bitcoin node");
 
-    let bitcoind = bitcoin::new_bitcoind_instance().await?;
+    let bitcoind = bitcoin::new_bitcoind_instance(ethereum_config).await?;
 
     println!("✓");
 
