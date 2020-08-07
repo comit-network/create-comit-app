@@ -15,16 +15,15 @@ use lazy_static::lazy_static;
 
 use crate::{
     config,
-    docker::{
-        self, docker_daemon_ip, free_local_port::free_local_port, DockerImage, LogMessage,
-        DOCKER_NETWORK,
-    },
+    docker::{self, docker_daemon_ip, DockerImage, LogMessage, DOCKER_NETWORK},
 };
 
 pub const TOKEN_CONTRACT: &str = include_str!("../../erc20_token/build/contract.hex");
 pub const CONTRACT_ABI: &str = include_str!("../../erc20_token/build/abi.json");
 
 const IMAGE: &str = "coblox/parity-poa:v2.5.9-stable";
+
+const HTTP_PORT: u16 = 8545;
 
 lazy_static! {
     static ref DEV_ACCOUNT: web3::types::Address = "00a329c0648769a73afac7f9381e08fb43dbea72"
@@ -55,14 +54,10 @@ pub async fn new_parity_instance(
     let mut options_builder = ContainerOptions::builder(IMAGE);
     options_builder.name("ethereum");
     options_builder.network_mode(DOCKER_NETWORK);
-
-    let http_port = free_local_port()
-        .await
-        .context("failed to acquire free local port")?;
-    options_builder.expose(8545, "tcp", http_port as u32);
+    options_builder.expose(HTTP_PORT as u32, "tcp", HTTP_PORT as u32);
 
     let http_endpoint = ParityHttpEndpoint {
-        port: http_port,
+        port: HTTP_PORT,
         ip: docker_daemon_ip()?,
     };
 
