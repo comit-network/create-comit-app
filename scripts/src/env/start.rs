@@ -31,25 +31,26 @@ pub async fn execute() -> anyhow::Result<Environment> {
     print_progress!("Reading config file");
 
     let path = std::env::current_dir()?.join(Path::new(config::FILE_NAME));
-    let config = match Config::from_file(&path) {
-        Ok(config) => (config.ethereum, config.bitcoin),
+    let (bitcoin_config, ethereum_config) = match Config::from_file(&path) {
+        Ok(config) => {
+            println!("✓");
+            (config.ethereum, config.bitcoin)
+        }
         Err(e) => {
             eprintln!("Could not load config from file: {}", e.to_string());
             (None, None)
         }
     };
 
-    println!("✓");
-
     print_progress!("Starting Ethereum node");
 
-    let parity = ethereum::new_parity_instance(config.0).await?;
+    let parity = ethereum::new_parity_instance(bitcoin_config).await?;
 
     println!("✓");
 
     print_progress!("Starting Bitcoin node");
 
-    let bitcoind = bitcoin::new_bitcoind_instance(config.1).await?;
+    let bitcoind = bitcoin::new_bitcoind_instance(ethereum_config).await?;
 
     println!("✓");
 
