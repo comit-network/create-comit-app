@@ -31,7 +31,7 @@ pub async fn execute() -> anyhow::Result<Environment> {
     print_progress!("Reading config file");
 
     let path = std::env::current_dir()?.join(Path::new(config::FILE_NAME));
-    let (bitcoin_config, ethereum_config) = match Config::from_file(&path) {
+    let (ethereum_config, bitcoin_config) = match Config::from_file(&path) {
         Ok(config) => {
             println!("✓");
             (config.ethereum, config.bitcoin)
@@ -44,13 +44,13 @@ pub async fn execute() -> anyhow::Result<Environment> {
 
     print_progress!("Starting Ethereum node");
 
-    let geth = ethereum::new_geth_instance(bitcoin_config).await?;
+    let geth = ethereum::new_geth_instance(ethereum_config).await?;
 
     println!("✓");
 
     print_progress!("Starting Bitcoin node");
 
-    let bitcoind = bitcoin::new_bitcoind_instance(ethereum_config).await?;
+    let bitcoind = bitcoin::new_bitcoind_instance(bitcoin_config).await?;
 
     println!("✓");
 

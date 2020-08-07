@@ -5,7 +5,6 @@ use crate::{
     docker::{self, docker_daemon_ip, DockerImage, LogMessage, DOCKER_NETWORK},
 };
 use anyhow::Context;
-use num256::Uint256;
 use secp256k1::{rand::thread_rng, SecretKey};
 use shiplift::ContainerOptions;
 use std::time::Duration;
@@ -36,6 +35,80 @@ pub struct GethInstance {
     pub account_0: Account,
     pub account_1: Account,
     pub erc20_contract_address: Address,
+}
+
+struct GethClient {
+    client: Web3<Http>,
+    endpoint_url: String,
+}
+
+impl GethClient {
+    fn new(endpoint: &GethHttpEndpoint) -> anyhow::Result<Self> {
+        let url = endpoint.to_string();
+        let transport =
+            Http::new(&url).context("unable to initialize http transport to ethereum node")?;
+        Ok(GethClient {
+            client: Web3::new(transport),
+            endpoint_url: url,
+        })
+    }
+    async fn fund_ethereum(&self, address: Address) -> anyhow::Result<()> {
+        send_transaction(
+            self.client.clone(),
+            Some(address),
+            30_000,
+            U256::from(1000u128 * 10u128.pow(18)),
+            Vec::new(),
+        )
+        .await
+        .with_context(|| {
+            format!(
+                "failed to send transaction for funding account {:x} with ether to {}",
+                address, self.endpoint_url
+            )
+        })?;
+
+        Ok(())
+    }
+
+    async fn fund_erc20(&self, address: Address, contract_address: Address) -> anyhow::Result<()> {
+        send_transaction(
+            self.client.clone(),
+            Some(contract_address),
+            100_000,
+            U256::from(0u64),
+            Vec::new(),
+        )
+        .await
+        .with_context(|| {
+            format!(
+                "failed to send transaction for funding account {:x} with erc20 to {}",
+                address, self.endpoint_url
+            )
+        })?;
+
+        Ok(())
+    }
+
+    async fn deploy_erc20_contract(&self) -> anyhow::Result<Address> {
+        let data = TOKEN_CONTRACT[2..].trim(); // remove the 0x in the front and any whitespace
+        let erc20_contract = hex::decode(data).context("token contract should be valid hex")?;
+
+        let receipt = send_transaction(
+            self.client.clone(),
+            None,
+            10_000_000,
+            U256::from(0),
+            erc20_contract,
+        )
+        .await?;
+
+        let contract_address = receipt
+            .contract_address
+            .context("contract_address not present, invalid deployment transaction?")?;
+
+        Ok(contract_address)
+    }
 }
 
 pub async fn new_geth_instance(config: Option<config::Ethereum>) -> anyhow::Result<GethInstance> {
@@ -72,28 +145,34 @@ pub async fn new_geth_instance(config: Option<config::Ethereum>) -> anyhow::Resu
     .await
     .context("failed to start container")?;
 
-    let account_0 = fund_new_account(http_endpoint)
-        .await
-        .context("failed to fund first account")?;
-    let account_1 = fund_new_account(http_endpoint)
-        .await
-        .context("failed to fund second account")?;
+    let client = GethClient::new(&http_endpoint)?;
 
-    if let Some(config) = config.clone() {
-        for address in config.addresses_to_fund {
-            fund_address(http_endpoint, address)
-                .await
-                .context("failed to fund config account")?;
-        }
-    }
+    let contract_address = client
+        .deploy_erc20_contract()
+        .await
+        .context("failed to deploy erc20 contract")?;
+
+    let account_0 = Account::new_random();
+    let account_1 = Account::new_random();
 
     let mut addresses = config
+        .clone()
         .map(|config| config.addresses_to_fund)
         .unwrap_or_default();
 
     addresses.push(derive_address(account_0)?);
     addresses.push(derive_address(account_1)?);
-    let contract_address = new_erc20_contract(http_endpoint, addresses).await?;
+
+    for address in addresses {
+        client
+            .fund_ethereum(address)
+            .await
+            .context("failed to fund account with ethereum")?;
+        client
+            .fund_erc20(address, contract_address)
+            .await
+            .context("failed to fund account with erc20")?;
+    }
 
     Ok(GethInstance {
         http_endpoint,
@@ -114,114 +193,6 @@ impl Account {
             private_key: SecretKey::new(&mut thread_rng()),
         }
     }
-}
-
-async fn fund_new_account(endpoint: GethHttpEndpoint) -> anyhow::Result<Account> {
-    let transport = Http::new(&endpoint.to_string())
-        .context("unable to initialize http transport to ethereum node")?;
-    let client = Web3::new(transport);
-
-    let account = Account::new_random();
-    let address = derive_address(account)?;
-
-    send_transaction(
-        client,
-        Some(address),
-        30_000,
-        U256::from(1000u128 * 10u128.pow(18)),
-        Vec::new(),
-    )
-    .await
-    .with_context(|| {
-        format!(
-            "failed to fund new account {:x} with ether to {}",
-            address,
-            endpoint.to_string(),
-        )
-    })?;
-
-    Ok(account)
-}
-
-async fn fund_address(endpoint: GethHttpEndpoint, address: Address) -> anyhow::Result<()> {
-    let transport = Http::new(&endpoint.to_string())
-        .context("unable to initialize http transport to ethereum node")?;
-    let client = Web3::new(transport);
-
-    send_transaction(
-        client.clone(),
-        Some(address),
-        30_000,
-        U256::from(1000u128 * 10u128.pow(18)),
-        Vec::new(),
-    )
-    .await
-    .with_context(|| {
-        format!(
-            "failed to send transaction for funding account {:x} with ether to {}",
-            address,
-            endpoint.to_string()
-        )
-    })?;
-
-    Ok(())
-}
-
-async fn new_erc20_contract(
-    endpoint: GethHttpEndpoint,
-    addresses: Vec<Address>,
-) -> anyhow::Result<Address> {
-    let transport = Http::new(&endpoint.to_string())?;
-    let client = Web3::new(transport);
-
-    let contract_address = deploy_erc20_contract(client.clone()).await?;
-
-    for address in addresses {
-        let transfer = transfer_fn(
-            clarity::Address::from(address.0),
-            Uint256::from(100u128) * Uint256::from(10u128.pow(18)),
-        );
-        send_transaction(
-            client.clone(),
-            Some(contract_address),
-            100_000,
-            U256::from(0u64),
-            transfer,
-        )
-        .await
-        .with_context(|| {
-            format!(
-                "failed to send transaction for funding account {:x} with erc20 to {}",
-                address,
-                endpoint.to_string()
-            )
-        })?;
-    }
-
-    Ok(contract_address)
-}
-
-async fn deploy_erc20_contract(client: Web3<Http>) -> anyhow::Result<Address> {
-    let data = TOKEN_CONTRACT[2..].trim(); // remove the 0x in the front and any whitespace
-    let erc20_contract = hex::decode(data).context("token contract should be valid hex")?;
-
-    let receipt = send_transaction(client, None, 4_000_000, U256::from(0), erc20_contract).await?;
-
-    let contract_address = receipt
-        .contract_address
-        .context("contract_address not present, invalid deployment transaction?")?;
-
-    Ok(contract_address)
-}
-
-fn transfer_fn(address: clarity::Address, amount: Uint256) -> Vec<u8> {
-    clarity::abi::encode_call(
-        "transfer(address,uint256)",
-        &[
-            clarity::abi::Token::Address(address),
-            clarity::abi::Token::Uint(amount),
-        ],
-    )
 }
 
 async fn send_transaction(
