@@ -1,4 +1,3 @@
-use clarity::Address as EthereumAddress;
 use rust_bitcoin::Address as BitcoinAddress;
 use serde_derive::Deserialize;
 use std::path::Path;
@@ -25,7 +24,7 @@ pub struct Bitcoin {
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct Ethereum {
-    pub addresses_to_fund: Vec<EthereumAddress>,
+    pub addresses_to_fund: Vec<web3::types::Address>,
 }
 
 #[cfg(test)]
