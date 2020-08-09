@@ -268,11 +268,11 @@ async fn send_transaction(
     Ok(tx_id)
 }
 
-async fn get_chain_id(client: Web3<Http>) -> anyhow::Result<u8> {
+async fn get_chain_id(client: Web3<Http>) -> anyhow::Result<u16> {
     let network = client.net().version().compat().await?;
 
     network
-        .parse::<u8>()
+        .parse::<u16>()
         .with_context(|| format!("{} is not a valid chain-id", network))
 }
 
