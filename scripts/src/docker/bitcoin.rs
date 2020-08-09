@@ -28,6 +28,8 @@ const IMAGE: &str = "coblox/bitcoin-core:0.20.0";
 pub const USERNAME: &str = "bitcoin";
 pub const PASSWORD: &str = "t68ej4UX2pB0cLlGwSwHFBLKxXYgomkXyFyxuBmm2U8=";
 
+const HTTP_PORT: u16 = 18443;
+
 #[derive(derive_more::Display, Copy, Clone)]
 #[display(fmt = "{}:{}", ip, port)]
 pub struct BitcoindP2PUri {
@@ -77,12 +79,10 @@ pub async fn new_bitcoind_instance(
         port: p2p_port,
         ip: docker_daemon_ip()?,
     };
-
-    let http_port = free_local_port().await?;
-    options_builder.expose(18443, "tcp", http_port as u32);
+    options_builder.expose(HTTP_PORT as u32, "tcp", HTTP_PORT as u32);
 
     let http_endpoint = BitcoindHttpEndpoint {
-        port: http_port,
+        port: HTTP_PORT,
         ip: docker_daemon_ip()?,
     };
 
