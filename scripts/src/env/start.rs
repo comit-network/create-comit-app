@@ -37,7 +37,7 @@ pub async fn execute() -> anyhow::Result<Environment> {
             (config.ethereum, config.bitcoin)
         }
         Err(e) => {
-            eprintln!("Could not load config from file: {}", e.to_string());
+            println!("No config file found, only funding generated default accounts.");
             (None, None)
         }
     };
