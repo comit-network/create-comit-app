@@ -15,10 +15,7 @@ use shiplift::ContainerOptions;
 
 use crate::{
     config,
-    docker::{
-        self, docker_daemon_ip, free_local_port::free_local_port, DockerImage, LogMessage,
-        DOCKER_NETWORK,
-    },
+    docker::{self, docker_daemon_ip, DockerImage, LogMessage, DOCKER_NETWORK},
 };
 use serde::export::Formatter;
 use std::fmt::{self, Display};
@@ -28,19 +25,20 @@ const IMAGE: &str = "coblox/bitcoin-core:0.20.0";
 pub const USERNAME: &str = "bitcoin";
 pub const PASSWORD: &str = "t68ej4UX2pB0cLlGwSwHFBLKxXYgomkXyFyxuBmm2U8=";
 
-const HTTP_PORT: u16 = 18443;
+const HTTP_PORT: u32 = 18443;
+const P2P_PORT: u32 = 18444;
 
 #[derive(derive_more::Display, Copy, Clone)]
 #[display(fmt = "{}:{}", ip, port)]
 pub struct BitcoindP2PUri {
-    port: u16,
+    port: u32,
     ip: Ipv4Addr,
 }
 
 #[derive(derive_more::Display, Copy, Clone)]
 #[display(fmt = "http://{}:{}", ip, port)]
 pub struct BitcoindHttpEndpoint {
-    port: u16,
+    port: u32,
     ip: Ipv4Addr,
 }
 
@@ -62,8 +60,8 @@ pub async fn new_bitcoind_instance(
         "-server",
         "-rest",
         "-printtoconsole",
-        "-bind=0.0.0.0:18444",
-        "-rpcbind=0.0.0.0:18443",
+        format!("-bind=0.0.0.0:{}", P2P_PORT).as_str(),
+        format!("-rpcbind=0.0.0.0:{}", HTTP_PORT).as_str(),
         "-rpcauth=bitcoin:1c0e8f3de84926c04115e7da7e501346$a48f42ad32741dd1755649c8b98663b3ccbebeb75f196389f9a5c8a96b72edb3",
         "-rpcallowip=0.0.0.0/0",
         "-debug=1",
@@ -72,14 +70,13 @@ pub async fn new_bitcoind_instance(
         "-fallbackfee=0.0002",
     ]);
 
-    let p2p_port = free_local_port().await?;
-    options_builder.expose(18444, "tcp", p2p_port as u32);
+    options_builder.expose(P2P_PORT, "tcp", P2P_PORT);
 
     let p2p_uri = BitcoindP2PUri {
-        port: p2p_port,
+        port: P2P_PORT,
         ip: docker_daemon_ip()?,
     };
-    options_builder.expose(HTTP_PORT as u32, "tcp", HTTP_PORT as u32);
+    options_builder.expose(HTTP_PORT, "tcp", HTTP_PORT);
 
     let http_endpoint = BitcoindHttpEndpoint {
         port: HTTP_PORT,
