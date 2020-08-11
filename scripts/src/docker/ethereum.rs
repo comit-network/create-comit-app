@@ -5,6 +5,7 @@ use crate::{
     docker::{self, docker_daemon_ip, DockerImage, LogMessage, DOCKER_NETWORK},
 };
 use anyhow::Context;
+use num256::Uint256;
 use secp256k1::{rand::thread_rng, SecretKey};
 use shiplift::ContainerOptions;
 use std::time::Duration;
@@ -57,7 +58,7 @@ impl GethClient {
             self.client.clone(),
             Some(address),
             30_000,
-            U256::from(1000u128 * 10u128.pow(18)),
+            U256::from(100_000u128 * 10u128.pow(18)),
             Vec::new(),
         )
         .await
@@ -72,12 +73,21 @@ impl GethClient {
     }
 
     async fn fund_erc20(&self, address: Address, contract_address: Address) -> anyhow::Result<()> {
+        let transfer = clarity::abi::encode_call(
+            "transfer(address,uint256)",
+            &[
+                clarity::abi::Token::Address(clarity::Address::from(address.0)),
+                clarity::abi::Token::Uint(
+                    Uint256::from(100_000u128) * Uint256::from(10u128.pow(18)),
+                ),
+            ],
+        );
         send_transaction(
             self.client.clone(),
             Some(contract_address),
             100_000,
             U256::from(0u64),
-            Vec::new(),
+            transfer,
         )
         .await
         .with_context(|| {
