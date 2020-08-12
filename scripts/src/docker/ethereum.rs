@@ -179,7 +179,7 @@ async fn new_erc20_contract(
     for address in addresses {
         let transfer = transfer_fn(
             clarity::Address::from(address.0),
-            Uint256::from(100u128) * Uint256::from(10u128.pow(18)),
+            Uint256::from(100000u128) * Uint256::from(10u128.pow(18)),
         );
         send_transaction(
             client.clone(),
