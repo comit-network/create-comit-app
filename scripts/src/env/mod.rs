@@ -8,7 +8,7 @@ use tokio::time::delay_for;
 
 use crate::{
     docker::{
-        bitcoin::{self, BitcoindHttpEndpoint},
+        bitcoin::{self, BitcoindComitScriptsHttpWalletEndpoint},
         delete_container, delete_network,
     },
     print_progress,
@@ -32,7 +32,7 @@ pub async fn start() {
 
     match result {
         Ok(Either::Left((self::start::Environment { bitcoind, .. }, ctrl_c))) => {
-            tokio::spawn(new_miner(bitcoind.http_endpoint));
+            tokio::spawn(new_miner(bitcoind.comit_scripts_wallet_endpoint));
 
             let _ = ctrl_c.await;
         }
@@ -47,10 +47,10 @@ pub async fn start() {
     println!("✓");
 }
 
-async fn new_miner(endpoint: BitcoindHttpEndpoint) -> anyhow::Result<()> {
+async fn new_miner(endpoint: BitcoindComitScriptsHttpWalletEndpoint) -> anyhow::Result<()> {
     loop {
         delay_for(Duration::from_secs(1)).await;
-        bitcoin::mine_a_block(endpoint).await?;
+        bitcoin::mine_a_block(&endpoint.to_string()).await?;
     }
 }
 

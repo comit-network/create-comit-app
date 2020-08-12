@@ -24,6 +24,7 @@ const IMAGE: &str = "coblox/bitcoin-core:0.20.0";
 
 pub const USERNAME: &str = "bitcoin";
 pub const PASSWORD: &str = "t68ej4UX2pB0cLlGwSwHFBLKxXYgomkXyFyxuBmm2U8=";
+pub const COMIT_SCRIPTS_WALLET_NAME: &str = "comit_scripts_wallet";
 
 const HTTP_PORT: u32 = 18443;
 const P2P_PORT: u32 = 18444;
@@ -42,9 +43,18 @@ pub struct BitcoindHttpEndpoint {
     ip: Ipv4Addr,
 }
 
+#[derive(derive_more::Display, Clone)]
+#[display(fmt = "http://{}:{}/wallet/{}", ip, port, wallet_name)]
+pub struct BitcoindComitScriptsHttpWalletEndpoint {
+    port: u32,
+    ip: Ipv4Addr,
+    wallet_name: String,
+}
+
 pub struct BitcoindInstance {
     pub p2p_uri: BitcoindP2PUri,
     pub http_endpoint: BitcoindHttpEndpoint,
+    pub comit_scripts_wallet_endpoint: BitcoindComitScriptsHttpWalletEndpoint,
     pub account_0: Account,
     pub account_1: Account,
 }
@@ -78,11 +88,6 @@ pub async fn new_bitcoind_instance(
     };
     options_builder.expose(HTTP_PORT, "tcp", HTTP_PORT);
 
-    let http_endpoint = BitcoindHttpEndpoint {
-        port: HTTP_PORT,
-        ip: docker_daemon_ip()?,
-    };
-
     let options = options_builder.build();
 
     docker::start(
@@ -94,28 +99,83 @@ pub async fn new_bitcoind_instance(
     .await
     .context("unable to start bitcoind docker image")?;
 
-    let account_0 = fund_new_account(http_endpoint)
+    let http_endpoint = BitcoindHttpEndpoint {
+        port: HTTP_PORT,
+        ip: docker_daemon_ip()?,
+    };
+
+    let http_wallet_endpoint = create_wallet(http_endpoint).await?;
+    generate_btc(&http_wallet_endpoint.to_string()).await?;
+
+    let account_0 = fund_new_account(http_wallet_endpoint.clone())
         .await
         .context("failed to fund first account")?;
-    let account_1 = fund_new_account(http_endpoint)
+    let account_1 = fund_new_account(http_wallet_endpoint.clone())
         .await
         .context("failed to fund second account")?;
 
     if let Some(config) = config {
         for address in config.addresses_to_fund {
-            fund_address(http_endpoint, address).await?;
+            fund_address(http_wallet_endpoint.clone(), address).await?;
         }
     }
 
     Ok(BitcoindInstance {
         p2p_uri,
         http_endpoint,
+        comit_scripts_wallet_endpoint: http_wallet_endpoint,
         account_0,
         account_1,
     })
 }
 
-async fn fund_new_account(endpoint: BitcoindHttpEndpoint) -> anyhow::Result<Account> {
+async fn create_wallet(
+    endpoint: BitcoindHttpEndpoint,
+) -> anyhow::Result<BitcoindComitScriptsHttpWalletEndpoint> {
+    let client = reqwest::Client::new();
+
+    // Create wallet for comit-scripts to be used for all initial funding TX and mining blocks periodically
+    let wallet_response: CreateWalletResponse = client
+        .post(&endpoint.to_string())
+        .basic_auth(USERNAME, Some(PASSWORD))
+        .json(&CreateWalletRequest::new(
+            COMIT_SCRIPTS_WALLET_NAME.to_owned(),
+        ))
+        .send()
+        .await
+        .context("failed to create wallet")?
+        .json()
+        .await?;
+
+    if let Some(error) = wallet_response.error {
+        return Err(error.into());
+    }
+
+    Ok(BitcoindComitScriptsHttpWalletEndpoint {
+        port: HTTP_PORT,
+        ip: docker_daemon_ip()?,
+        wallet_name: COMIT_SCRIPTS_WALLET_NAME.to_owned(),
+    })
+}
+
+async fn generate_btc(endpoint: &str) -> anyhow::Result<()> {
+    let client = reqwest::Client::new();
+    let new_address = new_address(endpoint).await?;
+    let _ = client
+        .post(endpoint)
+        .basic_auth(USERNAME, Some(PASSWORD))
+        // Generate 200 bitcoin that can be used to fund accounts (every block after the first 100 is +50 BTC)
+        .json(&GenerateToAddressRequest::new(104, new_address))
+        .send()
+        .await
+        .context("failed to generate blocks")?;
+
+    Ok(())
+}
+
+async fn fund_new_account(
+    endpoint: BitcoindComitScriptsHttpWalletEndpoint,
+) -> anyhow::Result<Account> {
     let account = Account::new_random()?;
 
     let (_, address) = account.first_account();
@@ -130,7 +190,10 @@ async fn fund_new_account(endpoint: BitcoindHttpEndpoint) -> anyhow::Result<Acco
     Ok(account)
 }
 
-async fn fund_address(endpoint: BitcoindHttpEndpoint, address: Address) -> anyhow::Result<()> {
+async fn fund_address(
+    endpoint: BitcoindComitScriptsHttpWalletEndpoint,
+    address: Address,
+) -> anyhow::Result<()> {
     fund(
         &endpoint.to_string(),
         address,
@@ -141,17 +204,17 @@ async fn fund_address(endpoint: BitcoindHttpEndpoint, address: Address) -> anyho
     Ok(())
 }
 
-pub async fn mine_a_block(endpoint: BitcoindHttpEndpoint) -> anyhow::Result<()> {
+pub async fn mine_a_block(endpoint: &str) -> anyhow::Result<()> {
     let client = reqwest::Client::new();
 
-    let new_address = new_address(&endpoint.to_string()).await?;
-
+    let new_address = new_address(endpoint).await?;
     let _ = client
-        .post(&endpoint.to_string())
+        .post(endpoint)
         .basic_auth(USERNAME, Some(PASSWORD))
         .json(&GenerateToAddressRequest::new(1, new_address))
         .send()
-        .await?;
+        .await
+        .context("failed to generate block")?;
 
     Ok(())
 }
@@ -287,6 +350,38 @@ impl GenerateToAddressRequest {
 }
 
 #[derive(Debug, serde::Serialize)]
+pub struct CreateWalletRequest {
+    jsonrpc: String,
+    id: String,
+    method: String,
+    params: serde_json::Value,
+}
+
+impl CreateWalletRequest {
+    pub fn new(wallet_name: String) -> Self {
+        CreateWalletRequest {
+            jsonrpc: "1.0".to_string(),
+            id: "createwallet".to_string(),
+            method: "createwallet".to_string(),
+            params: serde_json::json!([wallet_name]),
+        }
+    }
+}
+
+#[derive(Debug, serde::Deserialize)]
+pub struct CreateWalletResponseResult {
+    name: String,
+    warning: String,
+}
+
+#[derive(Debug, serde::Deserialize)]
+struct CreateWalletResponse {
+    result: Option<CreateWalletResponseResult>,
+    error: Option<JsonRpcError>,
+    id: String,
+}
+
+#[derive(Debug, serde::Serialize)]
 struct FundRequest {
     jsonrpc: String,
     id: String,
@@ -321,16 +416,6 @@ pub struct JsonRpcError {
 
 async fn fund(endpoint: &str, address: Address, amount: Amount) -> anyhow::Result<sha256d::Hash> {
     let client = reqwest::Client::new();
-
-    let new_address = new_address(endpoint).await?;
-
-    let _ = client
-        .post(endpoint)
-        .basic_auth(USERNAME, Some(PASSWORD))
-        .json(&GenerateToAddressRequest::new(101, new_address))
-        .send()
-        .await
-        .context("failed to generate blocks")?;
 
     let response: FundResponse = client
         .post(endpoint)
