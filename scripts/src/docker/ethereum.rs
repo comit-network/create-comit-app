@@ -195,9 +195,9 @@ async fn new_erc20_contract(
             clarity::Address::from(address.0),
             Uint256::from(100000u128) * Uint256::from(10u128.pow(18)),
         );
-        send_transaction(
+        send_raw_transaction(
             client.clone(),
-            Some(contract_address),
+            Some(clarity::Address::from(contract_address.0)),
             100_000,
             U256::from(0u64),
             transfer,
