@@ -5,6 +5,7 @@ use crate::{
     docker::{self, docker_daemon_ip, DockerImage, LogMessage, DOCKER_NETWORK},
 };
 use anyhow::Context;
+use lazy_static::lazy_static;
 use num256::Uint256;
 use secp256k1::{rand::thread_rng, SecretKey};
 use shiplift::ContainerOptions;
@@ -13,8 +14,17 @@ use web3::{
     api::Web3,
     confirm::send_transaction_with_confirmation,
     transports::Http,
-    types::{Address, TransactionReceipt, TransactionRequest, H160, U256},
+    types::{Address, Bytes, TransactionReceipt, TransactionRequest, H160, U256},
 };
+
+lazy_static! {
+    static ref DEPLOY_ACCOUNT: web3::types::Address = "00a329c0648769a73afac7f9381e08fb43dbea72"
+        .parse()
+        .expect("Should not fail: Could not parse DEV account address");
+    static ref DEPLOY_ACCOUNT_PRIVATE_KEY: clarity::PrivateKey = clarity::PrivateKey::from(
+        hex_literal::hex!("4d5db4107d237df6a3d58ee5f70ae63d73d7658d4026f2eefd2f204c81682cb7")
+    );
+}
 
 pub const TOKEN_CONTRACT: &str = include_str!("../../erc20_token/build/contract.hex");
 pub const CONTRACT_ABI: &str = include_str!("../../erc20_token/build/abi.json");
@@ -78,6 +88,10 @@ pub async fn new_geth_instance(config: Option<config::Ethereum>) -> anyhow::Resu
     let account_1 = fund_new_account(http_endpoint)
         .await
         .context("failed to fund second account")?;
+
+    fund_address(http_endpoint, *DEPLOY_ACCOUNT)
+        .await
+        .context("Failed to fund contract deployment account.")?;
 
     if let Some(config) = config.clone() {
         for address in config.addresses_to_fund {
@@ -205,13 +219,56 @@ async fn deploy_erc20_contract(client: Web3<Http>) -> anyhow::Result<Address> {
     let data = TOKEN_CONTRACT[2..].trim(); // remove the 0x in the front and any whitespace
     let erc20_contract = hex::decode(data).context("token contract should be valid hex")?;
 
-    let receipt = send_transaction(client, None, 4_000_000, U256::from(0), erc20_contract).await?;
+    let receipt =
+        send_raw_transaction(client, None, 10_000_000, U256::from(0), erc20_contract).await?;
 
     let contract_address = receipt
         .contract_address
         .context("contract_address not present, invalid deployment transaction?")?;
 
     Ok(contract_address)
+}
+
+async fn send_raw_transaction(
+    client: Web3<Http>,
+    to: Option<clarity::Address>,
+    gas_limit: u64,
+    amount: U256,
+    data: Vec<u8>,
+) -> anyhow::Result<TransactionReceipt> {
+    let chain_id = get_chain_id(client.clone()).await?;
+    let tx = clarity::Transaction {
+        nonce: client
+            .eth()
+            .transaction_count(*DEPLOY_ACCOUNT, None)
+            .await?
+            .as_u64()
+            .into(),
+        gas_price: 0u32.into(),
+        gas_limit: gas_limit.into(),
+        to: to.unwrap_or_default(),
+        value: <[u8; 32]>::from(amount).into(),
+        data,
+        signature: None,
+    };
+    let signed_raw_tx = tx.sign(&*DEPLOY_ACCOUNT_PRIVATE_KEY, Some(chain_id.into()));
+    let serialized_tx = signed_raw_tx
+        .to_bytes()
+        .map_err(|e| anyhow::anyhow!("failed to serialize transaction {:?}", e))?;
+
+    let tx_id = client
+        .send_raw_transaction_with_confirmation(Bytes(serialized_tx), Duration::from_millis(100), 1)
+        .await?;
+
+    Ok(tx_id)
+}
+
+async fn get_chain_id(client: Web3<Http>) -> anyhow::Result<u16> {
+    let network = client.net().version().await?;
+
+    network
+        .parse::<u16>()
+        .with_context(|| format!("{} is not a valid chain-id", network))
 }
 
 fn transfer_fn(address: clarity::Address, amount: Uint256) -> Vec<u8> {
