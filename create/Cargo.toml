@@ -15,7 +15,7 @@ tokio-compat = "0.1"
 anyhow = "1.0.32"
 flate2 = "1.0.17"
 ignore = "0.4.16"
-tar = "0.4.29"
+tar = "0.4.30"
 
 # This is just so that the same build flags can be passed in either crates
 [features]
