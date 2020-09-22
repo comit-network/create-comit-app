@@ -28,7 +28,7 @@
         "comit-sdk": "^0.15",
         "dotenv": "^8.1.0",
         "express": "^4.17.1",
-        "moment": "^2.28.0",
+        "moment": "^2.29.0",
         "readline-sync": "^1.4.10",
         "satoshi-bitcoin-ts": "^0.2.4"
     },
