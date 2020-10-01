@@ -5,7 +5,7 @@ authors = ["CoBloX developers <team@coblox.tech>"]
 edition = "2018"
 
 [dependencies]
-flate2 = "1.0.17"
+flate2 = "1.0.18"
 structopt = "0.3"
 tar = "0.4"
 tokio = { version = "0.2", features = ["fs", "io-util"] }
@@ -13,7 +13,7 @@ tokio-compat = "0.1"
 
 [build-dependencies]
 anyhow = "1.0.32"
-flate2 = "1.0.17"
+flate2 = "1.0.18"
 ignore = "0.4.16"
 tar = "0.4.30"
 
