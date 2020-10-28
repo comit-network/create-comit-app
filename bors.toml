@@ -6,4 +6,3 @@ status = [
     "e2e_test",
     "npm_build",
 ]
-pr_status = []
