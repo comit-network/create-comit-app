@@ -6,4 +6,4 @@ status = [
     "e2e_test",
     "npm_build",
 ]
-pr_status = ["license/cla"]
+pr_status = []
