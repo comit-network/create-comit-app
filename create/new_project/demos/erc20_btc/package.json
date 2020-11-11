@@ -24,7 +24,7 @@
         "typescript": "^4.0.5"
     },
     "dependencies": {
-        "comit-sdk": "^0.16.1",
+        "comit-sdk": "^0.17.1",
         "dotenv": "^8.1.0",
         "moment": "^2.29.1",
         "readline-sync": "^1.4.10",
