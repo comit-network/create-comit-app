@@ -14,7 +14,7 @@ tokio-compat = "0.1"
 [build-dependencies]
 anyhow = "1.0.34"
 flate2 = "1.0.19"
-ignore = "0.4.16"
+ignore = "0.4.17"
 tar = "0.4.30"
 
 # This is just so that the same build flags can be passed in either crates
